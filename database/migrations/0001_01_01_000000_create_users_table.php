@@ -1,5 +1,6 @@
 <?php
 
+use App\GlobalRoleEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,24 +13,25 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
+            $table->string('id')->primary();
             $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->rememberToken();
+            $table->string('global_name')->nullable();
+            $table->string('email')->unique()->nullable();
+            $table->string('avatar_hash')->nullable();
+            $table->enum('global_role', GlobalRoleEnum::getOptions());
+            $table->string('lang_code')->default('hu');
+            $table->string('access_token')->nullable();
+            $table->string('refresh_token')->nullable();
+            $table->dateTime('access_expires_at')->nullable();
             $table->timestamps();
-        });
-
-        Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
-            $table->string('token');
-            $table->timestamp('created_at')->nullable();
+            $table->softDeletes();
         });
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
+            $table->string('user_id')->nullable()->index();
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
+
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');
