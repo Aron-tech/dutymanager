@@ -14,14 +14,12 @@ return new class extends Migration
     {
         Schema::create('duties', function (Blueprint $table) {
             $table->id();
-            $table->string('guild_user_id');
+            $table->foreignId('guild_user_id')->constrained();
             $table->unsignedInteger('value');
             $table->timestamp('started_at');
             $table->timestamp('finished_at');
             $table->enum('status', DutyStatusEnum::getOptions());
             $table->softDeletes();
-
-            $table->foreign('guild_user_id')->references('id')->on('guild_users');
         });
     }
 

@@ -2,7 +2,17 @@
 
 namespace App\Services;
 
+use App\Models\Guild;
+
 class GuildService
 {
-    // Ide kerül a logika
+    private ?Guild $guild;
+
+    public function loadModel(Guild $guild): void
+    {
+        $this->guild = $guild;
+    }
+    public function addBotToGuild($data)
+    {
+    }
 }

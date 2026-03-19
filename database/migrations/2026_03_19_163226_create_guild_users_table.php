@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('guild_users', function (Blueprint $table) {
             $table->id();
-            $table->string('user_id');
-            $table->string('guild_id');
+            $table->string('user_id', 30);
+            $table->string('guild_id', 30);
             $table->string('ic_name');
             $table->jsonb('details');
             $table->boolean('is_request');
-            $table->dateTime('accepted_at')->nullable();
+            $table->timestamp('accepted_at')->nullable();
             $table->string('added_by')->nullable();
             $table->json('cached_roles')->nullable();
             $table->dateTime('roles_last_synced')->nullable();

@@ -14,12 +14,12 @@ return new class extends Migration
     {
         Schema::create('activity_logs', function (Blueprint $table) {
             $table->id();
-            $table->string('guild_id')->nullable();
-            $table->string('user_id')->nullable();
-            $table->string('target_id')->nullable();
+            $table->string('guild_id', 30)->nullable();
+            $table->string('user_id', 30)->nullable();
+            $table->string('target_id', 30)->nullable();
             $table->enum('action', ActionTypeEnum::getOptions());
             $table->jsonb('details')->nullable();
-            $table->dateTime('created_at');
+            $table->timestamp('created_at');
         });
     }
 

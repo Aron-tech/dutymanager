@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('guild_roles', function (Blueprint $table) {
             $table->id();
-            $table->string('guild_id');
-            $table->string('role_id');
+            $table->string('guild_id', 30);
+            $table->string('role_id', 30);
             $table->jsonb('permissions');
             $table->timestamps();
 

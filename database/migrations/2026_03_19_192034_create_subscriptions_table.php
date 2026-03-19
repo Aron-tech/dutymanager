@@ -15,8 +15,8 @@ return new class extends Migration
     {
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
-            $table->string('user_id');
-            $table->string('guild_id')->nullable();
+            $table->string('user_id', 30);
+            $table->string('guild_id', 30)->nullable();
             $table->string('stripe_id')->nullable();
             $table->enum('status', SubscriptionStatusEnum::getOptions());
             $table->timestamp('current_period_end');

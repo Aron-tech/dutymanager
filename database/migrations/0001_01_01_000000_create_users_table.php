@@ -13,16 +13,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->string('id')->primary();
+            $table->string('id', 30)->primary();
             $table->string('name');
             $table->string('global_name')->nullable();
             $table->string('email')->unique()->nullable();
             $table->string('avatar_hash')->nullable();
             $table->enum('global_role', GlobalRoleEnum::getOptions());
-            $table->string('lang_code')->default('hu');
+            $table->string('lang_code', 4)->default('hu');
             $table->string('access_token')->nullable();
             $table->string('refresh_token')->nullable();
-            $table->dateTime('access_expires_at')->nullable();
+            $table->timestamp('access_expires_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
