@@ -28,7 +28,6 @@ class AddBotToGuildRequest extends FormRequest
             'id' => 'required|string|unique:guilds|max:30',
             'name' => 'required|string|max:255',
             'owner_id' => 'required|string|exists:users,id|max:30',
-            'executor_id' => 'required|string|exists:users,id|max:30',
         ];
     }
 }

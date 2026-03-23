@@ -5,16 +5,36 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreGuildRequest;
 use App\Http\Requests\UpdateGuildRequest;
 use App\Models\Guild;
+use App\Models\User;
+use App\Services\DiscordFetchService;
 use App\Services\GuildService;
+use Inertia\Inertia;
 
 class GuildController extends Controller
 {
-    /**
-     * @param GuildService $service
-     */
     public function __construct(private readonly GuildService $service)
     {
         $this->service->setIsApiCall(false);
+    }
+
+    public function selector()
+    {
+        $user_id = auth()->id();
+        $access_token = session('discord_access_token', null) ?? (User::findOrFail($user_id)->access_token ?? null);
+        if (! $access_token) {
+            return redirect()->route('login.discord');
+        }
+
+        $guilds = (new DiscordFetchService)->getCategorizedGuilds($access_token, $user_id);
+
+        return Inertia::render('guilds/selector', [
+            'guilds' => $guilds,
+        ]);
+    }
+
+    public function selected()
+    {
+        //
     }
 
     /**

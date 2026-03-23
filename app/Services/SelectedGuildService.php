@@ -30,7 +30,7 @@ class SelectedGuildService
         });
     }
 
-    /**
+    /*
      * @return bool
      */
     public static function isSelected(): bool

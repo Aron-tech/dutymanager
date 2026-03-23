@@ -15,6 +15,7 @@ return new class extends Migration
         Schema::create('guilds', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->string('name');
+            $table->string('icon')->nullable();
             $table->string('owner_id');
             $table->enum('lang_code', [LanguageEnum::getOptions()]);
             $table->boolean('is_installed')->default(false);

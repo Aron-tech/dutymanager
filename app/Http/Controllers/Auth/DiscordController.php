@@ -37,6 +37,8 @@ class DiscordController extends Controller
 
             Auth::login($user, true);
 
+            session(['discord_access_token' => $user->access_token]);
+
             return redirect()->route('dashboard');
 
         } catch (\Exception $e) {

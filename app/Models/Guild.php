@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['id', 'name', 'slug', 'owner_id', 'lang_code', 'is_installed'])]
-#[Hidden(['slug', 'lang_code'])]
+#[Fillable(['id', 'name', 'icon', 'owner_id', 'lang_code', 'is_installed'])]
+#[Hidden(['lang_code'])]
 class Guild extends Model
 {
     use SoftDeletes;

@@ -19,9 +19,7 @@ class GuildController extends Controller
     public function addBot(AddBotToGuildRequest $request)
     {
         $validated_data = $request->validated();
-        $guild = $this->service->addBotToGuild($validated_data);
-        $user = User::findOrFail($validated_data['owner_id']);
-
+        $this->service->addBotToGuild($validated_data);
     }
 
     /**
