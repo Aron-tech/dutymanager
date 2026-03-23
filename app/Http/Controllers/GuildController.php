@@ -5,9 +5,18 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreGuildRequest;
 use App\Http\Requests\UpdateGuildRequest;
 use App\Models\Guild;
+use App\Services\GuildService;
 
 class GuildController extends Controller
 {
+    /**
+     * @param GuildService $service
+     */
+    public function __construct(private readonly GuildService $service)
+    {
+        $this->service->setIsApiCall(false);
+    }
+
     /**
      * Display a listing of the resource.
      */

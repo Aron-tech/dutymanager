@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('global_name')->nullable();
             $table->string('email')->unique()->nullable();
-            $table->string('avatar_hash')->nullable();
-            $table->enum('global_role', GlobalRoleEnum::getOptions());
+            $table->string('avatar_url')->nullable();
+            $table->enum('global_role', GlobalRoleEnum::getOptions())->default(GlobalRoleEnum::USER);
             $table->string('lang_code', 4)->default('hu');
             $table->string('access_token')->nullable();
             $table->string('refresh_token')->nullable();

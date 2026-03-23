@@ -13,13 +13,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['id', 'name', 'global_name', 'email', 'avatar_hash', 'lang_code', 'access_token', 'refresh_token', 'access_expires_at'])]
-#[Hidden(['avatar_hash', 'lang_code', 'access_token', 'refresh_token', 'access_expires_at'])]
+#[Fillable(['id', 'name', 'global_name', 'email', 'avatar_url', 'lang_code', 'access_token', 'refresh_token', 'access_expires_at'])]
+#[Hidden(['access_token', 'refresh_token', 'access_expires_at'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
-
     protected $primaryKey = 'id';
 
     protected $keyType = 'string';

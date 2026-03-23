@@ -23,7 +23,9 @@ class StoreGuildRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'guild_id' => ['required', 'string', 'exists:guilds,id'],
+            'user_id' => ['required', 'string', 'exists:users,id'],
+            'ic_name' => ['required', 'string'],
         ];
     }
 }
