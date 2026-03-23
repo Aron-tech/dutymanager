@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Actions\JoinUserToGuildAction;
 use App\ActionTypeEnum;
 use App\Concerns\ServiceTrait;
 use App\Models\ActivityLog;
@@ -52,8 +53,6 @@ class GuildService
         DB::beginTransaction();
 
         try {
-            $executor_user = User::findOrFail($data['executor_id']);
-
             $this->guild = Guild::createOrRestore(
                 ['id' => $data['id']],
                 [
@@ -64,6 +63,13 @@ class GuildService
                     'is_installed' => $data['is_installed'],
                 ]
             );
+
+            $owner_user = User::firstOrCreate(
+                ['id' => $data['owner_id']],
+                [''],
+            );
+
+            JoinUserToGuildAction::run($user, $guild, 'N/A', [], false, null);
 
             ActivityLog::make($this->guild->id, $executor_user->id, null, ActionTypeEnum::ADD_BOT_TO_GUILD, null);
 
