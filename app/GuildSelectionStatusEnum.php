@@ -4,8 +4,10 @@ namespace App;
 
 enum GuildSelectionStatusEnum: string
 {
-    case FULL_ACCESS = 'full_access';               // 1. eset
-    case NEEDS_REQUEST = 'needs_request';           // 2. eset
-    case LIMITED_ADMIN = 'limited_admin';           // 3. eset
-    case NEEDS_INSTALLATION = 'needs_installation'; // 4. eset
+    case FULL_ACCESS = 'full_access';
+    case NEEDS_REQUEST = 'needs_request';
+    case LIMITED_ADMIN = 'limited_admin';
+    case NEEDS_INSTALLATION = 'needs_installation';
+    case NEEDS_DEV_GUILD = 'needs_dev_guild';
+    case NOT_INSTALLED_NO_ACCESS = 'not_installed_no_access';
 }

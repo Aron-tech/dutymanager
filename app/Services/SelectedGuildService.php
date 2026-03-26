@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Session;
 
 class SelectedGuildService
 {
-    private const SESSION_KEY = 'selected_guild_id';
+    public const string SESSION_KEY = 'selected_guild_id';
 
     /**
      * @param Guild $guild

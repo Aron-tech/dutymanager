@@ -2,7 +2,6 @@
 
 namespace App\Actions;
 
-use App\Models\Guild;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use Lorisleiva\Actions\Concerns\AsAction;

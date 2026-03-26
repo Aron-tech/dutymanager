@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\SelectedGuildService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,7 +16,7 @@ class SelectedGuildMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->session()->has('selected_guild_id')) {
+        if (! $request->session()->has(SelectedGuildService::SESSION_KEY)) {
             return redirect()->route('guilds.selector');
         }
 

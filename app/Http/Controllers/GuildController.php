@@ -2,94 +2,121 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreGuildRequest;
-use App\Http\Requests\UpdateGuildRequest;
+use App\Http\Requests\SaveFeatureSettingsRequest;
+use App\Http\Requests\SaveFeaturesRequest;
 use App\Models\Guild;
-use App\Models\User;
 use App\Services\DiscordFetchService;
 use App\Services\GuildService;
+use App\Services\SelectedGuildService;
+use Exception;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class GuildController extends Controller
 {
-    public function __construct(private readonly GuildService $service)
-    {
-        $this->service->setIsApiCall(false);
-    }
+    public function __construct(
+        private readonly GuildService $service
+    ) {}
 
     public function selector()
     {
-        $user_id = auth()->id();
-        $access_token = session('discord_access_token', null) ?? (User::findOrFail($user_id)->access_token ?? null);
+        if (SelectedGuildService::isSelected()) {
+            SelectedGuildService::clear();
+        }
+
+        $user = auth()->user();
+        $access_token = session('discord_access_token') ?? $user->access_token;
+
         if (! $access_token) {
             return redirect()->route('login.discord');
         }
 
-        $guilds = (new DiscordFetchService)->getCategorizedGuilds($access_token, $user_id);
+        try {
+            $guilds = DiscordFetchService::getCategorizedGuilds($access_token, $user);
+        } catch (Exception $e) {
+            if ($e->getCode() === 401) {
+                session()->forget('discord_access_token');
+
+                return redirect()->route('login.discord');
+            }
+            throw $e;
+        }
 
         return Inertia::render('guilds/selector', [
             'guilds' => $guilds,
         ]);
     }
 
-    public function selected()
+    public function select(Guild $guild)
     {
-        //
+        $user = auth()->user();
+
+        SelectedGuildService::set($guild);
+
+        return to_route('dashboard');
     }
 
     /**
-     * Display a listing of the resource.
+     * @param Guild $guild
+     * @return Response
      */
-    public function index()
+    public function show(Guild $guild): Response
     {
-        //
+        $guild_settings = $guild->guildSettings()->firstOrCreate(
+            ['guild_id' => $guild->id],
+            ['current_step' => 0, 'features' => [], 'feature_settings' => []]
+        );
+
+        return Inertia::render('guilds/setup', [
+            'guild' => $guild,
+            'settings' => $guild_settings,
+            'context_data' => [],
+        ]);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * @param SaveFeaturesRequest $request
+     * @param Guild $guild
+     * @return RedirectResponse
+     * @throws Exception
      */
-    public function create()
+    public function saveFeatures(SaveFeaturesRequest $request, Guild $guild): RedirectResponse
     {
-        //
+        $validated = $request->validated();
+        $this->service->loadModel($guild);
+        $this->service->saveEnabledFeatures($validated['features'], $validated['next_step']);
+
+        return redirect()->route('guild.setup.show', $guild->id);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * @param SaveFeatureSettingsRequest $request
+     * @param Guild $guild
+     * @param string $feature_id
+     * @return RedirectResponse
+     * @throws Exception
      */
-    public function store(StoreGuildRequest $request)
+    public function saveFeatureSettings(SaveFeatureSettingsRequest $request, Guild $guild, string $feature_id): RedirectResponse
     {
-        //
+        $this->service->loadModel($guild);
+        $validated = $request->validated();
+
+        $this->service->saveFeatureSettings($feature_id, $validated['settings'], $validated['next_step']);
+
+        return redirect()->route('guild.setup.show', $guild->id);
     }
 
     /**
-     * Display the specified resource.
+     * @param Guild $guild
+     * @return RedirectResponse
+     * @throws Exception
      */
-    public function show(Guild $guild)
+    public function finish(Guild $guild): RedirectResponse
     {
-        //
-    }
+        $this->service->loadModel($guild);
+        $this->service->finishSetup();
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Guild $guild)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateGuildRequest $request, Guild $guild)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Guild $guild)
-    {
-        //
+        return to_route('dashboard');
     }
 }

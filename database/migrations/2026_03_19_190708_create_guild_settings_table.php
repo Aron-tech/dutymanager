@@ -16,6 +16,7 @@ return new class extends Migration
             $table->jsonb('features');
             $table->jsonb('feature_settings');
             $table->jsonb('user_details_config')->nullable();
+            $table->string('current_step')->default(0);
             $table->timestamps();
 
             $table->foreign('guild_id')->references('id')->on('guilds');

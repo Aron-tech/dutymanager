@@ -1,5 +1,6 @@
 import { Link, router } from '@inertiajs/react';
 import { LogOut, Settings } from 'lucide-react';
+import { HiOutlineServerStack } from 'react-icons/hi2';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -42,6 +43,17 @@ export function UserMenuContent({ user }: Props) {
                     >
                         <Settings className="mr-2" />
                         Settings
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link
+                        className="block w-full cursor-pointer"
+                        href={route('guilds.selector')}
+                        prefetch
+                        onClick={cleanup}
+                    >
+                        <HiOutlineServerStack className="mr-2" />
+                        Szerver választó
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>

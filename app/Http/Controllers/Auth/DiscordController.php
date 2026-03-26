@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Actions\UpsertDiscordUserAction;
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
@@ -13,7 +12,7 @@ class DiscordController extends Controller
 {
     public function redirectToDiscord(): RedirectResponse
     {
-        return Socialite::driver('discord')->redirect();
+        return Socialite::driver('discord')->scopes(['identify', 'email', 'guilds'])->redirect();
     }
 
     public function handleDiscordCallback(): RedirectResponse
@@ -29,7 +28,7 @@ class DiscordController extends Controller
                 'avatar_url' => $discord_user->getAvatar(),
                 'token' => $discord_user->token,
                 'refresh_token' => $discord_user->refreshToken,
-                'expires_in' => $discord_user->expiresIn,
+                'expires_in' => (int) $discord_user->expiresIn,
                 'language' => $discord_user->user['language'] ?? app()->getLocale(),
             ];
 
@@ -37,7 +36,7 @@ class DiscordController extends Controller
 
             Auth::login($user, true);
 
-            session(['discord_access_token' => $user->access_token]);
+            session()->put('discord_access_token', $user->access_token);
 
             return redirect()->route('dashboard');
 

@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     SidebarGroup,
     SidebarGroupLabel,
@@ -11,6 +11,11 @@ import type { NavItem } from '@/types';
 
 export function NavMain({ items = [] }: { items: NavItem[] }) {
     const { isCurrentUrl } = useCurrentUrl();
+    const { activeGuild } = usePage().props as any
+
+    if (!activeGuild) {
+        return null;
+    }
 
     return (
         <SidebarGroup className="px-2 py-0">

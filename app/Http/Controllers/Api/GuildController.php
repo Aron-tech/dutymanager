@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Actions\JoinUserToGuildAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AddBotToGuildRequest;
 use App\Models\Guild;
-use App\Models\User;
-use App\Services\GuildService;
+use App\Services\Api\GuildService;
 use Illuminate\Http\Request;
 
 class GuildController extends Controller
@@ -16,6 +14,12 @@ class GuildController extends Controller
     {
         $this->service->setIsApiCall(true);
     }
+
+    /**
+     * @return void
+     *
+     * @throws \Throwable
+     */
     public function addBot(AddBotToGuildRequest $request)
     {
         $validated_data = $request->validated();

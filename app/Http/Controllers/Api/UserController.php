@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\GuildService;
+use App\Services\Api\GuildService;
 
 class UserController extends Controller
 {
