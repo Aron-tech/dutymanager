@@ -51,12 +51,12 @@ class GuildService
         DB::transaction(function () use ($features, $next_step) {
             $guild_settings = GuildSettings::firstOrCreate(
                 ['guild_id' => $this->guild->id],
-                ['features' => [], 'feature_settings' => [], 'current_step' => 0]
+                ['features' => [], 'feature_settings' => [], 'current_view' => 'general-settings']
             );
 
             $guild_settings->update([
                 'features' => $features,
-                'current_step' => $next_step,
+                'current_view' => $next_step,
             ]);
         });
     }
@@ -75,7 +75,7 @@ class GuildService
         DB::transaction(function () use ($feature_id, $settings, $next_step) {
             $guild_settings = GuildSettings::firstOrCreate(
                 ['guild_id' => $this->guild->id],
-                ['features' => [], 'feature_settings' => [], 'current_step' => 0]
+                ['features' => [], 'feature_settings' => [], 'current_view' => 'general-settings']
             );
 
             $current_feature_settings = $guild_settings->feature_settings ?? [];
@@ -83,7 +83,7 @@ class GuildService
 
             $guild_settings->update([
                 'feature_settings' => $current_feature_settings,
-                'current_step' => $next_step,
+                'current_view' => $next_step,
             ]);
         });
     }

@@ -50,7 +50,7 @@ export interface GuildRole {
 
 export interface GuildSettings {
     guild_id: string;
-    current_step: number;
+    current_view: string | null;
     features: string[];
     feature_settings: Record<string, Record<string, any>>;
     user_details_config: Record<string, any>;

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { feature_registry } from '@/features/config/features';
 import GeneralSettings from '@/features/general-settings';
+import UserDetails from '@/features/user-details';
 import AppLayout from '@/layouts/app-layout';
 import type { Guild, GuildSettings } from '@/types';
 
@@ -113,6 +114,23 @@ export default function Setup({ guild, settings, context_data }: SetupProps) {
                                     ...prev['general_settings'],
                                     [field]: value,
                                 },
+                            }));
+                        }}
+                    />
+                );
+
+            case 'user_details':
+                return (
+                    <UserDetails
+                        data={
+                            settings.user_details_config ||
+                            featureData['user_details'] ||
+                            {}
+                        }
+                        onChange={(field, value) => {
+                            setFeatureData((prev: any) => ({
+                                ...prev,
+                                ['user_details']: value,
                             }));
                         }}
                     />
