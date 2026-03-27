@@ -5,4 +5,6 @@ return [
     'developer' => 'Fejlesztő',
     'amdin' => 'Admin',
     'user' => 'Felhasználó',
+    'hungarian' => 'Magyar',
+    'english' => 'Angol',
 ];

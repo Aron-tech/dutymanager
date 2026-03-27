@@ -101,7 +101,8 @@ export interface User {
 export interface FeatureViewProps {
     data: Record<string, any>;
     context_data: Record<string, any>;
-    onChange: (field_name: string, value: any) => void;
+    errors: Record<string, string>;
+    onChange: (field: string, value: any) => void;
 }
 
 export interface FeatureRegistryItem {

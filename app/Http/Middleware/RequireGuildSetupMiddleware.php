@@ -20,7 +20,7 @@ class RequireGuildSetupMiddleware
         $is_setup_route = $request->routeIs('guild.setup.*');
 
         if (! $guild->is_installed && ! $is_setup_route) {
-            return redirect()->route('guild.setup.show', $guild->id);
+            return redirect()->route('guild.setup.show');
         }
 
         if ($guild->is_installed && $is_setup_route) {

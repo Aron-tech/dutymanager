@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\SaveFeatureSettingsRequest;
 use App\Http\Requests\SaveFeaturesRequest;
+use App\LanguageEnum;
 use App\Models\Guild;
+use App\PermissionEnum;
 use App\Services\DiscordFetchService;
 use App\Services\GuildService;
 use App\Services\SelectedGuildService;
@@ -50,70 +52,75 @@ class GuildController extends Controller
 
     public function select(Guild $guild)
     {
-        $user = auth()->user();
-
         SelectedGuildService::set($guild);
 
         return to_route('dashboard');
     }
 
-    /**
-     * @param Guild $guild
-     * @return Response
-     */
-    public function show(Guild $guild): Response
+    public function show(): Response
     {
+        $guild = SelectedGuildService::get();
         $guild_settings = $guild->guildSettings()->firstOrCreate(
             ['guild_id' => $guild->id],
-            ['current_step' => 0, 'features' => [], 'feature_settings' => []]
+            ['current_view' => 'general_settings', 'features' => [], 'feature_settings' => []]
         );
+
+        $languages = collect(LanguageEnum::cases())->map(fn ($lang) => [
+            'value' => $lang->value,
+            'label' => $lang->getLabel(),
+        ]);
+
+        $permissions = collect(PermissionEnum::cases())->map(fn ($perm) => [
+            'value' => $perm->value,
+            'label' => $perm->getLabel(),
+        ]);
+
+        $discord_roles = DiscordFetchService::getGuildRoles($guild->id);
 
         return Inertia::render('guilds/setup', [
             'guild' => $guild,
             'settings' => $guild_settings,
-            'context_data' => [],
+            'context_data' => [
+                'languages' => $languages,
+                'permissions' => $permissions,
+                'discord_roles' => $discord_roles,
+            ],
         ]);
     }
 
     /**
-     * @param SaveFeaturesRequest $request
-     * @param Guild $guild
-     * @return RedirectResponse
      * @throws Exception
      */
-    public function saveFeatures(SaveFeaturesRequest $request, Guild $guild): RedirectResponse
+    public function saveFeatures(SaveFeaturesRequest $request): RedirectResponse
     {
         $validated = $request->validated();
+        $guild = SelectedGuildService::get();
         $this->service->loadModel($guild);
         $this->service->saveEnabledFeatures($validated['features'], $validated['next_step']);
 
-        return redirect()->route('guild.setup.show', $guild->id);
+        return redirect()->route('guild.setup.show');
     }
 
     /**
-     * @param SaveFeatureSettingsRequest $request
-     * @param Guild $guild
-     * @param string $feature_id
-     * @return RedirectResponse
      * @throws Exception
      */
-    public function saveFeatureSettings(SaveFeatureSettingsRequest $request, Guild $guild, string $feature_id): RedirectResponse
+    public function saveFeatureSettings(SaveFeatureSettingsRequest $request, string $feature_id): RedirectResponse
     {
+        $guild = SelectedGuildService::get();
         $this->service->loadModel($guild);
         $validated = $request->validated();
 
         $this->service->saveFeatureSettings($feature_id, $validated['settings'], $validated['next_step']);
 
-        return redirect()->route('guild.setup.show', $guild->id);
+        return redirect()->route('guild.setup.show');
     }
 
     /**
-     * @param Guild $guild
-     * @return RedirectResponse
      * @throws Exception
      */
-    public function finish(Guild $guild): RedirectResponse
+    public function finish(): RedirectResponse
     {
+        $guild = SelectedGuildService::get();
         $this->service->loadModel($guild);
         $this->service->finishSetup();
 

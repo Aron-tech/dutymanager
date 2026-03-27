@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\GlobalRoleEnum;
 use App\Models\Guild;
+use App\Models\GuildSettings;
 use App\Models\User;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
@@ -170,6 +172,84 @@ class DiscordFetchService
             ])->get("https://discord.com/api/guilds/{$guild_id}/channels");
 
             return $response->successful() ? $response->json() : [];
+        });
+    }
+
+    /**
+     * @param string $guild_id
+     * @param string|null $data_type
+     * @return array
+     * @throws ConnectionException
+     */
+    public static function getGuildData(string $guild_id, ?string $data_type = null): array
+    {
+        $bot_token = config('services.discord.token');
+
+        $url = "https://discord.com/api/v10/guilds/{$guild_id}";
+        if ($data_type !== null) {
+            $url .= '/'.ltrim($data_type, '/');
+        }
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bot '.$bot_token,
+        ])->get($url);
+
+        return $response->successful() ? $response->json() : [];
+    }
+
+    public static function getGuildRoles(string $guild_id): array
+    {
+        return Cache::remember("discord_guild_{$guild_id}_roles", now()->addHours(12), function () use ($guild_id) {
+            $data = self::getGuildData($guild_id, 'roles');
+
+            if (empty($data)) {
+                return $data;
+            }
+
+            return collect($data)
+                ->filter(fn ($role) => $role['id'] !== $guild_id)
+                ->map(fn ($role) => [
+                    'id' => $role['id'],
+                    'name' => $role['name'],
+                    'color' => $role['color'],
+                ])->values()->toArray();
+        });
+    }
+
+    /**
+     * Lekéri egy specifikus felhasználóhoz tartozó feloldott jogosultságokat a Discord rangjai alapján.
+     * Szintén 12 óráig cacheljük a "kiszámolt" jogosultságokat.
+     */
+    public static function getUserPermissions(string $guildId, string $userId): array
+    {
+        return Cache::remember("guild_{$guildId}_user_{$userId}_permissions", now()->addHours(12), function () use ($guildId, $userId) {
+            $token = config('services.discord.token');
+            $response = Http::withToken($token, 'Bot')
+                ->get("https://discord.com/api/v10/guilds/{$guildId}/members/{$userId}");
+
+            if ($response->failed()) {
+                return [
+                    'permissions' => [],
+                    'last_fetched_at' => now()->toDateTimeString(),
+                ];
+            }
+
+            $userRoles = $response->json('roles') ?? [];
+
+            $settings = GuildSettings::where('guild_id', $guildId)->first();
+            $roleMapping = $settings?->feature_settings['general_settings']['role_permissions'] ?? [];
+
+            $userPermissions = collect($userRoles)
+                ->map(fn ($roleId) => $roleMapping[$roleId] ?? [])
+                ->flatten()
+                ->unique()
+                ->values()
+                ->toArray();
+
+            return [
+                'permissions' => $userPermissions,
+                'last_fetched_at' => now()->toDateTimeString(),
+            ];
         });
     }
 }
