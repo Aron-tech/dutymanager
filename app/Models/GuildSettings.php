@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['guild_id', 'features', 'feature_settings', 'user_details_config', 'current_step'])]
+#[Fillable(['guild_id', 'features', 'feature_settings', 'user_details_config', 'current_step', 'is_complete'])]
 class GuildSettings extends Model
 {
     protected $table = 'guild_settings';
@@ -24,6 +24,7 @@ class GuildSettings extends Model
             'feature_settings' => 'array',
             'user_details_config' => 'array',
             'current_step' => 'int',
+            'is_complete' => 'bool',
         ];
     }
 
