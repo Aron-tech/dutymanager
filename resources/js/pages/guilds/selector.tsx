@@ -1,23 +1,27 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { ChevronRight, Server, Plus } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
-import { route } from 'ziggy-js';
+import { ChevronRight, Plus, Server } from 'lucide-react';
+import React, { useState } from 'react'; // A useEffect-et már nem használjuk
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppHeaderLayout from '@/layouts/app/app-header-layout';
 import type { BreadcrumbItem } from '@/types';
-import { discord } from '@/routes/login';
 
-// Feltételezve, hogy a window.__ globálisan elérhető (Laravel/Inertia i18n setup)
 const __ = (key: string): string => {
     return (window as any).translations?.[key] || key;
 };
 
-interface Guild {
+interface DiscordGuild {
     discord_id: string;
     name: string;
     icon: string | null;
@@ -30,10 +34,11 @@ interface ConfigField {
     is_required: boolean;
 }
 
-interface PageProps {
+interface SelectorPageProps {
+    [key: string]: unknown;
     guilds: {
-        my_servers: Guild[];
-        pending_addition: Guild[];
+        my_servers: DiscordGuild[];
+        pending_addition: DiscordGuild[];
     };
     flash?: {
         showRequestModal?: boolean;
@@ -42,18 +47,23 @@ interface PageProps {
     };
 }
 
-export default function Selector({ guilds }: PageProps) {
+export default function Selector({ guilds }: SelectorPageProps) {
     const { my_servers, pending_addition } = guilds;
-    const { flash } = usePage<PageProps>().props;
+
+    // Most már a TypeScript tökéletesen felismeri a struktúrát
+    const { flash } = usePage<SelectorPageProps>().props;
 
     const [is_modal_open, setIsModalOpen] = useState<boolean>(false);
     const [form_data, setFormData] = useState<Record<string, string>>({});
 
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: __('guilds.selector.breadcrumb'), href: '/guilds/selector' },
-    ];
+    // Egy lokális state-ben tároljuk az "előző" flash állapotot az összehasonlításhoz
+    const [prev_flash, setPrevFlash] = useState(flash);
 
-    useEffect(() => {
+    // ESLINT FIX: "Derived State Pattern" (Származtatott állapot render közben)
+    // Ez a React hivatalos megoldása a prop-változások lekezelésére useEffect nélkül.
+    if (flash !== prev_flash) {
+        setPrevFlash(flash); // Rögtön frissítjük az új referenciára
+
         if (flash?.showRequestModal) {
             setIsModalOpen(true);
             const initial_data: Record<string, string> = {};
@@ -62,7 +72,11 @@ export default function Selector({ guilds }: PageProps) {
             });
             setFormData(initial_data);
         }
-    }, [flash]);
+    }
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: __('guilds.selector.breadcrumb'), href: '/guilds/selector' },
+    ];
 
     const handleSelectServer = (discord_id: string) => {
         router.post(`/guilds/select/${discord_id}`);
@@ -71,37 +85,48 @@ export default function Selector({ guilds }: PageProps) {
     const handleAddBot = (discord_id: string) => {
         const client_id = import.meta.env.VITE_DISCORD_CLIENT_ID;
         const permissions = '8';
-        const invite_url = `https://discord.com/oauth2/authorize?client_id=${client_id}&permissions=${permissions}&integration_type=0&scope=bot+applications.commands&guild_id=${discord_id}`;
 
-        window.location.href = invite_url;
+        window.location.assign(
+            `https://discord.com/oauth2/authorize?client_id=${client_id}&permissions=${permissions}&integration_type=0&scope=bot+applications.commands&guild_id=${discord_id}`
+        );
     };
 
     const handleRequestSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!flash?.targetDiscordId) return;
 
-        router.post(route('guilds.request', flash.targetDiscordId), {
-            config_data: form_data
-        }, {
-            onSuccess: () => setIsModalOpen(false)
-        });
+        if (!flash?.targetDiscordId) {
+            return;
+        }
+
+        router.post(
+            route('guilds.request', flash.targetDiscordId),
+            {
+                config_data: form_data,
+            },
+            {
+                onSuccess: () => setIsModalOpen(false),
+            }
+        );
     };
 
     return (
         <AppHeaderLayout breadcrumbs={breadcrumbs}>
             <Head title={__('guilds.selector.page_title')} />
 
-            <div className="flex h-full flex-col gap-8 p-6 lg:p-10 max-w-5xl mx-auto w-full">
-
+            <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-8 p-6 lg:p-10">
                 <div className="flex flex-col gap-2">
-                    <h1 className="text-3xl font-bold tracking-tight">{__('guilds.selector.heading')}</h1>
-                    <p className="text-muted-foreground">{__('guilds.selector.subheading')}</p>
+                    <h1 className="text-3xl font-bold tracking-tight">
+                        {__('guilds.selector.heading')}
+                    </h1>
+                    <p className="text-muted-foreground">
+                        {__('guilds.selector.subheading')}
+                    </p>
                 </div>
 
                 {/* --- SZERVEREIM SZEKCIÓ --- */}
                 <div>
-                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                        <Server className="w-5 h-5 text-primary" />
+                    <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
+                        <Server className="h-5 w-5 text-primary" />
                         {__('guilds.selector.my_servers_title')}
                     </h2>
 
@@ -112,27 +137,39 @@ export default function Selector({ guilds }: PageProps) {
                             </CardContent>
                         </Card>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {my_servers.map((guild) => (
                                 <Card
                                     key={guild.discord_id}
-                                    className="hover:border-primary/50 transition-colors cursor-pointer overflow-hidden"
+                                    className="cursor-pointer overflow-hidden transition-colors hover:border-primary/50"
                                     onClick={() => handleSelectServer(guild.discord_id)}
                                 >
-                                    <CardContent className="flex items-center justify-between p-4 gap-3">
-                                        <div className="flex items-center space-x-3 min-w-0">
+                                    <CardContent className="flex items-center justify-between gap-3 p-4">
+                                        <div className="flex min-w-0 items-center space-x-3">
                                             <Avatar className="h-10 w-10 flex-shrink-0">
-                                                <AvatarImage src={guild.icon ? `https://cdn.discordapp.com/icons/${guild.discord_id}/${guild.icon}.png` : ''} />
-                                                <AvatarFallback>{guild.name.charAt(0)}</AvatarFallback>
+                                                <AvatarImage
+                                                    src={
+                                                        guild.icon
+                                                            ? `https://cdn.discordapp.com/icons/${guild.discord_id}/${guild.icon}.png`
+                                                            : ''
+                                                    }
+                                                />
+                                                <AvatarFallback>
+                                                    {guild.name.charAt(0)}
+                                                </AvatarFallback>
                                             </Avatar>
-                                            <div className="flex flex-col min-w-0">
-                                                <span className="font-medium truncate">{guild.name}</span>
-                                                <span className="text-xs text-muted-foreground truncate">
-                                                    {guild.is_installed ? __('guilds.status.installed') : __('guilds.status.install_required')}
+                                            <div className="flex min-w-0 flex-col">
+                                                <span className="truncate font-medium">
+                                                    {guild.name}
+                                                </span>
+                                                <span className="truncate text-xs text-muted-foreground">
+                                                    {guild.is_installed
+                                                        ? __('guilds.status.installed')
+                                                        : __('guilds.status.install_required')}
                                                 </span>
                                             </div>
                                         </div>
-                                        <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                                        <ChevronRight className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                                     </CardContent>
                                 </Card>
                             ))}
@@ -142,8 +179,8 @@ export default function Selector({ guilds }: PageProps) {
 
                 {/* --- HOZZÁADÁSRA VÁR SZEKCIÓ --- */}
                 <div>
-                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                        <Plus className="w-5 h-5 text-primary" />
+                    <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
+                        <Plus className="h-5 w-5 text-primary" />
                         {__('guilds.selector.pending_title')}
                     </h2>
 
@@ -154,16 +191,29 @@ export default function Selector({ guilds }: PageProps) {
                             </CardContent>
                         </Card>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {pending_addition.map((guild) => (
-                                <Card key={guild.discord_id} className="opacity-80 hover:opacity-100 transition-opacity overflow-hidden">
-                                    <CardContent className="flex items-center justify-between p-4 gap-3">
-                                        <div className="flex items-center space-x-3 min-w-0">
+                                <Card
+                                    key={guild.discord_id}
+                                    className="overflow-hidden opacity-80 transition-opacity hover:opacity-100"
+                                >
+                                    <CardContent className="flex items-center justify-between gap-3 p-4">
+                                        <div className="flex min-w-0 items-center space-x-3">
                                             <Avatar className="h-10 w-10 flex-shrink-0">
-                                                <AvatarImage src={guild.icon ? `https://cdn.discordapp.com/icons/${guild.discord_id}/${guild.icon}.png` : ''} />
-                                                <AvatarFallback>{guild.name.charAt(0)}</AvatarFallback>
+                                                <AvatarImage
+                                                    src={
+                                                        guild.icon
+                                                            ? `https://cdn.discordapp.com/icons/${guild.discord_id}/${guild.icon}.png`
+                                                            : ''
+                                                    }
+                                                />
+                                                <AvatarFallback>
+                                                    {guild.name.charAt(0)}
+                                                </AvatarFallback>
                                             </Avatar>
-                                            <span className="font-medium truncate">{guild.name}</span>
+                                            <span className="truncate font-medium">
+                                                {guild.name}
+                                            </span>
                                         </div>
                                         <Button
                                             variant="secondary"
@@ -174,8 +224,10 @@ export default function Selector({ guilds }: PageProps) {
                                                 handleAddBot(guild.discord_id);
                                             }}
                                         >
-                                            <span className="hidden sm:inline">{__('guilds.action.add')}</span>
-                                            <Plus className="sm:ml-2 w-3 h-3" />
+                                            <span className="hidden sm:inline">
+                                                {__('guilds.action.add')}
+                                            </span>
+                                            <Plus className="h-3 w-3 sm:ml-2" />
                                         </Button>
                                     </CardContent>
                                 </Card>
@@ -190,7 +242,9 @@ export default function Selector({ guilds }: PageProps) {
                     <form onSubmit={handleRequestSubmit}>
                         <DialogHeader>
                             <DialogTitle>{__('guilds.modal.title')}</DialogTitle>
-                            <DialogDescription>{__('guilds.modal.description')}</DialogDescription>
+                            <DialogDescription>
+                                {__('guilds.modal.description')}
+                            </DialogDescription>
                         </DialogHeader>
 
                         <div className="grid gap-4 py-4">
@@ -201,17 +255,28 @@ export default function Selector({ guilds }: PageProps) {
                                         id={field.name}
                                         required={field.is_required}
                                         value={form_data[field.name] || ''}
-                                        onChange={(e) => setFormData({...form_data, [field.name]: e.target.value})}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...form_data,
+                                                [field.name]: e.target.value,
+                                            })
+                                        }
                                     />
                                 </div>
                             ))}
                         </div>
 
                         <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => setIsModalOpen(false)}
+                            >
                                 {__('common.cancel')}
                             </Button>
-                            <Button type="submit">{__('guilds.modal.submit')}</Button>
+                            <Button type="submit">
+                                {__('guilds.modal.submit')}
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>

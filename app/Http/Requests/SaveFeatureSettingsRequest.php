@@ -24,7 +24,7 @@ class SaveFeatureSettingsRequest extends FormRequest
     {
         return [
             'settings' => ['required', 'array'],
-            'next_step' => ['required', 'integer', 'min:1'],
+            'next_step' => ['required', 'string', 'min:1', 'max:255'],
         ];
     }
 }

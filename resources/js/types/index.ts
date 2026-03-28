@@ -7,7 +7,7 @@ export interface ActivityLog {
     guild_id: string | null;
     user_id: string | null;
     target_id: string | null;
-    action: string; // TBD: ActionTypeEnum cserélendő pontos típusra
+    action: string;
     details: Record<string, any> | null;
     created_at: string;
 }
@@ -50,7 +50,7 @@ export interface GuildRole {
 
 export interface GuildSettings {
     guild_id: string;
-    current_view: string | null;
+    current_view: string;
     features: string[];
     feature_settings: Record<string, Record<string, any>>;
     user_details_config: Record<string, any>;
@@ -77,7 +77,6 @@ export interface GuildUser {
 
 export interface Subscription {
     id: number;
-    // TBD: Hiányzó mezők pótlása
     created_at: string;
     updated_at: string;
 }
@@ -88,7 +87,7 @@ export interface User {
     global_name: string | null;
     email: string | null;
     avatar_url: string | null;
-    lang_code: string | null; // A User modellben nincs Hidden tag-gel ellátva
+    lang_code: string | null;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
