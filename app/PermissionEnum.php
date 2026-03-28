@@ -30,7 +30,14 @@ enum PermissionEnum: string
     public function getLabel(?string $lang = null): string
     {
         return match ($this) {
-            self::ADD_USERS_TO_GUILD => __('enum.add_users_to_guild', [], $lang),
+            self::ADD_USERS_TO_GUILD => __('permission.add_users_to_guild', [], $lang),
+            self::DELETE_USERS_FROM_GUILD => __('permission.delete_users_from_guild', [], $lang),
+            self::EDIT_GUILD_USERS => __('permission.edit_guild_users', [], $lang),
+            self::EDIT_GUILD_SETTINGS => __('permission.edit_guild_settings', [], $lang),
+            self::EDIT_GUILD_USERS_DUTIES => __('permission.edit_guild_users_duties', [], $lang),
+            self::VIEW_GUILD_USERS => __('permission.view_guild_users', [], $lang),
+            self::VIEW_GUILD_SETTINGS => __('permission.view_guild_settings', [], $lang),
+            self::VIEW_GUILD_DUTIES_STATS => __('permission.view_guild_duties_stats', [], $lang)
         };
     }
 }

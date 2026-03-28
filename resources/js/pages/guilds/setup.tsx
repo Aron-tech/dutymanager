@@ -1,5 +1,6 @@
-import { Head, useForm, router } from '@inertiajs/react';
-import React, { useMemo } from 'react';
+import { Head, router } from '@inertiajs/react';
+import { useForm } from 'laravel-precognition-react-inertia';
+import React, { useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { feature_registry } from '@/features/config/features';
@@ -28,52 +29,62 @@ export default function Setup({ guild, settings, context_data }: SetupProps) {
     );
     const currentView = flow[currentViewIndex !== -1 ? currentViewIndex : 0];
     const isLastStep = currentViewIndex === flow.length - 1;
+    const nextView = isLastStep ? 'finish' : flow[currentViewIndex + 1];
 
     const {
         data: featureData,
         setData: setFeatureData,
         errors,
         clearErrors,
+        validate,
+        submit: submitFeature,
         processing: formProcessing,
-    } = useForm(settings.feature_settings || {});
+    } = useForm(
+        'post',
+        route('guild.setup.feature.save', { feature_id: currentView }),
+        {
+            settings: settings.feature_settings?.[currentView] || {},
+            next_view: nextView,
+        },
+    );
+
+    // Ha a currentView változik (pl. a user a Vissza gombra kattint),
+    // frissíteni kell a form adatokat a megfelelő nézet szerinti adatokkal.
+    useEffect(() => {
+        setFeatureData({
+            settings: settings.feature_settings?.[currentView] || {},
+            next_view: nextView,
+        });
+    }, [currentView, isLastStep, nextView, setFeatureData, settings.feature_settings]);
 
     const {
         data: moduleData,
         setData: setModuleData,
+        submit: submitModules,
         processing: moduleProcessing,
-    } = useForm({ features: settings.features || [] });
+    } = useForm('post', route('guild.setup.features.save'), {
+        features: settings.features || [],
+        next_view: nextView,
+    });
 
     const handleNext = () => {
-        const nextView = isLastStep ? 'finish' : flow[currentViewIndex + 1];
-
         if (currentView === 'modules') {
-            router.post(
-                route('guild.setup.features.save'),
-                {
-                    features: moduleData.features,
-                    next_view: nextView,
-                },
-                { preserveScroll: true },
-            );
+            submitModules({
+                preserveScroll: true,
+            });
 
             return;
         }
 
-        router.post(
-            route('guild.setup.feature.save', { feature_id: currentView }),
-            {
-                settings: featureData[currentView] || {},
-                next_view: nextView,
+        // feature settings mentése Precognition-nel
+        submitFeature({
+            preserveScroll: true,
+            onSuccess: () => {
+                if (isLastStep) {
+                    router.post(route('guild.setup.finish'));
+                }
             },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    if (isLastStep) {
-                        router.post(route('guild.setup.finish'));
-                    }
-                },
-            },
-        );
+        });
     };
 
     const handleBack = () => {
@@ -88,33 +99,19 @@ export default function Setup({ guild, settings, context_data }: SetupProps) {
             case 'general_settings':
                 return (
                     <GeneralSettings
-                        data={featureData['general_settings'] || {}}
+                        data={featureData.settings || {}}
                         context_data={context_data as any}
-                        errors={Object.keys(errors)
-                            .filter((key) =>
-                                key.startsWith('general_settings.'),
-                            )
-                            .reduce(
-                                (acc, key) => {
-                                    const shortKey = key.replace(
-                                        'general_settings.',
-                                        '',
-                                    );
-                                    acc[shortKey] = errors[key];
-
-                                    return acc;
-                                },
-                                {} as Record<string, string>,
-                            )}
+                        errors={errors as Record<string, string>}
                         onChange={(field: string, value: any) => {
-                            clearErrors(`general_settings.${field}`);
-                            setFeatureData((prev: any) => ({
-                                ...prev,
-                                ['general_settings']: {
-                                    ...prev['general_settings'],
-                                    [field]: value,
-                                },
-                            }));
+                            clearErrors(`settings.${field}`);
+
+                            setFeatureData('settings', {
+                                ...featureData.settings,
+                                [field]: value,
+                            });
+
+                            // Valós idejű Precognition validáció (kis késleltetéssel, hogy a setFeatureData befejeződjön)
+                            setTimeout(() => validate(`settings.${field}` as any), 150);
                         }}
                     />
                 );
@@ -124,14 +121,11 @@ export default function Setup({ guild, settings, context_data }: SetupProps) {
                     <UserDetails
                         data={
                             settings.user_details_config ||
-                            featureData['user_details'] ||
+                            featureData.settings ||
                             {}
                         }
-                        onChange={(field, value) => {
-                            setFeatureData((prev: any) => ({
-                                ...prev,
-                                ['user_details']: value,
-                            }));
+                        onChange={(_field, value) => {
+                            setFeatureData('settings', value);
                         }}
                     />
                 );
@@ -196,37 +190,16 @@ export default function Setup({ guild, settings, context_data }: SetupProps) {
                             </h3>
                         </div>
                         <ActiveFeatureComponent
-                            data={featureData[currentView] || {}}
+                            data={featureData.settings || {}}
                             context_data={context_data}
-                            errors={Object.keys(errors)
-                                .filter((key) =>
-                                    key.startsWith(
-                                        `feature_settings.${currentView}`,
-                                    ),
-                                )
-                                .reduce(
-                                    (acc, key) => {
-                                        const shortKey = key.replace(
-                                            `feature_settings.${currentView}.`,
-                                            '',
-                                        );
-                                        acc[shortKey] = errors[key];
-
-                                        return acc;
-                                    },
-                                    {} as Record<string, string>,
-                                )}
+                            errors={errors as Record<string, string>}
                             onChange={(field: string, value: any) => {
-                                clearErrors(
-                                    `feature_settings.${currentView}.${field}`,
-                                );
-                                setFeatureData((prev: any) => ({
-                                    ...prev,
-                                    [currentView]: {
-                                        ...prev[currentView],
-                                        [field]: value,
-                                    },
-                                }));
+                                clearErrors(`settings.${field}`);
+                                setFeatureData('settings', {
+                                    ...featureData.settings,
+                                    [field]: value,
+                                });
+                                setTimeout(() => validate(`settings.${field}` as any), 150);
                             }}
                         />
                     </div>
