@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\FeatureEnum;
 use App\Http\Requests\SaveFeatureSettingsRequest;
 use App\Http\Requests\SaveFeaturesRequest;
 use App\LanguageEnum;
@@ -23,6 +24,7 @@ class GuildController extends Controller
 
     /**
      * @return RedirectResponse|Response
+     *
      * @throws Exception
      */
     public function selector()
@@ -77,7 +79,7 @@ class GuildController extends Controller
         // Enumok formázása a frontend select mezőihez
         $languages = collect(LanguageEnum::cases())->map(fn ($lang) => [
             'value' => $lang->value,
-            'label' => $lang->getLabel(), // Ha nincs getLabel() metódusod, használd a $lang->name-et
+            'label' => $lang->getLabel(),
         ]);
 
         $permissions = collect(PermissionEnum::cases())->map(fn ($perm) => [
@@ -87,9 +89,17 @@ class GuildController extends Controller
 
         $discord_roles = DiscordFetchService::getGuildRoles($guild->id);
 
+        $features = collect(FeatureEnum::cases())->map(fn ($feature) => [
+            'id' => $feature->value,
+            'name' => $feature->getName(),
+            'description' => $feature->getDescription(),
+        ])->toArray();
+
         return Inertia::render('guilds/setup', [
             'guild' => $guild,
             'settings' => $guild_settings,
+            'features' => $features,
+            'enabled_features' => $guild_settings->features ?? [],
             'context_data' => [
                 'languages' => $languages,
                 'permissions' => $permissions,

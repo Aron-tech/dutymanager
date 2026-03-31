@@ -1,394 +1,227 @@
-import { Info, Plus, X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
-import InputError from '@/components/input-error';
+import { Plus, X } from 'lucide-react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-export interface GeneralSettingsData {
-    lang?: string;
-    mode?: 'preset' | 'custom';
-    preset_roles?: {
-        user?: string;
-        staff?: string;
-        owner?: string;
-    };
-    role_permissions?: Record<string, string[]>;
-}
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface GeneralSettingsProps {
-    data: GeneralSettingsData;
+    data: {
+        language?: string;
+        role_permissions?: { role_id: string; permission: string }[];
+    };
     context_data: {
         languages: { value: string; label: string }[];
         permissions: { value: string; label: string }[];
-        discord_roles: { id: string; name: string; color: number }[];
+        discord_roles: { id: string; name: string; color?: number | string }[]; // Szín hozzáadva
     };
-    errors: Record<string, string>;
     onChange: (field: string, value: any) => void;
+    errors?: Record<string, string>;
 }
 
-export default function GeneralSettings({
-    data,
-    context_data,
-    errors,
-    onChange,
-}: GeneralSettingsProps) {
-    const rolePermissions = data.role_permissions || {};
-    const presetRoles = data.preset_roles || {};
-    const mode = data.mode || 'preset';
-
-    // Alapértelmezett mód beállítása, ha még nincs
-    useEffect(() => {
-        if (!data.mode) {
-            onChange('mode', 'preset');
-        }
-    }, [data.mode, onChange]);
-
+export default function GeneralSettings({ data, context_data, onChange, errors }: GeneralSettingsProps) {
     const [selectedRole, setSelectedRole] = useState<string>('');
-    const [selectedPermission, setSelectedPermission] = useState<string>('');
+    const [selectedPerm, setSelectedPerm] = useState<string>('');
 
-    const availablePermissions = context_data.permissions.filter(
-        (perm) =>
-            !selectedRole ||
-            !(rolePermissions[selectedRole] || []).includes(perm.value),
-    );
+    const rolePermissions = data.role_permissions || [];
 
-    const handleAddPermission = () => {
-        if (!selectedRole || !selectedPermission) {
-            return;
+    const handleAddRolePerm = () => {
+        if (!selectedRole || !selectedPerm) return;
+
+        const exists = rolePermissions.some(
+            (rp) => rp.role_id === selectedRole && rp.permission === selectedPerm
+        );
+
+        if (!exists) {
+            onChange('role_permissions', [
+                ...rolePermissions,
+                { role_id: selectedRole, permission: selectedPerm }
+            ]);
         }
 
-        const currentRolePerms = rolePermissions[selectedRole] || [];
-
-        onChange('role_permissions', {
-            ...rolePermissions,
-            [selectedRole]: [...currentRolePerms, selectedPermission],
-        });
-
-        setSelectedPermission('');
+        setSelectedRole('');
+        setSelectedPerm('');
     };
 
-    const handleRemovePermission = (roleId: string, permValue: string) => {
-        const currentRolePerms = rolePermissions[roleId] || [];
-        const updatedPerms = currentRolePerms.filter((p) => p !== permValue);
-        const newRolePermissions = { ...rolePermissions };
+    const handleRemoveRolePerm = (roleId: string, perm: string) => {
+        const updated = rolePermissions.filter(
+            (rp) => !(rp.role_id === roleId && rp.permission === perm)
+        );
+        onChange('role_permissions', updated);
+    };
 
-        if (updatedPerms.length === 0) {
-            delete newRolePermissions[roleId];
-        } else {
-            newRolePermissions[roleId] = updatedPerms;
+    // --- Segédfüggvények ---
+
+    // Rang nevének kinyerése
+    const getRoleName = (id: string) =>
+        context_data.discord_roles?.find(r => r.id === id)?.name || id;
+
+    // Jogosultság nevének kinyerése
+    const getPermName = (val: string) =>
+        context_data.permissions?.find(p => p.value === val)?.label || val;
+
+    // Discord szín konvertálása (A Discord gyakran integerként küldi a színt)
+    const getRoleColor = (id: string) => {
+        const role = context_data.discord_roles?.find(r => r.id === id);
+        if (!role || !role.color) return '#99aab5'; // Alapértelmezett Discord szürke, ha nincs szín
+
+        if (typeof role.color === 'number') {
+            // Integer átalakítása HEX formátummá
+            return `#${role.color.toString(16).padStart(6, '0')}`;
         }
-
-        onChange('role_permissions', newRolePermissions);
+        return role.color;
     };
 
-    const handlePresetChange = (
-        type: 'user' | 'staff' | 'owner',
-        roleId: string,
-    ) => {
-        onChange('preset_roles', { ...presetRoles, [type]: roleId });
-    };
+    // Jogosultságok csoportosítása Role ID alapján a megjelenítéshez
+    const groupedPermissions = rolePermissions.reduce((acc, curr) => {
+        if (!acc[curr.role_id]) {
+            acc[curr.role_id] = [];
+        }
+        acc[curr.role_id].push(curr.permission);
+        return acc;
+    }, {} as Record<string, string[]>);
 
     return (
-        <div className="space-y-8">
-            {/* 1. Nyelvválasztó */}
-            <div className="space-y-2">
-                <Label htmlFor="lang">Alapértelmezett Nyelv</Label>
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
+
+            {/* 1. Nyelv kiválasztása (Lapos dizájn) */}
+            <div className="space-y-3">
+                <Label className="text-base font-semibold text-foreground">Szerver alapértelmezett nyelve</Label>
                 <Select
-                    value={data.lang || ''}
-                    onValueChange={(val) => onChange('lang', val)}
+                    value={data.language || ''}
+                    onValueChange={(val) => onChange('language', val)}
                 >
-                    <SelectTrigger
-                        id="lang"
-                        className={`w-full max-w-sm ${errors['settings.lang'] ? 'border-destructive' : ''}`}
-                    >
+                    <SelectTrigger className="w-full md:w-[300px]">
                         <SelectValue placeholder="Válassz nyelvet..." />
                     </SelectTrigger>
                     <SelectContent>
-                        {context_data.languages.map((lang) => (
+                        {context_data.languages?.map((lang) => (
                             <SelectItem key={lang.value} value={lang.value}>
                                 {lang.label}
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
-                <InputError message={errors['settings.lang']} />
+                {errors?.['settings.language'] && (
+                    <p className="text-sm font-medium text-destructive">
+                        {errors['settings.language']}
+                    </p>
+                )}
             </div>
 
-            <hr className="border-border" />
-
-            {/* 2. Jogosultságok kezelése módokkal */}
-            <div className="space-y-4">
+            {/* 2. Discord Rang - Jogosultság hozzárendelés */}
+            <div className="space-y-6">
                 <div>
-                    <h4 className="text-base font-semibold text-foreground">
-                        Jogosultságok kezelése
-                    </h4>
-                    <p className="mb-4 text-sm text-muted-foreground">
-                        Rendelj bot jogosultságokat a Discord szervereden lévő
-                        rangokhoz. Válaszd ki a számodra megfelelő beállítási
-                        módot.
+                    <Label className="text-base font-semibold text-foreground">Jogosultságok kiosztása</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Rendelj rendszer jogosultságokat a Discord szervereden található rangokhoz.
                     </p>
                 </div>
 
-                <Tabs
-                    value={mode}
-                    onValueChange={(val) => onChange('mode', val)}
-                    className="w-full"
-                >
-                    <TabsList className="grid w-full max-w-md grid-cols-2">
-                        <TabsTrigger value="preset">
-                            Előre beállított
-                        </TabsTrigger>
-                        <TabsTrigger value="custom">
-                            Egyedi konfiguráció
-                        </TabsTrigger>
-                    </TabsList>
-
-                    {/* --- PRESET MÓD --- */}
-                    <TabsContent value="preset" className="mt-6 space-y-6">
-                        <div className="flex items-start gap-3 rounded-md bg-muted p-4 text-sm text-muted-foreground">
-                            <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                            <p>
-                                Ebben a módban 3 alapvető szintet állítasz be. A
-                                bot automatikusan legenerálja és hozzárendeli a
-                                szükséges jogosultságokat a háttérben az
-                                optimális működéshez.
-                            </p>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                            {[
-                                {
-                                    id: 'user',
-                                    label: 'Felhasználó (User)',
-                                    desc: 'Alapvető parancsok, státuszok megtekintése.',
-                                },
-                                {
-                                    id: 'staff',
-                                    label: 'Személyzet (Staff)',
-                                    desc: 'Moderáció, szolgálat megkezdése.',
-                                },
-                                {
-                                    id: 'owner',
-                                    label: 'Tulajdonos (Owner)',
-                                    desc: 'Teljes hozzáférés a bot minden funkciójához.',
-                                },
-                            ].map((preset) => (
-                                <div key={preset.id} className="space-y-2">
-                                    <Label className="text-base font-medium">
-                                        {preset.label}
-                                    </Label>
-                                    <p className="mb-2 min-h-[32px] text-xs text-muted-foreground">
-                                        {preset.desc}
-                                    </p>
-                                    <Select
-                                        value={
-                                            presetRoles[
-                                                preset.id as keyof typeof presetRoles
-                                            ] || ''
-                                        }
-                                        onValueChange={(val) =>
-                                            handlePresetChange(
-                                                preset.id as any,
-                                                val,
-                                            )
-                                        }
-                                    >
-                                        <SelectTrigger
-                                            className={
-                                                errors[
-                                                    `settings.preset_roles.${preset.id}`
-                                                ]
-                                                    ? 'border-destructive'
-                                                    : ''
-                                            }
-                                        >
-                                            <SelectValue placeholder="Válassz rangot..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {context_data.discord_roles.map(
-                                                (role) => (
-                                                    <SelectItem
-                                                        key={role.id}
-                                                        value={role.id}
-                                                    >
-                                                        {role.name}
-                                                    </SelectItem>
-                                                ),
-                                            )}
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError
-                                        message={
-                                            errors[
-                                                `settings.preset_roles.${preset.id}`
-                                            ]
-                                        }
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </TabsContent>
-
-                    {/* --- CUSTOM MÓD --- */}
-                    <TabsContent value="custom" className="mt-6">
-                        <div className="flex flex-col items-end gap-3 sm:flex-row">
-                            <div className="flex-1 space-y-2">
-                                <Label>Discord Rang</Label>
-                                <Select
-                                    value={selectedRole}
-                                    onValueChange={setSelectedRole}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Válassz rangot..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {context_data.discord_roles.map(
-                                            (role) => (
-                                                <SelectItem
-                                                    key={role.id}
-                                                    value={role.id}
-                                                >
-                                                    {role.name}
-                                                </SelectItem>
-                                            ),
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="flex-1 space-y-2">
-                                <Label>Jogosultság</Label>
-                                <Select
-                                    value={selectedPermission}
-                                    onValueChange={setSelectedPermission}
-                                    disabled={
-                                        !selectedRole ||
-                                        availablePermissions.length === 0
-                                    }
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue
-                                            placeholder={
-                                                !selectedRole
-                                                    ? 'Előbb válassz rangot...'
-                                                    : availablePermissions.length ===
-                                                        0
-                                                      ? 'Minden jog kiadva'
-                                                      : 'Válassz jogosultságot...'
-                                            }
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {availablePermissions.map((perm) => (
-                                            <SelectItem
-                                                key={perm.value}
-                                                value={perm.value}
-                                            >
-                                                {perm.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <Button
-                                type="button"
-                                onClick={handleAddPermission}
-                                disabled={!selectedRole || !selectedPermission}
-                                className="mb-[2px]"
-                            >
-                                <Plus className="h-5 w-5" />
-                            </Button>
-                        </div>
-
-                        <InputError
-                            message={errors['settings.role_permissions']}
-                        />
-
-                        <div className="mt-6 space-y-4">
-                            {Object.entries(rolePermissions).map(
-                                ([roleId, perms]) => {
-                                    const role =
-                                        context_data.discord_roles.find(
-                                            (r) => r.id === roleId,
-                                        );
-
-                                    if (!role || perms.length === 0) {
-                                        return null;
-                                    }
-
-                                    return (
-                                        <div
-                                            key={roleId}
-                                            className="rounded-xl border bg-card/50 p-4"
-                                        >
-                                            <h5 className="mb-3 flex items-center gap-2 text-sm font-medium">
-                                                <span
-                                                    className="h-3 w-3 rounded-full"
-                                                    style={{
-                                                        backgroundColor:
-                                                            role.color
-                                                                ? `#${role.color.toString(16).padStart(6, '0')}`
-                                                                : '#99aab5',
-                                                    }}
-                                                ></span>
-                                                {role.name}
-                                            </h5>
-                                            <div className="flex flex-wrap gap-2">
-                                                {perms.map((permValue) => {
-                                                    const permLabel =
-                                                        context_data.permissions.find(
-                                                            (p) =>
-                                                                p.value ===
-                                                                permValue,
-                                                        )?.label || permValue;
-
-                                                    return (
-                                                        <Badge
-                                                            key={permValue}
-                                                            variant="secondary"
-                                                            className="flex items-center gap-1.5 py-1 pr-1 pl-3"
-                                                        >
-                                                            {permLabel}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    handleRemovePermission(
-                                                                        roleId,
-                                                                        permValue,
-                                                                    )
-                                                                }
-                                                                className="rounded-full p-0.5 transition-colors hover:bg-destructive hover:text-destructive-foreground"
-                                                            >
-                                                                <X className="h-3 w-3" />
-                                                            </button>
-                                                        </Badge>
-                                                    );
-                                                })}
-                                            </div>
+                {/* Hozzáadó form */}
+                <div className="flex flex-col md:flex-row gap-4 items-end">
+                    <div className="space-y-2 flex-1 max-w-[300px]">
+                        <Label className="text-xs text-muted-foreground">Discord Rang</Label>
+                        <Select value={selectedRole} onValueChange={setSelectedRole}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Válassz rangot..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {context_data.discord_roles?.map((role) => (
+                                    <SelectItem key={role.id} value={role.id}>
+                                        <div className="flex items-center gap-2">
+                                            <span
+                                                className="w-2.5 h-2.5 rounded-full"
+                                                style={{ backgroundColor: getRoleColor(role.id) }}
+                                            />
+                                            {role.name}
                                         </div>
-                                    );
-                                },
-                            )}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-                            {Object.keys(rolePermissions).length === 0 && (
-                                <div className="rounded-xl border-2 border-dashed py-6 text-center text-sm text-muted-foreground">
-                                    Még nincsenek egyedi jogosultságok kiosztva.
-                                    Válassz egy rangot és rendelj hozzá jogokat.
-                                </div>
-                            )}
+                    <div className="space-y-2 flex-1 max-w-[300px]">
+                        <Label className="text-xs text-muted-foreground">Rendszer Jogosultság</Label>
+                        <Select value={selectedPerm} onValueChange={setSelectedPerm}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Válassz jogosultságot..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {context_data.permissions?.map((perm) => (
+                                    <SelectItem key={perm.value} value={perm.value}>
+                                        {perm.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <Button
+                        type="button"
+                        onClick={handleAddRolePerm}
+                        disabled={!selectedRole || !selectedPerm}
+                        className="w-full md:w-auto"
+                        variant="secondary"
+                    >
+                        <Plus className="w-4 h-4 mr-1.5" /> Hozzáadás
+                    </Button>
+                </div>
+
+                {errors?.['settings.role_permissions'] && (
+                    <p className="text-sm font-medium text-destructive">
+                        {errors['settings.role_permissions']}
+                    </p>
+                )}
+
+                {/* Dotted Konténerek (Csoportosítva Rangonként) */}
+                <div className="mt-8 space-y-4">
+                    {Object.keys(groupedPermissions).length === 0 ? (
+                        <div className="text-sm text-muted-foreground italic py-4">
+                            Nincsenek még hozzárendelt jogosultságok.
                         </div>
-                    </TabsContent>
-                </Tabs>
+                    ) : (
+                        Object.entries(groupedPermissions).map(([roleId, perms]) => (
+                            <div
+                                key={roleId}
+                                className="flex flex-col gap-3 p-4 border-2 border-dotted border-border/60 rounded-xl bg-muted/10"
+                            >
+                                {/* Rang fejléce színnel */}
+                                <div className="flex items-center gap-2">
+                                    <span
+                                        className="w-3 h-3 rounded-full shadow-sm"
+                                        style={{ backgroundColor: getRoleColor(roleId) }}
+                                    />
+                                    <span className="font-semibold text-foreground">
+                                        {getRoleName(roleId)}
+                                    </span>
+                                </div>
+
+                                {/* Ranghoz tartozó jogosultságok */}
+                                <div className="flex flex-wrap gap-2 pl-5">
+                                    {perms.map((perm) => (
+                                        <Badge
+                                            key={`${roleId}-${perm}`}
+                                            variant="secondary"
+                                            className="flex items-center gap-1.5 py-1 px-2.5 font-normal bg-background shadow-sm border"
+                                        >
+                                            <span>{getPermName(perm)}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveRolePerm(roleId, perm)}
+                                                className="ml-1 rounded-full p-0.5 opacity-70 hover:opacity-100 hover:bg-destructive/10 hover:text-destructive focus:outline-none transition-all"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
             </div>
         </div>
     );
