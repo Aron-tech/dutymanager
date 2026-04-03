@@ -13,7 +13,7 @@ interface GeneralSettingsProps {
     context_data: {
         languages: { value: string; label: string }[];
         permissions: { value: string; label: string }[];
-        discord_roles: { id: string; name: string; color?: number | string }[]; // Szín hozzáadva
+        discord_roles: { id: string; name: string; color?: number | string }[];
     };
     onChange: (field: string, value: any) => void;
     errors?: Record<string, string>;
@@ -26,7 +26,9 @@ export default function GeneralSettings({ data, context_data, onChange, errors }
     const rolePermissions = data.role_permissions || [];
 
     const handleAddRolePerm = () => {
-        if (!selectedRole || !selectedPerm) return;
+        if (!selectedRole || !selectedPerm) {
+            return;
+        }
 
         const exists = rolePermissions.some(
             (rp) => rp.role_id === selectedRole && rp.permission === selectedPerm
@@ -50,9 +52,6 @@ export default function GeneralSettings({ data, context_data, onChange, errors }
         onChange('role_permissions', updated);
     };
 
-    // --- Segédfüggvények ---
-
-    // Rang nevének kinyerése
     const getRoleName = (id: string) =>
         context_data.discord_roles?.find(r => r.id === id)?.name || id;
 
@@ -63,12 +62,15 @@ export default function GeneralSettings({ data, context_data, onChange, errors }
     // Discord szín konvertálása (A Discord gyakran integerként küldi a színt)
     const getRoleColor = (id: string) => {
         const role = context_data.discord_roles?.find(r => r.id === id);
-        if (!role || !role.color) return '#99aab5'; // Alapértelmezett Discord szürke, ha nincs szín
+
+        if (!role || !role.color) {
+            return '#99aab5';
+        }
 
         if (typeof role.color === 'number') {
-            // Integer átalakítása HEX formátummá
             return `#${role.color.toString(16).padStart(6, '0')}`;
         }
+
         return role.color;
     };
 
@@ -77,7 +79,9 @@ export default function GeneralSettings({ data, context_data, onChange, errors }
         if (!acc[curr.role_id]) {
             acc[curr.role_id] = [];
         }
+
         acc[curr.role_id].push(curr.permission);
+
         return acc;
     }, {} as Record<string, string[]>);
 

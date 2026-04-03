@@ -20,8 +20,7 @@ class SaveFeatureSettingsRequest extends FormRequest
 
         if ($this->route('feature_id') === 'general_settings') {
             $rules = array_merge($rules, [
-                'settings.lang' => ['required', 'string'],
-                'settings.mode' => ['required', 'in:preset,custom'],
+                'settings.language' => ['required', 'string'],
 
                 'settings.preset_roles.user' => ['required_if:settings.mode,preset', 'string'],
                 'settings.preset_roles.staff' => ['required_if:settings.mode,preset', 'string'],
@@ -37,7 +36,7 @@ class SaveFeatureSettingsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'settings.lang.required' => 'A nyelv kiválasztása kötelező.',
+            'settings.language.required' => 'A nyelv kiválasztása kötelező.',
             'settings.preset_roles.*.required_if' => 'Ennek a rangnak a kiválasztása kötelező a Preset módban.',
             'settings.role_permissions.required_if' => 'Legalább egy jogosultságot ki kell osztani!',
             'settings.role_permissions.min' => 'Legalább egy jogosultságot ki kell osztani!',

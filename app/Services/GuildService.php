@@ -6,6 +6,7 @@ use App\Concerns\ServiceTrait;
 use App\Models\Guild;
 use App\Models\GuildSettings;
 use Exception;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class GuildService
@@ -16,21 +17,12 @@ class GuildService
 
     private ?string $lang = null;
 
-    /**
-     * @param Guild|null $guild
-     * @param string|null $guild_id
-     * @return void
-     */
     public function loadModel(?Guild $guild = null, ?string $guild_id = null): void
     {
         $this->guild = $guild ?? Guild::findOrFail($guild_id);
         $this->lang = $this->guild->lang_code;
     }
 
-    /**
-     * @return void
-     * @throws Exception
-     */
     private function ensureModelLoaded(): void
     {
         if (! $this->guild) {
@@ -38,20 +30,14 @@ class GuildService
         }
     }
 
-    /**
-     * @param array $features
-     * @param int $next_step
-     * @return void
-     * @throws Exception
-     */
-    public function saveEnabledFeatures(array $features, int $next_step): void
+    public function saveEnabledFeatures(array $features, string $next_step): void
     {
         $this->ensureModelLoaded();
 
         DB::transaction(function () use ($features, $next_step) {
             $guild_settings = GuildSettings::firstOrCreate(
                 ['guild_id' => $this->guild->id],
-                ['features' => [], 'feature_settings' => [], 'current_view' => 'general-settings']
+                ['features' => [], 'feature_settings' => [], 'current_view' => 'general_settings']
             );
 
             $guild_settings->update([
@@ -62,20 +48,16 @@ class GuildService
     }
 
     /**
-     * @param string $feature_id
-     * @param array $settings
-     * @param int $next_step
-     * @return void
-     * @throws Exception
+     * @throws \Throwable
      */
-    public function saveFeatureSettings(string $feature_id, array $settings, int $next_step): void
+    public function saveFeatureSettings(string $feature_id, array $settings, string $next_step): void
     {
         $this->ensureModelLoaded();
 
         DB::transaction(function () use ($feature_id, $settings, $next_step) {
             $guild_settings = GuildSettings::firstOrCreate(
                 ['guild_id' => $this->guild->id],
-                ['features' => [], 'feature_settings' => [], 'current_view' => 'general-settings']
+                ['features' => [], 'feature_settings' => [], 'current_view' => 'general_settings']
             );
 
             $current_feature_settings = $guild_settings->feature_settings ?? [];
@@ -89,15 +71,29 @@ class GuildService
     }
 
     /**
-     * @return void
-     * @throws Exception
+     * Speciális tisztító logika a user_details funkcióhoz.
      */
+    public function saveUserDetailsConfig(array $settings, string $next_step): void
+    {
+        $cleaned_settings = [
+            'require_real_name' => (bool) Arr::get($settings, 'require_real_name', false),
+            'name_format' => trim(Arr::get($settings, 'name_format', '{first} {last}')),
+            'log_channel_id' => trim(Arr::get($settings, 'log_channel_id', '')),
+        ];
+
+        $this->saveFeatureSettings('user_details', $cleaned_settings, $next_step);
+    }
+
     public function finishSetup(): void
     {
         $this->ensureModelLoaded();
 
         DB::transaction(function () {
-            $this->guild->update(['is_installed' => true]);
+            // is_installed helyett a migration-ben lévő is_complete mezőt frissítjük
+            $guild_settings = GuildSettings::where('guild_id', $this->guild->id)->first();
+            if ($guild_settings) {
+                $guild_settings->update(['is_complete' => true]);
+            }
         });
     }
 }

@@ -63,7 +63,6 @@ export default function Setup({ guild, settings, context_data, features = [] }: 
         next_view: nextView,
     });
 
-    // JAVÍTÁS: Szigorú dependency kontroll a végtelen ciklus (Maximum update depth) elkerülésére!
     useEffect(() => {
         setFeatureData({
             settings: settings.feature_settings?.[currentView] || {},
@@ -74,12 +73,12 @@ export default function Setup({ guild, settings, context_data, features = [] }: 
             next_view: nextView,
         });
         clearErrors();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentView]); // Csak akkor fusson le, ha ténylegesen lapozunk a nézetek között
+    }, [clearErrors, currentView, nextView, setFeatureData, setModuleData, settings.feature_settings, settings.features]);
 
     const handleNext = () => {
         if (currentView === 'modules') {
             submitModules({ preserveScroll: true });
+
             return;
         }
 
@@ -169,7 +168,8 @@ export default function Setup({ guild, settings, context_data, features = [] }: 
                 );
 
             default:
-                const ActiveFeatureComponent = feature_registry[currentView]?.view;
+                { const ActiveFeatureComponent = feature_registry[currentView]?.view;
+
                 return ActiveFeatureComponent ? (
                     <div className="space-y-6">
                         <div className="border-b pb-2">
@@ -195,7 +195,7 @@ export default function Setup({ guild, settings, context_data, features = [] }: 
                     <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
                         <p className="text-muted-foreground">Nézet betöltése: {currentView}...</p>
                     </div>
-                );
+                ); }
         }
     };
 

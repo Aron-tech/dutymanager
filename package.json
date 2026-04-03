@@ -54,6 +54,8 @@
         "concurrently": "^9.0.1",
         "globals": "^15.14.0",
         "input-otp": "^1.4.2",
+        "laravel-precognition-react": "^2.0.0",
+        "laravel-precognition-react-inertia": "^0.8.0",
         "laravel-vite-plugin": "^2.0",
         "lucide-react": "^0.475.0",
         "radix-ui": "^1.4.3",
