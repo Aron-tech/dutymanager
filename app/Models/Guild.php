@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\DutyStatusEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
@@ -54,5 +55,22 @@ class Guild extends Model
     public function users(): HasManyThrough
     {
         return $this->hasManyThrough(User::class, GuildUser::class);
+    }
+
+    /**
+     * @return HasManyThrough
+     */
+    public function guildDuties(): HasManyThrough
+    {
+        return $this->hasManyThrough(Duty::class, GuildUser::class, 'guild_id', 'guild_user_id', 'id', 'id');
+    }
+
+    /**
+     * @param DutyStatusEnum $status
+     * @return int
+     */
+    public function getDutiesValue(DutyStatusEnum $status = DutyStatusEnum::CURRENT_PERIOD): int
+    {
+        return $this->guildDuties()->where('status', '<=', $status)->sum('value');
     }
 }

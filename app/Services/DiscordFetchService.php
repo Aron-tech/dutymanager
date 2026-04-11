@@ -71,24 +71,6 @@ class DiscordFetchService
     }
 
     /**
-     * Szöveges (0) és hangalapú (2) csatornák lekérése
-     */
-    public static function getGuildChannels(string $bot_token, string $guild_id): array
-    {
-        $all_channels = collect(self::fetchRawGuildChannels($bot_token, $guild_id));
-
-        return $all_channels
-            ->whereIn('type', [0, 2])
-            ->map(fn ($channel) => [
-                'id' => $channel['id'],
-                'name' => $channel['name'],
-                'type' => $channel['type'],
-            ])
-            ->values()
-            ->toArray();
-    }
-
-    /**
      * Kategóriák (4) lekérése
      */
     public static function getGuildCategories(string $bot_token, string $guild_id): array
@@ -176,9 +158,6 @@ class DiscordFetchService
     }
 
     /**
-     * @param string $guild_id
-     * @param string|null $data_type
-     * @return array
      * @throws ConnectionException
      */
     public static function getGuildData(string $guild_id, ?string $data_type = null): array
@@ -197,12 +176,16 @@ class DiscordFetchService
         return $response->successful() ? $response->json() : [];
     }
 
-    public static function getGuildRoles(string $guild_id): array
+    public static function getGuildRoles(string $guild_id, bool $select_format = false): array
     {
-        return Cache::remember("discord_guild_{$guild_id}_roles", now()->addHours(12), function () use ($guild_id) {
+        return Cache::remember("discord_guild_{$guild_id}_roles", now()->addHours(12), function () use ($select_format, $guild_id) {
             $data = self::getGuildData($guild_id, 'roles');
 
             if (empty($data)) {
+                return $data;
+            }
+
+            if (! $select_format) {
                 return $data;
             }
 
@@ -213,6 +196,49 @@ class DiscordFetchService
                     'name' => $role['name'],
                     'color' => $role['color'],
                 ])->values()->toArray();
+        });
+    }
+
+    /**
+     * Lekérdezi egy szerver csatornáit.
+     * * Discord csatorna típusok (néhány gyakori):
+     * 0 = Text, 2 = Voice, 4 = Category, 5 = Announcement
+     *
+     * @param string $discord_id
+     * @param bool $select_format
+     * @param array|null $allowed_types
+     * @return array
+     */
+    public static function getGuildChannels(string $discord_id, bool $select_format = false, ?array $allowed_types = null): array
+    {
+        $cache_key = "discord_guild_{$discord_id}_channels_".($select_format ? 'select' : 'raw');
+
+        if ($allowed_types !== null) {
+            $cache_key .= '_'.implode('_', $allowed_types);
+        }
+
+        return Cache::remember($cache_key, now()->addHours(12), function () use ($discord_id, $select_format, $allowed_types) {
+            $data = self::getGuildData($discord_id, 'channels');
+
+            if (empty($data)) {
+                return [];
+            }
+
+            $collection = collect($data);
+
+            if ($allowed_types !== null) {
+                $collection = $collection->filter(fn ($channel) => in_array($channel['type'], $allowed_types));
+            }
+
+            if ($select_format) {
+                $collection = $collection->map(fn ($channel) => [
+                    'id' => $channel['id'],
+                    'name' => $channel['name'],
+                    'type' => $channel['type'],
+                ]);
+            }
+
+            return $collection->values()->toArray();
         });
     }
 

@@ -111,3 +111,15 @@ export interface FeatureRegistryItem {
     is_core?: boolean;
     view: React.FC<FeatureViewProps>;
 }
+
+export interface DiscordRole {
+    id: string;
+    name: string;
+    color?: number | string;
+}
+
+export interface DiscordChannel {
+    id: string;
+    name: string;
+    type?: number;
+}

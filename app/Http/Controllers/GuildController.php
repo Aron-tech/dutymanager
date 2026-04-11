@@ -15,6 +15,7 @@ use Exception;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class GuildController extends Controller
 {
@@ -58,6 +59,7 @@ class GuildController extends Controller
     }
 
     /**
+     * @param Guild $guild
      * @return RedirectResponse
      */
     public function select(Guild $guild)
@@ -67,16 +69,24 @@ class GuildController extends Controller
         return to_route('dashboard');
     }
 
+    /**
+     * @return Response
+     */
     public function show(): Response
     {
         $guild = SelectedGuildService::get();
+
+        $this->service->loadModel($guild);
 
         $guild_settings = $guild->guildSettings()->firstOrCreate(
             ['guild_id' => $guild->id],
             ['current_view' => 'general_settings', 'features' => [], 'feature_settings' => [], 'is_complete' => false]
         );
 
-        // Enumok formázása a frontend select mezőihez
+        if (request()->has('current_view')) {
+            $guild_settings->current_view = request('current_view');
+        }
+
         $languages = collect(LanguageEnum::cases())->map(fn ($lang) => [
             'value' => $lang->value,
             'label' => $lang->getLabel(),
@@ -87,7 +97,11 @@ class GuildController extends Controller
             'label' => $perm->getLabel(),
         ]);
 
-        $discord_roles = DiscordFetchService::getGuildRoles($guild->id);
+        $discord_roles = DiscordFetchService::getGuildRoles($guild->id, true);
+
+        $discord_text_channels = DiscordFetchService::getGuildChannels($guild->id, true, [0, 5]);
+
+        $discord_voice_channels = DiscordFetchService::getGuildChannels($guild->id, true, [2]);
 
         $features = collect(FeatureEnum::cases())->map(fn ($feature) => [
             'id' => $feature->value,
@@ -104,35 +118,35 @@ class GuildController extends Controller
                 'languages' => $languages,
                 'permissions' => $permissions,
                 'discord_roles' => $discord_roles,
+                'discord_voice_channels' => $discord_voice_channels,
+                'discord_text_channels' => $discord_text_channels,
             ],
         ]);
     }
 
     /**
-     * @throws \Throwable
+     * @param SaveFeaturesRequest $request
+     * @return RedirectResponse
      */
     public function saveFeatures(SaveFeaturesRequest $request): RedirectResponse
     {
         $validated = $request->validated();
         $guild = SelectedGuildService::get();
+        $this->service->loadModel($guild);
+        $success = $this->service->saveFeatures($validated);
 
-        \DB::transaction(function () use ($guild, $validated) {
-            $guild_settings = $guild->guildSettings()->firstOrCreate(
-                ['guild_id' => $guild->id],
-                ['current_view' => 'general_settings', 'is_complete' => false]
-            );
+        if (! $success) {
+            return back()->withInput()->withErrors(['error' => 'Sajnos nem sikerült menteni a beállításokat. Próbáld újra!']);
+        }
 
-            $guild_settings->update([
-                'features' => $validated['features'] ?? [],
-                'current_view' => $validated['next_view'],
-            ]);
-        });
-
-        return back();
+        return to_route('guild.setup.show');
     }
 
     /**
-     * @throws Exception
+     * @param SaveFeatureSettingsRequest $request
+     * @param string $feature_id
+     * @return RedirectResponse
+     * @throws Throwable
      */
     public function saveFeatureSettings(SaveFeatureSettingsRequest $request, string $feature_id): RedirectResponse
     {
@@ -140,26 +154,31 @@ class GuildController extends Controller
         $this->service->loadModel($guild);
         $validated = $request->validated();
 
-        // Ha a user_details-t mentjük, ahhoz a speciális tisztító logikát hívjuk
         if ($feature_id === 'user_details') {
             $this->service->saveUserDetailsConfig($validated['settings'], $validated['next_view']);
         } else {
-            // Minden más feature mehet a generikus mentésbe
             $this->service->saveFeatureSettings($feature_id, $validated['settings'], $validated['next_view']);
         }
 
-        return back();
+        return to_route('guild.setup.show');
     }
 
     /**
-     * @throws Exception
+     * @throws Throwable
      */
     public function finish(): RedirectResponse
     {
         $guild = SelectedGuildService::get();
+
         $this->service->loadModel($guild);
         $this->service->finishSetup();
 
-        return back();
+        if (! $guild->is_installed) {
+            return back()->withErrors([
+                'installation' => __('A rendszer úgy érzékeli, hogy a bot még nincs inicializálva a Discord szervereden. Kérlek, használd a /install parancsot a folytatáshoz!'),
+            ]);
+        }
+
+        return to_route('dashboard');
     }
 }

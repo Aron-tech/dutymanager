@@ -5,6 +5,8 @@ namespace App;
 enum FeatureEnum: string
 {
     case DUTY = 'duty_manager';
+    case WARN = 'warn_system';
+    case RANK = 'rank_system';
 
     public static function getOptions(): array
     {
@@ -18,6 +20,8 @@ enum FeatureEnum: string
     {
         return match ($this) {
             self::DUTY => 'Szolgálat Kezelő',
+            self::WARN => 'Figyelmeztetés rendszer',
+            self::RANK => 'Rang rendszer',
         };
     }
 
@@ -28,6 +32,8 @@ enum FeatureEnum: string
     {
         return match ($this) {
             self::DUTY => 'Frakciók és szolgálati idők naplózása.',
+            self::WARN => 'Figyelmeztetés rendszer',
+            self::RANK => 'Rang rendszer',
         };
     }
 }

@@ -2,14 +2,15 @@ import { Head, router } from '@inertiajs/react';
 import { useForm } from 'laravel-precognition-react-inertia';
 import React, { useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 import { feature_registry } from '@/features/config/features';
+import FinishView from '@/features/finish-view';
 import GeneralSettings from '@/features/general-settings';
+import ModulesView from '@/features/modules-view';
 import AppLayout from '@/layouts/app-layout';
 import type { Guild, GuildSettings } from '@/types';
+import UserDetailsView from '@/features/user-details';
 
-const MANDATORY_VIEWS = ['general_settings', 'modules'];
+const MANDATORY_VIEWS = ['general_settings', 'user_details', 'modules'];
 
 interface Feature {
     id: string;
@@ -24,17 +25,68 @@ interface SetupProps {
     features?: Feature[];
 }
 
-export default function Setup({ guild, settings, context_data, features = [] }: SetupProps) {
+const getDefaultSettings = (viewName: string) => {
+    if (viewName === 'general_settings') {
+        return {
+            lang: 'hu',
+            mode: 'preset',
+            preset_roles: { user: [], staff: [], owner: [] },
+            role_permissions: [],
+        };
+    }
+
+    if (viewName === 'user_details') {
+        return {
+            require_real_name: false,
+            name_format: '{first} {last}',
+            log_channel_id: '',
+            config: [],
+        };
+    }
+
+    return {};
+};
+
+const getInitialSettings = (viewName: string, backendSettings: any) => {
+    const defaults = getDefaultSettings(viewName);
+
+    if (!backendSettings || Object.keys(backendSettings).length === 0) {
+        return defaults;
+    }
+
+    return { ...defaults, ...backendSettings };
+};
+
+export default function Setup({
+    guild,
+    settings,
+    context_data,
+    features = [],
+}: SetupProps) {
+    const {
+        data: moduleData,
+        setData: setModuleData,
+        submit: submitModules,
+        processing: moduleProcessing,
+        errors: moduleErrors,
+        clearErrors: clearModuleErrors,
+    } = useForm('post', route('guild.setup.features.save'), {
+        features: settings.features || [],
+        next_view: '',
+    });
+
     const flow = useMemo(() => {
-        const selectedFeatures = settings.features || [];
+        return [...MANDATORY_VIEWS, ...(moduleData.features || []), 'finish'];
+    }, [moduleData.features]);
 
-        return [...MANDATORY_VIEWS, ...selectedFeatures];
-    }, [settings.features]);
-
-    const currentViewIndex = flow.indexOf(settings.current_view || 'general_settings');
+    const currentViewIndex = flow.indexOf(
+        settings.current_view || 'general_settings',
+    );
     const currentView = flow[currentViewIndex !== -1 ? currentViewIndex : 0];
-    const isLastStep = currentViewIndex === flow.length - 1;
-    const nextView = isLastStep ? 'finish' : flow[currentViewIndex + 1];
+
+    const isLastFeature = currentViewIndex === flow.length - 2;
+    const nextView =
+        currentView === 'finish' ? 'finish' : flow[currentViewIndex + 1];
 
     const {
         data: featureData,
@@ -48,32 +100,33 @@ export default function Setup({ guild, settings, context_data, features = [] }: 
         'post',
         route('guild.setup.feature.save', { feature_id: currentView }),
         {
-            settings: settings.feature_settings?.[currentView] || {},
+            settings: getInitialSettings(
+                currentView,
+                settings.feature_settings?.[currentView],
+            ),
             next_view: nextView,
         },
     );
 
-    const {
-        data: moduleData,
-        setData: setModuleData,
-        submit: submitModules,
-        processing: moduleProcessing,
-    } = useForm('post', route('guild.setup.features.save'), {
-        features: settings.features || [],
-        next_view: nextView,
-    });
+    useEffect(() => {
+        setFeatureData(
+            'settings',
+            getInitialSettings(
+                currentView,
+                settings.feature_settings?.[currentView],
+            ),
+        );
+        setModuleData('features', settings.features || []);
+        clearErrors();
+        clearModuleErrors();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentView]);
 
     useEffect(() => {
-        setFeatureData({
-            settings: settings.feature_settings?.[currentView] || {},
-            next_view: nextView,
-        });
-        setModuleData({
-            features: settings.features || [],
-            next_view: nextView,
-        });
-        clearErrors();
-    }, [clearErrors, currentView, nextView, setFeatureData, setModuleData, settings.feature_settings, settings.features]);
+        setFeatureData('next_view', nextView);
+        setModuleData('next_view', nextView);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [nextView]);
 
     const handleNext = () => {
         if (currentView === 'modules') {
@@ -84,11 +137,6 @@ export default function Setup({ guild, settings, context_data, features = [] }: 
 
         submitFeature({
             preserveScroll: true,
-            onSuccess: () => {
-                if (isLastStep) {
-                    router.post(route('guild.setup.finish'));
-                }
-            },
         });
     };
 
@@ -101,29 +149,41 @@ export default function Setup({ guild, settings, context_data, features = [] }: 
 
     const renderStepContent = () => {
         switch (currentView) {
+            case 'finish':
+                return <FinishView guild={guild} onBack={handleBack} />;
+
             case 'general_settings':
                 return (
                     <div className="space-y-4">
-                        <div className="border-b pb-2 mb-6">
+                        <div className="mb-6 border-b pb-2">
                             <h3 className="text-lg font-semibold text-foreground">
                                 Általános Beállítások
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                                Konfiguráld a szerver alapértelmezett nyelvét és jogosultságait.
+                                Konfiguráld a szerver alapértelmezett nyelvét és
+                                jogosultságait.
                             </p>
                         </div>
+                        {errors.settings && (
+                            <div className="mb-4 rounded-md border border-destructive bg-destructive/10 p-3 text-sm font-medium text-destructive">
+                                {errors.settings}
+                            </div>
+                        )}
                         <GeneralSettings
                             data={featureData.settings || {}}
                             context_data={context_data as any}
                             errors={errors as Record<string, string>}
                             onChange={(field: string, value: any) => {
                                 clearErrors(`settings.${field}`);
+                                clearErrors('settings');
                                 setFeatureData('settings', {
                                     ...featureData.settings,
                                     [field]: value,
                                 });
-                                // Precognition validáció késleltetve, hogy a state biztosan frissüljön
-                                setTimeout(() => validate(`settings.${field}` as any), 200);
+                                setTimeout(
+                                    () => validate(`settings.${field}` as any),
+                                    200,
+                                );
                             }}
                         />
                     </div>
@@ -131,53 +191,29 @@ export default function Setup({ guild, settings, context_data, features = [] }: 
 
             case 'modules':
                 return (
-                    <div className="space-y-4">
-                        <div className="border-b pb-2 mb-6">
-                            <h3 className="text-lg font-semibold text-foreground">Modulok aktiválása</h3>
-                            <p className="text-sm text-muted-foreground">Válaszd ki a használni kívánt funkciókat.</p>
-                        </div>
-                        {features.length === 0 ? (
-                            <div className="text-sm text-muted-foreground italic">Nincsenek elérhető funkciók.</div>
-                        ) : (
-                            <div className="grid gap-4 md:grid-cols-2">
-                                {features.map((feature) => (
-                                    <Card key={feature.id} className="transition-all hover:bg-accent/50">
-                                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                            <div className="space-y-1">
-                                                <CardTitle className="text-sm font-medium">{feature.name}</CardTitle>
-                                                <CardDescription>{feature.description}</CardDescription>
-                                            </div>
-                                            <Switch
-                                                checked={moduleData.features.includes(feature.id)}
-                                                onCheckedChange={(checked) => {
-                                                    const updated = checked
-                                                        ? [...moduleData.features, feature.id]
-                                                        : moduleData.features.filter((id) => id !== feature.id);
-                                                    setModuleData('features', updated);
-                                                }}
-                                            />
-                                        </CardHeader>
-                                    </Card>
-                                ))}
-                            </div>
-                        )}
-                        {moduleData.errors.features && (
-                            <p className="text-sm text-destructive mt-2">{moduleData.errors.features}</p>
-                        )}
-                    </div>
+                    <ModulesView
+                        features={features}
+                        selectedFeatures={moduleData.features}
+                        onChange={(selected) => {
+                            clearModuleErrors('features');
+                            setModuleData('features', selected);
+                        }}
+                        error={moduleErrors.features}
+                    />
                 );
 
-            default:
-                { const ActiveFeatureComponent = feature_registry[currentView]?.view;
-
-                return ActiveFeatureComponent ? (
-                    <div className="space-y-6">
-                        <div className="border-b pb-2">
+            case 'user_details':
+                return (
+                    <div className="space-y-4">
+                        <div className="mb-6 border-b pb-2">
                             <h3 className="text-lg font-semibold text-foreground">
-                                {feature_registry[currentView]?.title} testreszabása
+                                Felhasználói Adatok
                             </h3>
+                            <p className="text-sm text-muted-foreground">
+                                Állítsd be, milyen adatokat kérjen be a bot a tagoktól.
+                            </p>
                         </div>
-                        <ActiveFeatureComponent
+                        <UserDetailsView
                             data={featureData.settings || {}}
                             context_data={context_data}
                             errors={errors as Record<string, string>}
@@ -187,15 +223,56 @@ export default function Setup({ guild, settings, context_data, features = [] }: 
                                     ...featureData.settings,
                                     [field]: value,
                                 });
+                                // Precognition validáció (opcionális)
                                 setTimeout(() => validate(`settings.${field}` as any), 200);
                             }}
                         />
                     </div>
-                ) : (
-                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                        <p className="text-muted-foreground">Nézet betöltése: {currentView}...</p>
+                );
+
+            default: {
+                const ActiveFeatureComponent =
+                    feature_registry[currentView]?.view;
+
+                return ActiveFeatureComponent ? (
+                    <div className="space-y-6">
+                        <div className="border-b pb-2">
+                            <h3 className="text-lg font-semibold text-foreground">
+                                {feature_registry[currentView]?.title}{' '}
+                                testreszabása
+                            </h3>
+                        </div>
+                        {errors.settings && (
+                            <div className="mb-4 rounded-md border border-destructive bg-destructive/10 p-3 text-sm font-medium text-destructive">
+                                {errors.settings}
+                            </div>
+                        )}
+                        <ActiveFeatureComponent
+                            data={featureData.settings || {}}
+                            context_data={context_data}
+                            errors={errors as Record<string, string>}
+                            onChange={(field: string, value: any) => {
+                                clearErrors(`settings.${field}`);
+                                clearErrors('settings');
+                                setFeatureData('settings', {
+                                    ...featureData.settings,
+                                    [field]: value,
+                                });
+                                setTimeout(
+                                    () => validate(`settings.${field}` as any),
+                                    200,
+                                );
+                            }}
+                        />
                     </div>
-                ); }
+                ) : (
+                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/50">
+                        <p className="text-muted-foreground">
+                            Nézet betöltése: {currentView}...
+                        </p>
+                    </div>
+                );
+            }
         }
     };
 
@@ -206,11 +283,17 @@ export default function Setup({ guild, settings, context_data, features = [] }: 
             <Head title={`Szerver Setup - ${guild.name}`} />
             <div className="container mx-auto max-w-4xl px-4 py-8">
                 <div className="mb-8 flex flex-col gap-2">
-                    <h2 className="text-3xl font-extrabold tracking-tight text-primary">Szerver Inicializálás</h2>
+                    <h2 className="text-3xl font-extrabold tracking-tight text-primary">
+                        Szerver telepítése
+                    </h2>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="font-semibold text-foreground">{guild.name}</span>
+                        <span className="font-semibold text-foreground">
+                            {guild.name}
+                        </span>
                         <span>•</span>
-                        <span>Lépés: {currentViewIndex + 1} / {flow.length}</span>
+                        <span>
+                            Lépés: {currentViewIndex + 1} / {flow.length}
+                        </span>
                     </div>
                 </div>
 
@@ -220,23 +303,30 @@ export default function Setup({ guild, settings, context_data, features = [] }: 
                             {renderStepContent()}
                         </div>
 
-                        <div className="mt-12 flex items-center justify-between border-t pt-6">
-                            <Button
-                                variant="ghost"
-                                onClick={handleBack}
-                                disabled={currentViewIndex === 0 || isProcessing}
-                            >
-                                Vissza
-                            </Button>
+                        {/* JAVÍTÁS: A finish nézetnek saját navigációja van (FinishView.tsx), így itt elrejtjük */}
+                        {currentView !== 'finish' && (
+                            <div className="mt-12 flex items-center justify-between border-t pt-6">
+                                <Button
+                                    variant="ghost"
+                                    onClick={handleBack}
+                                    disabled={
+                                        currentViewIndex === 0 || isProcessing
+                                    }
+                                >
+                                    Vissza
+                                </Button>
 
-                            <Button
-                                onClick={handleNext}
-                                disabled={isProcessing}
-                                className="min-w-[140px] shadow-lg shadow-primary/20"
-                            >
-                                {isLastStep ? 'Beállítások véglegesítése' : 'Következő lépés'}
-                            </Button>
-                        </div>
+                                <Button
+                                    onClick={handleNext}
+                                    disabled={isProcessing}
+                                    className="min-w-[140px] shadow-lg shadow-primary/20"
+                                >
+                                    {isLastFeature
+                                        ? 'Beállítások véglegesítése'
+                                        : 'Következő lépés'}
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

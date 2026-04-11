@@ -19,6 +19,7 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
+
     protected $primaryKey = 'id';
 
     protected $keyType = 'string';
@@ -49,5 +50,21 @@ class User extends Authenticatable
     public function guilds(): HasManyThrough
     {
         return $this->hasManyThrough(Guild::class, GuildUser::class);
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function availableSubscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class)->whereNull('guild_id')->whereDate('current_period_end', '>', now());
     }
 }

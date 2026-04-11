@@ -13,8 +13,6 @@ enum PermissionEnum: string
     case VIEW_GUILD_SETTINGS = 'view_guild_settings';
     case VIEW_GUILD_DUTIES_STATS = 'view_guild_duties_stats';
 
-
-
     /**
      * @return array
      */
