@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\SubscriptionStatusEnum;
+use App\Enums\SubscriptionStatusEnum;
 use Illuminate\Console\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;

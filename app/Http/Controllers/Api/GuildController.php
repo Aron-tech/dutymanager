@@ -10,10 +10,7 @@ use Illuminate\Http\Request;
 
 class GuildController extends Controller
 {
-    public function __construct(private readonly GuildService $service)
-    {
-        $this->service->setIsApiCall(true);
-    }
+    public function __construct(private readonly GuildService $service) {}
 
     /**
      * @return void

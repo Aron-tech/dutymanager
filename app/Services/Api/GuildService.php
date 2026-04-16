@@ -2,12 +2,10 @@
 
 namespace App\Services\Api;
 
-use App\Actions\JoinUserToGuildAction;
-use App\ActionTypeEnum;
 use App\Concerns\ServiceTrait;
+use App\Enums\ActionTypeEnum;
 use App\Models\ActivityLog;
 use App\Models\Guild;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;

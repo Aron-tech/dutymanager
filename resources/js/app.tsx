@@ -9,6 +9,7 @@ import '../css/app.css';
 import { initializeTheme } from '@/hooks/use-appearance';
 // 1. Importáld a route függvényt
 import { route } from 'ziggy-js';
+import { Toaster } from 'sonner';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -35,6 +36,7 @@ createInertiaApp({
             <StrictMode>
                 <TooltipProvider delayDuration={0}>
                     <App {...props} />
+                    <Toaster richColors position="top-right" toastOptions={{ className: 'z-[9999]' }} />
                 </TooltipProvider>
             </StrictMode>,
         );

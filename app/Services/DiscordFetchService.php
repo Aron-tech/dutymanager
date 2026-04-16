@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
-use App\GlobalRoleEnum;
+use App\Enums\GlobalRoleEnum;
 use App\Models\Guild;
 use App\Models\GuildSettings;
+use App\Models\GuildUser;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
@@ -148,7 +149,7 @@ class DiscordFetchService
     {
         $cache_key = "discord_guild_channels_{$guild_id}";
 
-        return Cache::remember($cache_key, now()->addMinutes(5), function () use ($bot_token, $guild_id) {
+        return Cache::remember($cache_key, now()->addMinutes(15), function () use ($bot_token, $guild_id) {
             $response = Http::withHeaders([
                 'Authorization' => 'Bot '.$bot_token,
             ])->get("https://discord.com/api/guilds/{$guild_id}/channels");
@@ -178,7 +179,7 @@ class DiscordFetchService
 
     public static function getGuildRoles(string $guild_id, bool $select_format = false): array
     {
-        return Cache::remember("discord_guild_{$guild_id}_roles", now()->addHours(12), function () use ($select_format, $guild_id) {
+        return Cache::remember("discord_guild_{$guild_id}_roles", now()->addMinutes(15), function () use ($select_format, $guild_id) {
             $data = self::getGuildData($guild_id, 'roles');
 
             if (empty($data)) {
@@ -203,11 +204,6 @@ class DiscordFetchService
      * Lekérdezi egy szerver csatornáit.
      * * Discord csatorna típusok (néhány gyakori):
      * 0 = Text, 2 = Voice, 4 = Category, 5 = Announcement
-     *
-     * @param string $discord_id
-     * @param bool $select_format
-     * @param array|null $allowed_types
-     * @return array
      */
     public static function getGuildChannels(string $discord_id, bool $select_format = false, ?array $allowed_types = null): array
     {
@@ -217,7 +213,7 @@ class DiscordFetchService
             $cache_key .= '_'.implode('_', $allowed_types);
         }
 
-        return Cache::remember($cache_key, now()->addHours(12), function () use ($discord_id, $select_format, $allowed_types) {
+        return Cache::remember($cache_key, now()->addMinutes(15), function () use ($discord_id, $select_format, $allowed_types) {
             $data = self::getGuildData($discord_id, 'channels');
 
             if (empty($data)) {
@@ -243,12 +239,66 @@ class DiscordFetchService
     }
 
     /**
+     * @param string $guild_id
+     * @param bool $select_format
+     * @param int|null $filter
+     * @return array
+     */
+    public static function getGuildMembers(string $guild_id, bool $select_format, ?int $filter = null): array
+    {
+        $cache_filter = $filter ?? 0;
+        $cache_key = "discord_guild_{$guild_id}_members_".($select_format ? 'select' : 'raw')."_{$cache_filter}";
+
+        return Cache::remember($cache_key, now()->addMinutes(15), function () use ($guild_id, $select_format, $filter) {
+            $bot_token = config('services.discord.token');
+            $response = Http::withHeaders([
+                'Authorization' => 'Bot '.$bot_token,
+            ])->get("https://discord.com/api/v10/guilds/{$guild_id}/members", [
+                'limit' => 1000,
+            ]);
+
+            if (! $response->successful()) {
+                return [];
+            }
+
+            $discord_members = $response->json();
+            $member_collection = collect($discord_members);
+
+            if ($filter === 1 || $filter === 2) {
+                $db_user_ids = GuildUser::where('guild_id', $guild_id)->pluck('user_id')->toArray();
+
+                $member_collection = $member_collection->filter(function ($member) use ($db_user_ids, $filter) {
+                    $user_id = (string) $member['user']['id'];
+                    $is_in_db = in_array($user_id, $db_user_ids);
+
+                    return $filter === 1 ? $is_in_db : ! $is_in_db;
+                });
+            }
+
+            if (! $select_format) {
+                return $member_collection->values()->toArray();
+            }
+
+            return $member_collection->map(function ($member) {
+                $display_name = $member['user']['global_name'] ?? $member['user']['username'];
+                $name = $member['user']['username'];
+
+                return [
+                    'value' => (string) $member['user']['id'],
+                    'label' => $display_name,
+                    'name' => $name,
+                ];
+            })->values()->toArray();
+        });
+    }
+
+    /**
      * Lekéri egy specifikus felhasználóhoz tartozó feloldott jogosultságokat a Discord rangjai alapján.
      * Szintén 12 óráig cacheljük a "kiszámolt" jogosultságokat.
      */
     public static function getUserPermissions(string $guildId, string $userId): array
     {
-        return Cache::remember("guild_{$guildId}_user_{$userId}_permissions", now()->addHours(12), function () use ($guildId, $userId) {
+        return Cache::remember("guild_{$guildId}_user_{$userId}_permissions", now()->addMinutes(15), function () use ($guildId, $userId) {
             $token = config('services.discord.token');
             $response = Http::withToken($token, 'Bot')
                 ->get("https://discord.com/api/v10/guilds/{$guildId}/members/{$userId}");

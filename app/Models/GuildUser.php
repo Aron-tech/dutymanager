@@ -2,19 +2,22 @@
 
 namespace App\Models;
 
-use App\DutyActionEnum;
-use App\DutyStatusEnum;
+use App\Enums\DutyActionEnum;
+use App\Enums\DutyStatusEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['user_id', 'guild_id', 'ic_name', 'details', 'is_request', 'accepted_at', 'added_by', 'cached_roles', 'roles_last_synced'])]
+#[Fillable(['user_id', 'guild_id', 'ic_name', 'details', 'is_request', 'accepted_at', 'added_by', 'cached_roles', 'roles_last_synced', 'rank_changed_at'])]
 #[Hidden(['cached_roles', 'roles_last_synced'])]
 class GuildUser extends Model
 {
+    protected $appends = ['joined_ago'];
+
     /**
      * @return string[]
      */
@@ -26,53 +29,60 @@ class GuildUser extends Model
             'accepted_at' => 'datetime',
             'cached_roles' => 'array',
             'roles_last_synced' => 'datetime',
+            'rank_changed_at' => 'datetime',
         ];
     }
 
-    /**
-     * @return BelongsTo
-     */
+    public function getJoinedAgoAttribute(): string
+    {
+        if (empty($this->created_at)) {
+            return 'N/A';
+        }
+        $days = (int) $this->created_at->diffInDays(now());
+        if ($days === 0) {
+            return 'Ma';
+        }
+        if ($days === 1) {
+            return '1 napja';
+        }
+
+        return "{$days} napja";
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * @return BelongsTo
-     */
     public function guild(): BelongsTo
     {
         return $this->belongsTo(Guild::class);
     }
 
-    /**
-     * @return HasMany
-     */
     public function duties(): HasMany
     {
         return $this->hasMany(Duty::class);
     }
 
-    /**
-     * @param DutyStatusEnum $status
-     * @return int
-     */
     public function getDutiesValue(DutyStatusEnum $status = DutyStatusEnum::CURRENT_PERIOD): int
     {
-        return Duty::where('guild_user_id', $this->id)->where('status', '<=', $status)->sum('value');
+        return $this->duties()->where('status', '<=', $status)->sum('value');
     }
 
-    /**
-     * @return HasOne
-     */
     public function currentDuty(): HasOne
     {
         return $this->hasOne(Duty::class)->where('status', '<=', DutyStatusEnum::CURRENT_PERIOD)->whereNull('finished_at')->latest();
     }
 
+
     /**
-     * @return array
+     * @return MorphMany
      */
+    public function images(): MorphMany
+    {
+        return $this->morphMany(Image::class, 'imageable');
+    }
+
     public function duty(): array
     {
         $current_duty = $this->currentDuty;

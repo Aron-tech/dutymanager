@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\DutyStatusEnum;
+use App\Enums\DutyStatusEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;

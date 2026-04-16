@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\FeatureEnum;
+use App\Enums\FeatureEnum;
+use App\Enums\LanguageEnum;
+use App\Enums\PermissionEnum;
 use App\Http\Requests\SaveFeatureSettingsRequest;
 use App\Http\Requests\SaveFeaturesRequest;
-use App\LanguageEnum;
 use App\Models\Guild;
-use App\PermissionEnum;
 use App\Services\DiscordFetchService;
 use App\Services\GuildService;
 use App\Services\SelectedGuildService;

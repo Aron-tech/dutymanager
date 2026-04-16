@@ -18,7 +18,7 @@ export interface Duty {
     value: number;
     started_at: string;
     finished_at: string | null;
-    status: string; // TBD: DutyStatusEnum cserélendő pontos típusra
+    status: string;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
@@ -53,11 +53,10 @@ export interface GuildSettings {
     current_view: string;
     features: string[];
     feature_settings: Record<string, Record<string, any>>;
-    user_details_config: Record<string, any>;
+    user_details_config: UserDetailsConfig[];
     created_at: string;
     updated_at: string;
 }
-
 export interface GuildUser {
     id: number;
     user_id: string;
@@ -70,9 +69,13 @@ export interface GuildUser {
     created_at: string;
     updated_at: string;
 
-    // Relációk
     user?: User;
     guild?: Guild;
+    images?: Image[];
+
+    current_period_duties_sum_value?: number;
+    all_period_duties_sum_value?: number;
+    joined_ago?: string;
 }
 
 export interface Subscription {
@@ -122,4 +125,35 @@ export interface DiscordChannel {
     id: string;
     name: string;
     type?: number;
+}
+
+export interface PaginatedData<T> {
+    data: T[];
+    links: { url: string | null; label: string; active: boolean }[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+}
+
+export interface UserDetailsConfig {
+    name: string;
+    type: string;
+    required: boolean;
+}
+
+export interface Rank {
+    id: string;
+    name: string;
+}
+
+export interface SelectItem {
+    value: string;
+    label: string;
+}
+
+export interface Image {
+    id: number;
+    url: string;
+    path: string;
 }

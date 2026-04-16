@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\ActionTypeEnum;
+use App\Enums\ActionTypeEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 

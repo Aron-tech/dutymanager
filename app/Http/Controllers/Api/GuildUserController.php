@@ -3,15 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\JoinUserToGuildAction;
-use App\Actions\UpsertDiscordUserAction;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreGuildUserRequest;
+use App\Http\Requests\Api\StoreGuildUserRequest;
 use App\Models\Guild;
 use App\Models\User;
-use Illuminate\Http\Request;
+use App\Services\GuildService;
 
 class GuildUserController extends Controller
 {
+
+    public function __construct(
+        private readonly GuildService $service
+    ) {}
     public function store(StoreGuildUserRequest $request)
     {
         $data = $request->validated();

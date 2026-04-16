@@ -1,8 +1,10 @@
-<?php
+ <?php
 
 use App\Http\Controllers\Auth\DiscordController;
-use App\Http\Controllers\GuildController;
-use App\Http\Middleware\RequireGuildSetupMiddleware;
+ use App\Http\Controllers\DutyController;
+ use App\Http\Controllers\GuildController;
+ use App\Http\Controllers\GuildUserController;
+ use App\Http\Middleware\RequireGuildSetupMiddleware;
 use App\Http\Middleware\SelectedGuildMiddleware;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +27,26 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/guilds/setup/features', [GuildController::class, 'saveFeatures'])->name('guild.setup.features.save')->middleware([HandlePrecognitiveRequests::class]);
         Route::post('/guilds/setup/feature/{feature_id}', [GuildController::class, 'saveFeatureSettings'])->name('guild.setup.feature.save')->middleware([HandlePrecognitiveRequests::class]);
         Route::post('/guilds/setup/finish', [GuildController::class, 'finish'])->name('guild.setup.finish');
+
+        Route::prefix('user-panel')->group(function () {
+            Route::get('/', [GuildUserController::class, 'index'])->name('guild.users.index');
+            Route::post('/', [GuildUserController::class, 'store'])->name('guild.users.store');
+            Route::put('/{guild_user}', [GuildUserController::class, 'update'])->name('guild.users.update');
+            Route::get('/{guild_user}/image', [GuildUserController::class, 'getImagesData'])->name('guild.users.image');
+            Route::get('/{guild_user}/duties', [GuildUserController::class, 'getDutiesData'])->name('guild.users.duties');
+            Route::get('/image/{image}', [GuildUserController::class, 'showImage'])->name('guild.users.image.show');
+            Route::post('/{guild_user}/image', [GuildUserController::class, 'storeImage'])->name('guild.users.image.store');
+            Route::delete('/image/{image}', [GuildUserController::class, 'deleteImage'])->name('guild.users.image.delete');
+            Route::delete('/{guild_user}', [GuildUserController::class, 'delete'])->name('guild.users.delete');
+            Route::delete('/', [GuildUserController::class, 'bulkDelete'])->name('guild.users.bulk.delete');
+        });
+
+        Route::prefix('duty')->group(function () {
+            Route::post('/', [DutyController::class, 'store'])->name('duty.store');
+            Route::put('/{duty}', [DutyController::class, 'update'])->name('duty.update');
+            Route::delete('/{duty}', [DutyController::class, 'delete'])->name('duty.delete');
+            Route::delete('/', [DutyController::class, 'bulkDelete'])->name('duty.bulk.delete');
+        });
     });
 });
 

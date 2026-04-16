@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\DutyStatusEnum;
+use App\Enums\DutyStatusEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Duty extends Model
 {
     use SoftDeletes;
+
+    public $timestamps = false;
 
     /**
      * @return string[]

@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\LanguageEnum;
+use App\Enums\LanguageEnum;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
