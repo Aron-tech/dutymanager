@@ -20,10 +20,26 @@ class Duty extends Model
     protected function casts(): array
     {
         return [
-            'value' => 'int',
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
             'status' => DutyStatusEnum::class,
         ];
+    }
+
+    public static function getActiveDutiesCount(): int
+    {
+        return self::whereNull('value')->whereNull('finished_at')->count();
+    }
+
+    /**
+     * @param int $value
+     * @return string
+     */
+    public static function standardFormat(int $value): string
+    {
+        $hours = $value / 60;
+        $minutes = $value - 60 * $hours;
+
+        return sprintf('%02d:%02d', $hours, $minutes);
     }
 }

@@ -37,6 +37,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { formatDuty } from '@/lib/utils';
 import type { GuildUser, Duty } from '@/types';
 
 interface EditDutyModalProps {
@@ -99,25 +100,17 @@ export default function EditDutyModal({ is_open, onClose, user }: EditDutyModalP
         }
     }, [is_open, user, fetchDuties]);
 
-    const formatMinutes = (total_minutes: number) => {
-        const h = Math.floor(Math.abs(total_minutes) / 60);
-        const m = Math.abs(total_minutes) % 60;
-        const sign = total_minutes < 0 ? '-' : '';
-
-        return `${sign}${h}:${String(m).padStart(2, '0')}`;
-    };
-
     const previewCurrent = useMemo(() => {
         const adj = parseInt(String(manual_data.current_adj), 10) || 0;
 
-        return formatMinutes(total_current + adj);
+        return formatDuty(total_current + adj);
     }, [total_current, manual_data.current_adj]);
 
     const previewAll = useMemo(() => {
         const c_adj = parseInt(String(manual_data.current_adj), 10) || 0;
         const a_adj = parseInt(String(manual_data.all_adj), 10) || 0;
 
-        return formatMinutes(total_all + c_adj + a_adj);
+        return formatDuty(total_all + c_adj + a_adj);
     }, [total_all, manual_data.current_adj, manual_data.all_adj]);
 
     const handleAdjustment = (status: number) => {
@@ -125,8 +118,8 @@ export default function EditDutyModal({ is_open, onClose, user }: EditDutyModalP
         const minutes = parseInt(String(value), 10) || 0;
 
         if (minutes === 0) {
-return;
-}
+            return;
+        }
 
         router.post(route('duty.store'), {
             guild_user_id: user!.id,
@@ -141,28 +134,6 @@ return;
             }
         });
     };
-
-    const handleResetToZero = (status: number) => {
-        const target_val = status === 0 ? total_current : total_all;
-
-        if (target_val === 0) {
-return;
-}
-
-        router.post(route('duty.store'), {
-            guild_user_id: user!.id,
-            value: -target_val,
-            status: status,
-            started_at: new Date().toISOString(),
-        }, {
-            preserveScroll: true,
-            onSuccess: () => {
-
-                fetchDuties();
-            }
-        });
-    };
-
     const confirmDelete = () => {
         setDeleteState((prev) => ({ ...prev, is_processing: true }));
 
@@ -210,14 +181,14 @@ return;
     }, [duties, period_filter, sort_column, sort_direction]);
 
     const duty_columns: ColumnDef<Duty>[] = [
-        { id: 'value', label: 'Mentett idő', sortable: true, render: (row) => <span className="font-semibold">{formatMinutes(row.value)}</span> },
+        { id: 'value', label: 'Mentett idő', sortable: true, render: (row) => <span className="font-semibold">{formatDuty(row.value)}</span> },
         { id: 'started_at', label: 'Szolgálatba lépés', sortable: true, render: (row) => new Date(row.started_at).toLocaleString() },
         { id: 'finished_at', label: 'Szolgálatból kilépés', sortable: true, render: (row) => row.finished_at ? new Date(row.finished_at).toLocaleString() : 'Folyamatban' },
     ];
 
     if (!user) {
-return null;
-}
+        return null;
+    }
 
     return (
         <>

@@ -43,6 +43,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
+import EditDutyModal from '@/pages/guild-users/_edit-duty-modal'; // ÚJ IMPORT
 import type {
     GuildUser,
     PaginatedData,
@@ -52,7 +53,7 @@ import type {
 } from '@/types';
 import CreateEditUserModal from './_create-edit-modal';
 import UserImageGallery from './_image-gallery-modal';
-import EditDutyModal from '@/pages/guild-users/_edit-duty-modal'; // ÚJ IMPORT
+import { formatDuty } from '@/lib/utils';
 
 interface UserManagerProps {
     guild_users: PaginatedData<GuildUser>;
@@ -127,17 +128,6 @@ export default function UserManagerView({
     const safe_user_details = Array.isArray(user_details_config)
         ? user_details_config
         : [];
-
-    const formatDutyTime = (minutes?: number) => {
-        if (!minutes) {
-            return '00:00';
-        }
-
-        const h = Math.floor(minutes / 60);
-        const m = minutes % 60;
-
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    };
 
     const column_definitions = useMemo(() => {
         const base_cols = [
@@ -285,14 +275,14 @@ export default function UserManagerView({
                     } else if (col.id === 'current_duty') {
                     render_func = (row: GuildUser) => (
                         <Badge>
-                            {formatDutyTime(
+                            {formatDuty(
                                 row.current_period_duties_sum_value,
                             )}
                         </Badge>
                     );
                 } else if (col.id === 'all_duty') {
                     render_func = (row: GuildUser) =>
-                        formatDutyTime(row.all_period_duties_sum_value);
+                        formatDuty(row.all_period_duties_sum_value);
                 } else if (col.id === 'joined_at') {
                         render_func = (row: GuildUser) => row.joined_ago;
                     } else if (col.id.startsWith('detail_')) {

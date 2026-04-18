@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -42,6 +43,15 @@ class User extends Authenticatable
     public function guildUsers(): HasMany
     {
         return $this->hasMany(GuildUser::class);
+    }
+
+    /**
+     * @param string $guild_id
+     * @return HasOne
+     */
+    public function guildUser(string $guild_id): HasOne
+    {
+        return $this->hasOne(GuildUser::class)->where('guild_id', $guild_id);
     }
 
     /**

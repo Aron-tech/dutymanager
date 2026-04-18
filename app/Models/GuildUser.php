@@ -74,6 +74,14 @@ class GuildUser extends Model
         return $this->hasOne(Duty::class)->where('status', '<=', DutyStatusEnum::CURRENT_PERIOD)->whereNull('finished_at')->latest();
     }
 
+    /**
+     * @return bool
+     */
+    public function hasActiveDuty(): bool
+    {
+        return $this->currentDuty()->exists();
+    }
+
 
     /**
      * @return MorphMany
@@ -83,13 +91,16 @@ class GuildUser extends Model
         return $this->morphMany(Image::class, 'imageable');
     }
 
+    /**
+     * @return array
+     */
     public function duty(): array
     {
         $current_duty = $this->currentDuty;
         $now = now();
 
         if (empty($current_duty)) {
-            $this->duties()->create([
+            $current_duty = $this->duties()->create([
                 'guild_user_id' => $this->id,
                 'started_at' => now(),
                 'status' => DutyStatusEnum::CURRENT_PERIOD,

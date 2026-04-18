@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DutyActionEnum;
 use App\Enums\DutyStatusEnum;
 use App\Http\Requests\BulkDeleteGuildUserRequest;
 use App\Http\Requests\IndexGuildUserRequest;
@@ -15,6 +16,7 @@ use App\Services\GuildUserService;
 use App\Services\SelectedGuildService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -160,6 +162,35 @@ class GuildUserController extends Controller
             return back()->with('success', 'Kép törölve.');
         } catch (Throwable $e) {
             return back()->withErrors(['error' => 'Hiba a törlés során.']);
+        }
+    }
+
+    /**
+     * @param GuildUser $guild_user
+     * @return JsonResponse
+     */
+    public function toggleDuty(GuildUser $guild_user): JsonResponse
+    {
+        $message = null;
+
+        try {
+            $result = DB::transaction(function () use ($guild_user, &$message) {
+                return $guild_user->duty();
+            });
+
+            if (! empty($result['action'])) {
+                if ($result['duty_action'] == DutyActionEnum::ON_DUTY) {
+                    $message = __('duty.success_duty_on');
+                } elseif ($result['duty_action'] == DutyActionEnum::OFF_DUTY) {
+                    $message = __('duty.success_duty_off');
+                }
+            }
+
+            return response()->json(['success' => true, 'message' => $message, 'result' => $result]);
+        } catch (Throwable $e) {
+            Log::error($e);
+
+            return response()->json(['success' => false, 'message' => __('app.error_action')]);
         }
     }
 }

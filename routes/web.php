@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\DiscordController;
  use App\Http\Controllers\DutyController;
  use App\Http\Controllers\GuildController;
  use App\Http\Controllers\GuildUserController;
+ use App\Http\Controllers\PageController;
  use App\Http\Middleware\RequireGuildSetupMiddleware;
 use App\Http\Middleware\SelectedGuildMiddleware;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
@@ -22,7 +23,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/guilds/select/{guild}', [GuildController::class, 'select'])->name('guilds.select');
 
     Route::middleware([SelectedGuildMiddleware::class, RequireGuildSetupMiddleware::class])->group(function () {
-        Route::inertia('dashboard', 'dashboard')->name('dashboard');
+        Route::get('dashboard', [PageController::class, 'dashboard'])->name('dashboard');
         Route::get('/guilds/setup', [GuildController::class, 'show'])->name('guild.setup.show');
         Route::post('/guilds/setup/features', [GuildController::class, 'saveFeatures'])->name('guild.setup.features.save')->middleware([HandlePrecognitiveRequests::class]);
         Route::post('/guilds/setup/feature/{feature_id}', [GuildController::class, 'saveFeatureSettings'])->name('guild.setup.feature.save')->middleware([HandlePrecognitiveRequests::class]);
@@ -42,6 +43,7 @@ Route::middleware(['auth'])->group(function () {
         });
 
         Route::prefix('duty')->group(function () {
+            Route::post('/{guild_user}', [GuildUserController::class, 'toggleDuty'])->name('duty.toggle');
             Route::post('/', [DutyController::class, 'store'])->name('duty.store');
             Route::put('/{duty}', [DutyController::class, 'update'])->name('duty.update');
             Route::delete('/{duty}', [DutyController::class, 'delete'])->name('duty.delete');
