@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\DutyActionEnum;
 use App\Enums\DutyStatusEnum;
+use App\Enums\PunishmentTypeEnum;
 use App\Http\Requests\BulkDeleteGuildUserRequest;
 use App\Http\Requests\IndexGuildUserRequest;
 use App\Http\Requests\StoreGuildUserRequest;
@@ -11,7 +12,6 @@ use App\Http\Requests\UpdateGuildUserRequest;
 use App\Http\Requests\UploadImageRequest;
 use App\Models\GuildUser;
 use App\Models\Image;
-use App\Services\DiscordFetchService;
 use App\Services\GuildUserService;
 use App\Services\SelectedGuildService;
 use Illuminate\Http\JsonResponse;
@@ -109,15 +109,14 @@ class GuildUserController extends Controller
         return response()->json([$guild_user, $total_current_duties, $total_duties]);
     }
 
-    /**
-     * @param GuildUser $guild_user
-     * @return JsonResponse
-     */
     public function getPunishmentsData(GuildUser $guild_user): JsonResponse
     {
-        $guild_user->load(['punishments.createdByUser']);
+        $guild_user->load(['punishments.createdByUser:id,name']);
 
-        return response()->json($guild_user);
+        return response()->json([
+            'punishments' => $guild_user->punishments,
+            'types' => PunishmentTypeEnum::getTranslatedOptions(),
+        ]);
     }
 
     public function getImagesData(GuildUser $guild_user): JsonResponse
@@ -166,10 +165,6 @@ class GuildUserController extends Controller
         }
     }
 
-    /**
-     * @param GuildUser $guild_user
-     * @return JsonResponse
-     */
     public function toggleDuty(GuildUser $guild_user): JsonResponse
     {
         $message = null;

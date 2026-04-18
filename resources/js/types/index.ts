@@ -180,3 +180,19 @@ export interface Punishment {
     guild?: Guild;
     createdBy?: User;
 }
+
+export interface TableFilters {
+    search?: string;
+    per_page?: string;
+    sort?: string;
+    direction?: 'asc' | 'desc';
+}
+
+export interface UserManagerProps {
+    guild_users: PaginatedData<GuildUser>;
+    user_details_config: UserDetailsConfig[];
+    unattached_guild_users: DiscordSelectItem[];
+    filters: TableFilters;
+    has_rank_system?: boolean;
+    available_ranks?: Rank[];
+}

@@ -1,5 +1,5 @@
-import React from 'react';
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 
 export interface ColumnDef<T> {
@@ -15,6 +15,8 @@ interface DataTableProps<T> {
     key_field?: keyof T;
     selected_rows?: (string | number)[];
     onSelectionChange?: (ids: (string | number)[]) => void;
+    // ÚJ: Függvény, ami megmondja, hogy a sor kiválasztható-e
+    is_row_selectable?: (row: T) => boolean;
     sort_column?: string;
     sort_direction?: string;
     onSort?: (col_id: string) => void;
@@ -28,20 +30,28 @@ export function DataTable<T extends Record<string, any>>({
                                                              key_field = 'id',
                                                              selected_rows = [],
                                                              onSelectionChange,
+                                                             is_row_selectable, // Destructure
                                                              sort_column,
                                                              sort_direction,
                                                              onSort,
                                                              actions,
                                                              empty_message = 'Nincs megjeleníthető adat.',
                                                          }: DataTableProps<T>) {
-    const is_all_selected = data.length > 0 && selected_rows.length === data.length;
+
+    // Számoljuk ki, hogy hány sor TÉNYLEGESEN kiválasztható
+    const selectable_data = is_row_selectable
+        ? data.filter(row => is_row_selectable(row))
+        : data;
+
+    const is_all_selected = selectable_data.length > 0 && selected_rows.length === selectable_data.length;
 
     const handleSelectAll = () => {
         if (!onSelectionChange) return;
         if (is_all_selected) {
             onSelectionChange([]);
         } else {
-            onSelectionChange(data.map((row) => row[key_field as string]));
+            // Csak a kiválasztható sorokat adjuk hozzá
+            onSelectionChange(selectable_data.map((row) => row[key_field as string]));
         }
     };
 
@@ -64,6 +74,8 @@ export function DataTable<T extends Record<string, any>>({
                             <Checkbox
                                 checked={is_all_selected}
                                 onCheckedChange={handleSelectAll}
+                                // Ha nincs egyetlen kiválasztható sor sem, tiltsuk le a fejléces checkboxot
+                                disabled={selectable_data.length === 0}
                             />
                         </th>
                     )}
@@ -105,13 +117,18 @@ export function DataTable<T extends Record<string, any>>({
                 ) : (
                     data.map((row, index) => {
                         const row_id = row[key_field as string];
+                        // Ellenőrizzük, hogy az aktuális sor kiválasztható-e
+                        const is_selectable = is_row_selectable ? is_row_selectable(row) : true;
+
                         return (
-                            <tr key={row_id || index} className="hover:bg-muted/30">
+                            <tr key={row_id || index} className={`hover:bg-muted/30 ${!is_selectable ? 'opacity-60 bg-muted/10' : ''}`}>
                                 {onSelectionChange && (
                                     <td className="p-3">
                                         <Checkbox
                                             checked={selected_rows.includes(row_id)}
                                             onCheckedChange={() => handleSelectRow(row_id)}
+                                            // Checkbox letiltása, ha a sor nem kiválasztható
+                                            disabled={!is_selectable}
                                         />
                                     </td>
                                 )}

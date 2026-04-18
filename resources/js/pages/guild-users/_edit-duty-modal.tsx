@@ -3,8 +3,8 @@ import axios from 'axios';
 import { Clock, Trash2, Edit, Loader2 } from 'lucide-react';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
-import { DataTable  } from '@/components/data-table';
-import type {ColumnDef} from '@/components/data-table';
+import { DataTable } from '@/components/data-table';
+import type { ColumnDef } from '@/components/data-table';
 import {
     Accordion,
     AccordionContent,
@@ -26,10 +26,12 @@ import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -134,6 +136,7 @@ export default function EditDutyModal({ is_open, onClose, user }: EditDutyModalP
             }
         });
     };
+
     const confirmDelete = () => {
         setDeleteState((prev) => ({ ...prev, is_processing: true }));
 
@@ -193,87 +196,136 @@ export default function EditDutyModal({ is_open, onClose, user }: EditDutyModalP
     return (
         <>
             <Dialog open={is_open} onOpenChange={(open) => !open && onClose()}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[800px]">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2"><Clock className="h-5 w-5" /> {user.ic_name || user.user?.name} szolgálati ideje</DialogTitle>
-                    </DialogHeader>
+                <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden p-0 sm:max-w-5xl">
+                    <div className="p-6 pb-2">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Clock className="h-5 w-5 text-primary" />
+                                Szolgálati idő kezelése: {user.ic_name || user.user?.name}
+                            </DialogTitle>
+                            <DialogDescription>
+                                Szolgálati idő manuális módosítása és a korábbi tevékenységek listája.
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
 
-                    {is_loading ? (
-                        <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
-                    ) : (
-                        <div className="space-y-6 py-4">
-                            <Accordion type="single" collapsible defaultValue="current" className="w-full">
-                                <AccordionItem value="current">
-                                    <AccordionTrigger className="text-sm font-semibold">Aktuális szolgálati idő módosítása</AccordionTrigger>
-                                    <AccordionContent className="pt-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex-1 space-y-1">
-                                                <Label className="text-xs text-muted-foreground">Módosítás (perc)</Label>
-                                                <Input type="number" placeholder="5" value={manual_data.current_adj} onChange={(e) => setManualData('current_adj', e.target.value)} />
-                                            </div>
-                                            <div className="flex-1 space-y-1">
-                                                <Label className="text-xs text-muted-foreground">Várható új érték</Label>
-                                                <div className="flex h-10 items-center rounded-md border bg-muted/50 px-3 font-mono font-bold">{previewCurrent}</div>
-                                            </div>
-                                            <div className="mt-5 flex gap-2">
-                                                <Button variant="outline" size="icon" disabled={is_processing || !manual_data.current_adj} onClick={() => handleAdjustment(0)}><Edit className="h-4 w-4" /></Button>
+                    <div className="flex-1 overflow-y-auto px-6 pb-6">
+                        {/* Módosítás form (Összecsukható) */}
+                        <Accordion type="single" collapsible defaultValue="current" className="mb-8 w-full rounded-lg border bg-muted/30 px-4">
+                            <AccordionItem value="current" className="border-b border-border/50">
+                                <AccordionTrigger className="text-sm font-semibold hover:no-underline">
+                                    Aktuális szolgálati idő módosítása
+                                </AccordionTrigger>
+                                <AccordionContent className="pt-2 pb-4">
+                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                                        <div className="flex-1 space-y-2">
+                                            <Label htmlFor="current-adj" className="text-xs text-muted-foreground">Módosítás (perc)</Label>
+                                            <Input id="current-adj" type="number" placeholder="Pl.: 5 vagy -5" value={manual_data.current_adj} onChange={(e) => setManualData('current_adj', e.target.value)} />
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <Label className="text-xs text-muted-foreground">Várható új érték</Label>
+                                            <div className="flex h-10 items-center rounded-md border bg-muted/50 px-3 font-mono font-bold">
+                                                {previewCurrent}
                                             </div>
                                         </div>
-                                    </AccordionContent>
-                                </AccordionItem>
+                                        <div className="mt-2 flex sm:mt-0">
+                                            <Button disabled={is_processing || !manual_data.current_adj} onClick={() => handleAdjustment(0)}>
+                                                <Edit className="mr-2 h-4 w-4" /> Módosítás
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
 
-                                <AccordionItem value="all">
-                                    <AccordionTrigger className="text-sm font-semibold">Összes szolgálati idő módosítása</AccordionTrigger>
-                                    <AccordionContent className="pt-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex-1 space-y-1">
-                                                <Label className="text-xs text-muted-foreground">Módosítás (perc)</Label>
-                                                <Input type="number" placeholder="5" value={manual_data.all_adj} onChange={(e) => setManualData('all_adj', e.target.value)} />
-                                            </div>
-                                            <div className="flex-1 space-y-1">
-                                                <Label className="text-xs text-muted-foreground">Várható új érték</Label>
-                                                <div className="flex h-10 items-center rounded-md border bg-muted/50 px-3 font-mono font-bold">{previewAll}</div>
-                                            </div>
-                                            <div className="mt-5 flex gap-2">
-                                                <Button variant="outline" size="icon" disabled={is_processing || !manual_data.all_adj} onClick={() => handleAdjustment(1)}><Edit className="h-4 w-4" /></Button>
+                            <AccordionItem value="all" className="border-b-0">
+                                <AccordionTrigger className="text-sm font-semibold hover:no-underline">
+                                    Összes szolgálati idő módosítása
+                                </AccordionTrigger>
+                                <AccordionContent className="pt-2 pb-4">
+                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                                        <div className="flex-1 space-y-2">
+                                            <Label htmlFor="all-adj" className="text-xs text-muted-foreground">Módosítás (perc)</Label>
+                                            <Input id="all-adj" type="number" placeholder="Pl.: 5 vagy -5" value={manual_data.all_adj} onChange={(e) => setManualData('all_adj', e.target.value)} />
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <Label className="text-xs text-muted-foreground">Várható új érték</Label>
+                                            <div className="flex h-10 items-center rounded-md border bg-muted/50 px-3 font-mono font-bold">
+                                                {previewAll}
                                             </div>
                                         </div>
-                                    </AccordionContent>
-                                </AccordionItem>
-                            </Accordion>
+                                        <div className="mt-2 flex sm:mt-0">
+                                            <Button disabled={is_processing || !manual_data.all_adj} onClick={() => handleAdjustment(1)}>
+                                                <Edit className="mr-2 h-4 w-4" /> Módosítás
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
 
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-semibold">Előzmények</h3>
-                                    <Select value={period_filter} onValueChange={(v: any) => {
- setPeriodFilter(v); setSelectedRows([]);
-}}>
-                                        <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                        {/* Előzmények Szekció */}
+                        <div className="mt-6 space-y-4 border-t pt-6">
+                            <div className="flex flex-wrap items-center justify-between gap-4">
+                                <h3 className="text-lg font-semibold tracking-tight">Előzmények</h3>
+                                <div className="flex items-center gap-3">
+                                    <Select value={period_filter} onValueChange={(v: any) => { setPeriodFilter(v); setSelectedRows([]); }}>
+                                        <SelectTrigger className="w-[180px]">
+                                            <SelectValue />
+                                        </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="current">Current period</SelectItem>
-                                            <SelectItem value="all">All period</SelectItem>
+                                            <SelectItem value="current">Jelenlegi időszak</SelectItem>
+                                            <SelectItem value="all">Minden időszak</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </div>
-                                {selected_rows.length > 0 && (
-                                    <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-2">
-                                        <span className="text-sm font-medium">{selected_rows.length} elem kijelölve</span>
-                                        <Button variant="destructive" size="sm" onClick={() => setDeleteState({ is_open: true, is_bulk: true, duty_id: null, is_processing: false })}>Tömeges törlés</Button>
-                                    </div>
-                                )}
-                                <div className="rounded-md border bg-background">
-                                    <DataTable<Duty>
-                                        data={sorted_duties} columns={duty_columns} key_field="id"
-                                        selected_rows={selected_rows} onSelectionChange={setSelectedRows}
-                                        sort_column={sort_column} sort_direction={sort_direction} onSort={(c) => {
- setSortDirection(sort_column === c && sort_direction === 'asc' ? 'desc' : 'asc'); setSortColumn(c);
-}}
-                                        actions={(row) => <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteState({ is_open: true, is_bulk: false, duty_id: row.id, is_processing: false })}><Trash2 className="h-4 w-4" /></Button>}
-                                    />
+
+                                    {selected_rows.length > 0 && (
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => setDeleteState({ is_open: true, is_bulk: true, duty_id: null, is_processing: false })}
+                                            className="shadow-sm"
+                                        >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Törlés ({selected_rows.length})
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
+
+                            {is_loading ? (
+                                <div className="flex justify-center p-12">
+                                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                                </div>
+                            ) : (
+                                <div className="rounded-md border bg-background">
+                                    <DataTable<Duty>
+                                        data={sorted_duties}
+                                        columns={duty_columns}
+                                        key_field="id"
+                                        selected_rows={selected_rows}
+                                        onSelectionChange={setSelectedRows}
+                                        sort_column={sort_column}
+                                        sort_direction={sort_direction}
+                                        onSort={(c) => {
+                                            setSortDirection(sort_column === c && sort_direction === 'asc' ? 'desc' : 'asc');
+                                            setSortColumn(c);
+                                        }}
+                                        actions={(row) => (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-destructive hover:bg-destructive/10"
+                                                onClick={() => setDeleteState({ is_open: true, is_bulk: false, duty_id: row.id, is_processing: false })}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                        empty_message="Nincsenek mentett szolgálati idők."
+                                    />
+                                </div>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </DialogContent>
             </Dialog>
 
@@ -282,18 +334,16 @@ export default function EditDutyModal({ is_open, onClose, user }: EditDutyModalP
                     <AlertDialogHeader>
                         <AlertDialogMedia className="bg-destructive/10 text-destructive"><Trash2 className="h-6 w-6" /></AlertDialogMedia>
                         <AlertDialogTitle>Megerősítés</AlertDialogTitle>
-                        <AlertDialogDescription>Biztosan törölni szeretnéd a kijelölt eleme(ke)t?</AlertDialogDescription>
+                        <AlertDialogDescription>Biztosan törölni szeretnéd a kijelölt eleme(ke)t? Ezzel az összesített idő is csökkenni fog.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={delete_state.is_processing}>Mégse</AlertDialogCancel>
-                        <AlertDialogAction variant="destructive" onClick={confirmDelete} disabled={delete_state.is_processing}>{delete_state.is_processing ? 'Folyamatban...' : 'Törlés'}</AlertDialogAction>
+                        <AlertDialogAction variant="destructive" onClick={confirmDelete} disabled={delete_state.is_processing}>
+                            {delete_state.is_processing ? 'Folyamatban...' : 'Törlés'}
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
         </>
     );
 }
-
-const Label = ({ children, className }: { children: React.ReactNode, className?: string }) => (
-    <label className={`text-sm font-medium leading-none ${className}`}>{children}</label>
-);

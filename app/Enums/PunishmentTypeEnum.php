@@ -24,4 +24,17 @@ enum PunishmentTypeEnum: string
     {
         return __('enum.'.$this->value, [], $lang);
     }
+
+    /**
+     * @return array
+     */
+    public static function getTranslatedOptions(): array
+    {
+        $options = [];
+        foreach (self::cases() as $type) {
+            $options[$type->value] = $type->getLabel();
+        }
+
+        return $options;
+    }
 }

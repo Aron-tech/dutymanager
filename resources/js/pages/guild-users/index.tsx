@@ -1,18 +1,16 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import {
-    Search,
-    SlidersHorizontal,
-    MoreVertical,
-    Edit,
-    Trash2,
-    Plus,
-    ImageIcon,
-    Clock,
-} from 'lucide-react';
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
+import React, {
+    useState,
+    useMemo,
+    useEffect,
+    useCallback,
+    useRef,
+} from 'react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/data-table';
 import type { ColumnDef } from '@/components/data-table';
+import { DataTableToolbar } from '@/components/data-table-toolbar';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -26,59 +24,25 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { useDebounce } from '@/hooks/use-debounce';
 import AppLayout from '@/layouts/app-layout';
 import { formatDuty } from '@/lib/utils';
 import EditDutyModal from '@/pages/guild-users/_edit-duty-modal';
-import type {
-    GuildUser,
-    PaginatedData,
-    Rank,
-    UserDetailsConfig,
-    SelectItem as DiscordSelectItem,
-} from '@/types';
+import type { GuildUser, UserManagerProps } from '@/types';
 import CreateEditUserModal from './_create-edit-modal';
 import UserImageGallery from './_image-gallery-modal';
 import PunishmentsCell from './_punishments-cell';
-
-interface UserManagerProps {
-    guild_users: PaginatedData<GuildUser>;
-    user_details_config: UserDetailsConfig[];
-    unattached_guild_users: DiscordSelectItem[];
-    filters: {
-        search?: string;
-        per_page?: string;
-        sort?: string;
-        direction?: string;
-    };
-    has_rank_system?: boolean;
-    available_ranks?: Rank[];
-}
+import UserTableActions from './_user-table-actions';
+import EditPunishmentModal from '@/pages/guild-users/_edit-punishment-modal';
 
 export default function UserManagerView({
-                                            guild_users,
-                                            user_details_config = [],
-                                            unattached_guild_users = [],
-                                            filters,
-                                            has_rank_system = false,
-                                            available_ranks = [],
-                                        }: UserManagerProps) {
+    guild_users,
+    user_details_config = [],
+    unattached_guild_users = [],
+    filters,
+    has_rank_system = false,
+    available_ranks = [],
+}: UserManagerProps) {
     const { props } = usePage();
     const flash = props.flash as {
         success: string | null;
@@ -96,19 +60,13 @@ export default function UserManagerView({
     }, [flash]);
 
     const safe_filters = Array.isArray(filters) ? {} : filters || {};
-    const search_timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [search_query, setSearchQuery] = useState(safe_filters.search || '');
+    const debounced_search = useDebounce(search_query, 400);
     const [per_page_amount, setPerPageAmount] = useState(
         safe_filters.per_page || String(guild_users.per_page),
     );
     const [custom_per_page, setCustomPerPage] = useState('');
     const [selected_rows, setSelectedRows] = useState<(string | number)[]>([]);
-    const [is_modal_open, setIsModalOpen] = useState(false);
-
-    const [edit_user, setEditUser] = useState<GuildUser | null>(null);
-    const [duty_user, setDutyUser] = useState<GuildUser | null>(null);
-    const [gallery_user, setGalleryUser] = useState<GuildUser | null>(null);
-
     const [sort_column, setSortColumn] = useState(
         safe_filters.sort || 'created_at',
     );
@@ -116,6 +74,11 @@ export default function UserManagerView({
         safe_filters.direction || 'desc',
     );
 
+    const [is_modal_open, setIsModalOpen] = useState(false);
+    const [edit_user, setEditUser] = useState<GuildUser | null>(null);
+    const [duty_user, setDutyUser] = useState<GuildUser | null>(null);
+    const [punishment_user, setPunishmentUser] = useState<GuildUser | null>(null);
+    const [gallery_user, setGalleryUser] = useState<GuildUser | null>(null);
     const [delete_state, setDeleteState] = useState<{
         is_open: boolean;
         ids: (string | number)[];
@@ -126,6 +89,7 @@ export default function UserManagerView({
         is_processing: false,
     });
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const safe_user_details = Array.isArray(user_details_config)
         ? user_details_config
         : [];
@@ -157,46 +121,46 @@ export default function UserManagerView({
     const default_visible = column_definitions
         .filter((col) => col.required)
         .map((col) => col.id);
-
     const [visible_columns, setVisibleColumns] =
         useState<string[]>(default_visible);
 
-    const fetchFilteredData = (
-        search: string,
-        limit: string,
-        sort: string,
-        dir: string,
-    ) => {
-        router.get(
-            route('guild.users.index'),
-            { search, per_page: limit, sort, direction: dir },
-            { preserveState: true, preserveScroll: true, replace: true },
-        );
-    };
+    const is_mounted = useRef(false);
+    useEffect(() => {
+        if (!is_mounted.current) {
+            is_mounted.current = true;
 
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value;
-        setSearchQuery(val);
-
-        if (search_timeout.current) {
-            clearTimeout(search_timeout.current);
+            return;
         }
 
-        search_timeout.current = setTimeout(() => {
-            fetchFilteredData(
-                val,
-                per_page_amount,
-                sort_column,
-                sort_direction,
+        fetchFilteredData(
+            debounced_search,
+            per_page_amount,
+            sort_column,
+            sort_direction,
+        );
+    }, [debounced_search]);
+
+    const fetchFilteredData = useCallback(
+        (search: string, limit: string, sort: string, dir: string) => {
+            router.get(
+                route('guild.users.index'),
+                { search, per_page: limit, sort, direction: dir },
+                { preserveState: true, preserveScroll: true, replace: true },
             );
-        }, 400);
-    };
+        },
+        [],
+    );
 
     const handlePerPageChange = (val: string) => {
         if (val !== 'custom') {
             setPerPageAmount(val);
             setCustomPerPage('');
-            fetchFilteredData(search_query, val, sort_column, sort_direction);
+            fetchFilteredData(
+                debounced_search,
+                val,
+                sort_column,
+                sort_direction,
+            );
         } else {
             setPerPageAmount('custom');
         }
@@ -207,7 +171,7 @@ export default function UserManagerView({
     ) => {
         if (e.key === 'Enter' && custom_per_page) {
             fetchFilteredData(
-                search_query,
+                debounced_search,
                 custom_per_page,
                 sort_column,
                 sort_direction,
@@ -220,7 +184,7 @@ export default function UserManagerView({
             sort_column === col_id && sort_direction === 'asc' ? 'desc' : 'asc';
         setSortColumn(col_id);
         setSortDirection(new_dir);
-        fetchFilteredData(search_query, per_page_amount, col_id, new_dir);
+        fetchFilteredData(debounced_search, per_page_amount, col_id, new_dir);
     };
 
     const toggleColumnVisibility = (col_id: string) => {
@@ -243,7 +207,6 @@ export default function UserManagerView({
             ? 'guild.users.delete'
             : 'guild.users.bulk.delete';
         const payload = is_single ? {} : { data: { ids: delete_state.ids } };
-
         const url = is_single
             ? route(route_name, delete_state.ids[0])
             : route(route_name);
@@ -278,14 +241,18 @@ export default function UserManagerView({
                     );
                 } else if (col.id === 'punishments') {
                     render_func = (row: any) => (
-                        <PunishmentsCell punishments={row.active_punishments} />
+                        <PunishmentsCell
+                            punishments={
+                                row.active_punishments ||
+                                row.activePunishments ||
+                                []
+                            }
+                        />
                     );
                 } else if (col.id === 'current_duty') {
                     render_func = (row: GuildUser) => (
                         <Badge>
-                            {formatDuty(
-                                row.current_period_duties_sum_value,
-                            )}
+                            {formatDuty(row.current_period_duties_sum_value)}
                         </Badge>
                     );
                 } else if (col.id === 'all_duty') {
@@ -307,51 +274,27 @@ export default function UserManagerView({
             });
     }, [column_definitions, visible_columns]);
 
-    const renderActions = (row: GuildUser) => (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                    <MoreVertical className="h-4 w-4" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem
-                    onClick={() => {
-                        setEditUser(row);
-                        setIsModalOpen(true);
-                    }}
-                >
-                    <Edit className="mr-2 h-4 w-4" /> Szerkesztés
-                </DropdownMenuItem>
-
-                <DropdownMenuItem onClick={() => setDutyUser(row)}>
-                    <Clock className="mr-2 h-4 w-4" /> Szolgálati idő
-                </DropdownMenuItem>
-
-                <DropdownMenuItem onClick={() => setGalleryUser(row)}>
-                    <ImageIcon className="mr-2 h-4 w-4" /> Képek
-                    {(row as any).images?.length > 0 && (
-                        <Badge className="ml-auto flex h-5 w-5 items-center justify-center rounded-full p-0">
-                            {(row as any).images.length}
-                        </Badge>
-                    )}
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() =>
-                        setDeleteState({
-                            is_open: true,
-                            ids: [row.id],
-                            is_processing: false,
-                        })
-                    }
-                >
-                    <Trash2 className="mr-2 h-4 w-4" /> Törlés
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+    const renderActions = useCallback(
+        (row: GuildUser) => (
+            <UserTableActions
+                user={row}
+                onEdit={(u) => {
+                    setEditUser(u);
+                    setIsModalOpen(true);
+                }}
+                onShowDuties={(u) => setDutyUser(u)}
+                onShowPunishments={(u) => setPunishmentUser(u)}
+                onShowGallery={(u) => setGalleryUser(u)}
+                onDelete={(u) =>
+                    setDeleteState({
+                        is_open: true,
+                        ids: [u.id],
+                        is_processing: false,
+                    })
+                }
+            />
+        ),
+        [],
     );
 
     return (
@@ -373,94 +316,31 @@ export default function UserManagerView({
                         <div className="h-px w-full bg-border/60" />
                     </div>
                     <div className="col-span-6 sm:col-span-1">
-                        <div className="col-span-6 sm:col-span-1">
-                            <Button
-                                className="w-full shadow-sm"
-                                variant="default"
-                                onClick={() => {
-                                    setEditUser(null);
-                                    setIsModalOpen(true);
-                                }}
-                            >
-                                <Plus className="mr-2 h-4 w-4" /> Új felhasználó
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-end gap-3">
-                    <div className="relative w-full sm:w-64">
-                        <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Keresés IC név alapján..."
-                            className="pl-9"
-                            value={search_query}
-                            onChange={handleSearchChange}
-                        />
-                    </div>
-
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="outline"
-                                className="flex items-center gap-2"
-                            >
-                                <SlidersHorizontal className="h-4 w-4" />{' '}
-                                Oszlopok
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuLabel>
-                                Látható oszlopok
-                            </DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            {column_definitions.map((col) => (
-                                <DropdownMenuCheckboxItem
-                                    key={col.id}
-                                    checked={visible_columns.includes(col.id)}
-                                    onCheckedChange={() =>
-                                        toggleColumnVisibility(col.id)
-                                    }
-                                    disabled={col.id === 'ic_name'}
-                                >
-                                    {col.label}{' '}
-                                    {col?.is_dynamic &&
-                                        !col.required &&
-                                        '(Opcionális)'}
-                                </DropdownMenuCheckboxItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <div className="flex items-center gap-2">
-                        <Select
-                            value={per_page_amount}
-                            onValueChange={handlePerPageChange}
+                        <Button
+                            className="w-full shadow-sm"
+                            variant="default"
+                            onClick={() => {
+                                setEditUser(null);
+                                setIsModalOpen(true);
+                            }}
                         >
-                            <SelectTrigger className="w-[100px]">
-                                <SelectValue placeholder="Sor/oldal" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="10">10</SelectItem>
-                                <SelectItem value="20">20</SelectItem>
-                                <SelectItem value="50">50</SelectItem>
-                                <SelectItem value="custom">Egyedi</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        {per_page_amount === 'custom' && (
-                            <Input
-                                type="number"
-                                placeholder="db"
-                                className="w-16"
-                                value={custom_per_page}
-                                onChange={(e) =>
-                                    setCustomPerPage(e.target.value)
-                                }
-                                onKeyDown={handleCustomPerPageSubmit}
-                            />
-                        )}
+                            <Plus className="mr-2 h-4 w-4" /> Új felhasználó
+                        </Button>
                     </div>
                 </div>
+
+                <DataTableToolbar
+                    search_query={search_query}
+                    onSearchChange={setSearchQuery}
+                    columns={column_definitions}
+                    visible_columns={visible_columns}
+                    onToggleColumn={toggleColumnVisibility}
+                    per_page_amount={per_page_amount}
+                    onPerPageChange={handlePerPageChange}
+                    custom_per_page={custom_per_page}
+                    onCustomPerPageChange={setCustomPerPage}
+                    onCustomPerPageSubmit={handleCustomPerPageSubmit}
+                />
 
                 {selected_rows.length > 0 && (
                     <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-2">
@@ -514,7 +394,7 @@ export default function UserManagerView({
                                     router.get(
                                         link.url,
                                         {
-                                            search: search_query,
+                                            search: debounced_search,
                                             per_page: per_page_amount,
                                             sort: sort_column,
                                             direction: sort_direction,
@@ -547,7 +427,11 @@ export default function UserManagerView({
                 onClose={() => setDutyUser(null)}
                 user={duty_user}
             />
-
+            <EditPunishmentModal
+                is_open={!!punishment_user}
+                onClose={() => setPunishmentUser(null)}
+                user={punishment_user}
+            />
             <UserImageGallery
                 user={gallery_user}
                 onClose={() => setGalleryUser(null)}
@@ -558,10 +442,7 @@ export default function UserManagerView({
                 onOpenChange={(open) =>
                     !open &&
                     !delete_state.is_processing &&
-                    setDeleteState((prev) => ({
-                        ...prev,
-                        is_open: false,
-                    }))
+                    setDeleteState((prev) => ({ ...prev, is_open: false }))
                 }
             >
                 <AlertDialogContent size="sm">

@@ -87,7 +87,10 @@ class GuildUser extends Model
 
     public function punishments(): HasMany
     {
-        return $this->hasMany(Punishment::class, 'user_id', 'user_id')->where('guild_id', $this->guild_id)->withTrashed();
+        return $this->hasMany(Punishment::class, 'user_id', 'user_id')
+            ->when($this->guild_id, function ($query) {
+                $query->where('guild_id', $this->guild_id);
+            })->withTrashed();
     }
 
     /**
