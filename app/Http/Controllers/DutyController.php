@@ -7,6 +7,7 @@ use App\Http\Requests\BulkDeleteDutyRequest;
 use App\Http\Requests\StoreDutyRequest;
 use App\Models\Duty;
 use App\Services\DutyService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -14,7 +15,7 @@ class DutyController extends Controller
 {
     public function __construct(private readonly DutyService $service) {}
 
-    public function store(StoreDutyRequest $request)
+    public function store(StoreDutyRequest $request): RedirectResponse
     {
         $data = $request->validated();
         try {
