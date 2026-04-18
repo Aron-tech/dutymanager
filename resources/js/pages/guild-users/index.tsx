@@ -6,7 +6,8 @@ import {
     Edit,
     Trash2,
     Plus,
-    ImageIcon, Clock // ÚJ IKON
+    ImageIcon,
+    Clock,
 } from 'lucide-react';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -43,7 +44,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
-import EditDutyModal from '@/pages/guild-users/_edit-duty-modal'; // ÚJ IMPORT
+import { formatDuty } from '@/lib/utils';
+import EditDutyModal from '@/pages/guild-users/_edit-duty-modal';
 import type {
     GuildUser,
     PaginatedData,
@@ -53,7 +55,7 @@ import type {
 } from '@/types';
 import CreateEditUserModal from './_create-edit-modal';
 import UserImageGallery from './_image-gallery-modal';
-import { formatDuty } from '@/lib/utils';
+import PunishmentsCell from './_punishments-cell';
 
 interface UserManagerProps {
     guild_users: PaginatedData<GuildUser>;
@@ -70,13 +72,13 @@ interface UserManagerProps {
 }
 
 export default function UserManagerView({
-    guild_users,
-    user_details_config = [],
-    unattached_guild_users = [],
-    filters,
-    has_rank_system = false,
-    available_ranks = [],
-}: UserManagerProps) {
+                                            guild_users,
+                                            user_details_config = [],
+                                            unattached_guild_users = [],
+                                            filters,
+                                            has_rank_system = false,
+                                            available_ranks = [],
+                                        }: UserManagerProps) {
     const { props } = usePage();
     const flash = props.flash as {
         success: string | null;
@@ -124,7 +126,6 @@ export default function UserManagerView({
         is_processing: false,
     });
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     const safe_user_details = Array.isArray(user_details_config)
         ? user_details_config
         : [];
@@ -134,6 +135,7 @@ export default function UserManagerView({
             { id: 'user_id', label: 'Discord ID', required: true },
             { id: 'global_name', label: 'Discord Név', required: true },
             { id: 'ic_name', label: 'IC Név', required: true },
+            { id: 'punishments', label: 'Büntetések', required: true },
         ];
 
         const config_cols = safe_user_details.map((config) => ({
@@ -230,7 +232,9 @@ export default function UserManagerView({
     };
 
     const confirmDelete = () => {
-        if (delete_state.ids.length === 0) return;
+        if (delete_state.ids.length === 0) {
+            return;
+        }
 
         setDeleteState((prev) => ({ ...prev, is_processing: true }));
 
@@ -265,14 +269,18 @@ export default function UserManagerView({
                 let render_func;
 
                 if (col.id === 'user_id') {
-                        render_func = (row: GuildUser) => row.user_id;
-                    } else if (col.id === 'global_name') {
-                        render_func = (row: GuildUser) => row.user?.name;
-                    } else if (col.id === 'ic_name') {
-                        render_func = (row: GuildUser) => (
-                            <span className="font-semibold">{row.ic_name}</span>
-                        );
-                    } else if (col.id === 'current_duty') {
+                    render_func = (row: GuildUser) => row.user_id;
+                } else if (col.id === 'global_name') {
+                    render_func = (row: GuildUser) => row.user?.name;
+                } else if (col.id === 'ic_name') {
+                    render_func = (row: GuildUser) => (
+                        <span className="font-semibold">{row.ic_name}</span>
+                    );
+                } else if (col.id === 'punishments') {
+                    render_func = (row: any) => (
+                        <PunishmentsCell punishments={row.active_punishments} />
+                    );
+                } else if (col.id === 'current_duty') {
                     render_func = (row: GuildUser) => (
                         <Badge>
                             {formatDuty(
@@ -284,8 +292,8 @@ export default function UserManagerView({
                     render_func = (row: GuildUser) =>
                         formatDuty(row.all_period_duties_sum_value);
                 } else if (col.id === 'joined_at') {
-                        render_func = (row: GuildUser) => row.joined_ago;
-                    } else if (col.id.startsWith('detail_')) {
+                    render_func = (row: GuildUser) => row.joined_ago;
+                } else if (col.id.startsWith('detail_')) {
                     const key = col.id.replace('detail_', '');
                     render_func = (row: GuildUser) => row.details?.[key] || '-';
                 }
@@ -360,7 +368,6 @@ export default function UserManagerView({
                     </p>
                 </div>
 
-                {/* Kereső, Filter, Táblázat renderelése változatlan... */}
                 <div className="grid grid-cols-6 items-center gap-4">
                     <div className="col-span-5 hidden sm:block">
                         <div className="h-px w-full bg-border/60" />
@@ -541,13 +548,11 @@ export default function UserManagerView({
                 user={duty_user}
             />
 
-            {/* ÚJ: KÉPGALÉRIA MODAL */}
             <UserImageGallery
                 user={gallery_user}
                 onClose={() => setGalleryUser(null)}
             />
 
-            {/* ALERT DIALOG A TÖRLÉSHEZ */}
             <AlertDialog
                 open={delete_state.is_open}
                 onOpenChange={(open) =>

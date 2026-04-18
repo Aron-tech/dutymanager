@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\DutyActionEnum;
 use App\Enums\DutyStatusEnum;
+use App\Services\SelectedGuildService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
@@ -95,7 +96,9 @@ class GuildUser extends Model
     public function activePunishments(): HasMany
     {
         return $this->hasMany(Punishment::class, 'user_id', 'user_id')
-            ->where('guild_id', $this->guild_id)
+            ->when($this->guild_id, function ($query) {
+                $query->where('guild_id', $this->guild_id);
+            })
             ->where(function ($query) {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());

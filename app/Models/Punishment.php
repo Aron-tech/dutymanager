@@ -21,7 +21,7 @@ class Punishment extends Model
         ];
     }
 
-    public static function make(User $target_user, ?Guild $guild, PunishmentTypeEnum $type, ?int $level, string $reason, ?int $expires_at): ?Punishment
+    public static function make(User $target_user, ?Guild $guild, PunishmentTypeEnum $type, ?int $level, string $reason, ?int $expires_at, ?User $created_by): ?Punishment
     {
         $guild = $guild ?: SelectedGuildService::get() ?? null;
 
@@ -41,6 +41,7 @@ class Punishment extends Model
             'level' => $level,
             'reason' => $reason,
             'expires_at' => $expires_at,
+            'created_by' => $created_by ?: auth()->id(),
         ]);
     }
 

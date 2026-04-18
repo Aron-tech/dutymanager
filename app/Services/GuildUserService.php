@@ -29,11 +29,6 @@ class GuildUserService
         $this->guild_user = $guild_user ?? GuildUser::findOrFail($guild_user_id);
     }
 
-    /**
-     * @param Guild $guild
-     * @param array $data
-     * @return array
-     */
     public function getIndexData(Guild $guild, array $data): array
     {
         $paginated_users = $this->getGuildUserPagination($guild, $data);
@@ -59,7 +54,16 @@ class GuildUserService
 
         $query = GuildUser::query()
             ->where('guild_id', $guild->id)
-            ->with(['user', 'activePunishments'])
+            ->with([
+                'user:id,name',
+                'activePunishments' => function ($q) use ($guild) {
+                    $q->where('guild_id', $guild->id)
+                        ->with('createdByUser:id,name');
+                },
+            ])
+            ->withCount(['activePunishments' => function ($q) use ($guild) {
+                $q->where('guild_id', $guild->id);
+            }])
             ->withSum(['duties as current_period_duties_sum_value' => function ($q) {
                 $q->where('status', '<=', DutyStatusEnum::CURRENT_PERIOD);
             }], 'value')
@@ -79,8 +83,8 @@ class GuildUserService
         switch ($sort) {
             case 'global_name':
                 $query->join('users', 'guild_users.user_id', '=', 'users.id')
-                    ->orderBy('users.name', $direction)
-                    ->select('guild_users.*');
+                    ->select('guild_users.*')
+                    ->orderBy('users.name', $direction);
                 break;
             case 'current_duty':
                 $query->orderBy('current_period_duties_sum_value', $direction);
@@ -90,6 +94,9 @@ class GuildUserService
                 break;
             case 'joined_at':
                 $query->orderBy('created_at', $direction);
+                break;
+            case 'punishments':
+                $query->orderBy('active_punishments_count', $direction);
                 break;
             default:
                 if (str_starts_with($sort, 'detail_')) {
@@ -149,9 +156,6 @@ class GuildUserService
     }
 
     /**
-     * @param GuildUser $guild_user
-     * @param array $data
-     * @return GuildUser
      * @throws Throwable
      */
     public function updateGuildUser(GuildUser $guild_user, array $data): GuildUser
@@ -206,10 +210,6 @@ class GuildUserService
         });
     }
 
-    /**
-     * @param Image $image
-     * @return bool
-     */
     public function removeImage(Image $image): bool
     {
         $guild_user = $image->imageable()->first();

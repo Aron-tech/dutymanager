@@ -157,3 +157,26 @@ export interface Image {
     url: string;
     path: string;
 }
+
+export enum PunishmentType {
+    VERBAL_WARNING = 'verbal_warning',
+    WARNING = 'warning',
+    BLACKLIST = 'blacklist'
+}
+export interface Punishment {
+    id: number;
+    user_id: string;
+    guild_id: string;
+    type: PunishmentType;
+    level?: number;
+    reason: string;
+    expires_at?: string;
+    created_by: string;
+    created_at: string;
+    updated_at: string;
+    deleted_at?: string;
+
+    user?: User;
+    guild?: Guild;
+    createdBy?: User;
+}
