@@ -29,6 +29,26 @@ class GuildUserService
         $this->guild_user = $guild_user ?? GuildUser::findOrFail($guild_user_id);
     }
 
+    /**
+     * @param Guild $guild
+     * @param array $data
+     * @return array
+     */
+    public function getIndexData(Guild $guild, array $data): array
+    {
+        $paginated_users = $this->getGuildUserPagination($guild, $data);
+        $guild_settings = $guild->guildSettings;
+        $user_details_config = $guild_settings?->user_details_config ?? [];
+        $unattached_guild_users = DiscordFetchService::getGuildMembers($guild->id, true, 2);
+
+        return [
+            'guild_users' => $paginated_users,
+            'user_details_config' => $user_details_config,
+            'unattached_guild_users' => $unattached_guild_users,
+            'filters' => $data,
+        ];
+    }
+
     public function getGuildUserPagination(Guild $guild, ?array $filter): LengthAwarePaginator|AbstractPaginator
     {
         $search_query = $filter['search'] ?? null;
@@ -39,7 +59,7 @@ class GuildUserService
 
         $query = GuildUser::query()
             ->where('guild_id', $guild->id)
-            ->with('user')
+            ->with(['user', 'activePunishments'])
             ->withSum(['duties as current_period_duties_sum_value' => function ($q) {
                 $q->where('status', '<=', DutyStatusEnum::CURRENT_PERIOD);
             }], 'value')

@@ -74,26 +74,35 @@ class GuildUser extends Model
         return $this->hasOne(Duty::class)->where('status', '<=', DutyStatusEnum::CURRENT_PERIOD)->whereNull('finished_at')->latest();
     }
 
-    /**
-     * @return bool
-     */
     public function hasActiveDuty(): bool
     {
         return $this->currentDuty()->exists();
     }
 
-
-    /**
-     * @return MorphMany
-     */
     public function images(): MorphMany
     {
         return $this->morphMany(Image::class, 'imageable');
     }
 
+    public function punishments(): HasMany
+    {
+        return $this->hasMany(Punishment::class, 'user_id', 'user_id')->where('guild_id', $this->guild_id)->withTrashed();
+    }
+
     /**
-     * @return array
+     * @return HasMany
      */
+    public function activePunishments(): HasMany
+    {
+        return $this->hasMany(Punishment::class, 'user_id', 'user_id')
+            ->where('guild_id', $this->guild_id)
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->latest();
+    }
+
     public function duty(): array
     {
         $current_duty = $this->currentDuty;

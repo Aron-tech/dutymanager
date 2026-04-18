@@ -7,4 +7,8 @@ return [
     'user' => 'Felhasználó',
     'hungarian' => 'Magyar',
     'english' => 'Angol',
+    // punishment
+    'verbal_warning' => 'Szóbeli figyelmeztetés',
+    'warning' => 'Figyelmeztetés',
+    'blacklist' => 'Feketelista',
 ];

@@ -35,6 +35,7 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/{guild_user}', [GuildUserController::class, 'update'])->name('guild.users.update');
             Route::get('/{guild_user}/image', [GuildUserController::class, 'getImagesData'])->name('guild.users.image');
             Route::get('/{guild_user}/duties', [GuildUserController::class, 'getDutiesData'])->name('guild.users.duties');
+            Route::get('/{guild_user}/punishments', [GuildUserController::class, 'getPunishmentsData'])->name('guild.users.punishments');
             Route::get('/image/{image}', [GuildUserController::class, 'showImage'])->name('guild.users.image.show');
             Route::post('/{guild_user}/image', [GuildUserController::class, 'storeImage'])->name('guild.users.image.store');
             Route::delete('/image/{image}', [GuildUserController::class, 'deleteImage'])->name('guild.users.image.delete');

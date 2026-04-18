@@ -34,17 +34,7 @@ class GuildUserController extends Controller
         $guild = SelectedGuildService::get();
         $validated = $request->validated();
 
-        $paginated_users = $this->service->getGuildUserPagination($guild, $validated);
-        $guild_settings = $guild->guildSettings;
-        $user_details_config = $guild_settings?->user_details_config ?? [];
-        $unattached_guild_users = DiscordFetchService::getGuildMembers($guild->id, true, 2);
-
-        return Inertia::render('guild-users/index', [
-            'guild_users' => $paginated_users,
-            'user_details_config' => $user_details_config,
-            'unattached_guild_users' => $unattached_guild_users,
-            'filters' => $validated,
-        ]);
+        return Inertia::render('guild-users/index', $this->service->getIndexData($guild, $validated));
     }
 
     public function store(StoreGuildUserRequest $request): RedirectResponse
@@ -117,6 +107,17 @@ class GuildUserController extends Controller
         $total_duties = $guild_user->getDutiesValue(DutyStatusEnum::ALL_PERIOD);
 
         return response()->json([$guild_user, $total_current_duties, $total_duties]);
+    }
+
+    /**
+     * @param GuildUser $guild_user
+     * @return JsonResponse
+     */
+    public function getPunishmentsData(GuildUser $guild_user): JsonResponse
+    {
+        $guild_user->load(['punishments.createdByUser']);
+
+        return response()->json($guild_user);
     }
 
     public function getImagesData(GuildUser $guild_user): JsonResponse
