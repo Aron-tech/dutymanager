@@ -28,6 +28,8 @@ class DutyService
             $guild_user = GuildUser::findOrFail($data['guild_user_id']);
             $duty = $guild_user->duties()->create([
                 ...$data,
+                'user_id' => $guild_user->user_id,
+                'guild_id' => $guild_user->guild_id,
                 'started_at' => time(),
                 'finished_at' => time(),
             ]);

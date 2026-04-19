@@ -111,7 +111,9 @@ class GuildUser extends Model
         if (empty($current_duty)) {
             $current_duty = $this->duties()->create([
                 'guild_user_id' => $this->id,
-                'started_at' => now(),
+                'user_id' => $this->user_id,
+                'guild_id' => $this->guild_id,
+                'started_at' => $now,
                 'status' => DutyStatusEnum::CURRENT_PERIOD,
             ]);
 

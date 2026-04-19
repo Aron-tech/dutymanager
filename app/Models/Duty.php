@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['guild_user_id', 'value', 'started_at', 'finished_at', 'status'])]
+#[Fillable(['user_id', 'guild_id', 'guild_user_id', 'value', 'started_at', 'finished_at', 'status'])]
 class Duty extends Model
 {
     use SoftDeletes;

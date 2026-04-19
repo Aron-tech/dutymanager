@@ -8,7 +8,7 @@ class GuildUserObserver
 {
     public function deleting(GuildUser $guildUser): void
     {
-        $guildUser->duties()->delete();
+        $guildUser->duties()->update(['guild_user_id' => null]);
         $guildUser->images()->delete();
     }
 

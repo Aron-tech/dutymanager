@@ -4,14 +4,37 @@ namespace App\Enums;
 
 enum PermissionEnum: string
 {
-    case ADD_USERS_TO_GUILD = 'add_users_to_guild';
-    case DELETE_USERS_FROM_GUILD = 'delete_users_from_guild';
+    // Sima guild user információk
+    case ADD_GUILD_USERS = 'add_guild_users';
     case EDIT_GUILD_USERS = 'edit_guild_users';
-    case EDIT_GUILD_SETTINGS = 'edit_guild_settings';
-    case EDIT_GUILD_USERS_DUTIES = 'edit_guild_users_duties';
-    case VIEW_GUILD_USERS = 'view_guild_users';
+    case DELETE_GUILD_USERS = 'delete_guild_users';
+
+    // Szolgálat kezelése
+    case ADD_DUTIES = 'add_duties';
+    case EDIT_DUTIES = 'edit_duties';
+    case DELETE_DUTIES = 'delete_duties';
+
+    // Punishment kezelése
+    case ADD_PUNISHMENTS = 'add_punishments';
+    case ADD_BLACKLIST = 'add_blacklist';
+    case ADD_WARNING = 'add_warning';
+    case ADD_VERBAL_WARNING = 'add_verbal_warning';
+    case DELETE_PUNISHMENTS = 'delete_punishments';
+    case DELETE_BLACKLIST = 'delete_blacklist';
+    case DELETE_WARNING = 'delete_warning';
+    case DELETE_VERBAL_WARNING = 'delete_verbal_warning';
+
+
+    // Megtekintési jogok
     case VIEW_GUILD_SETTINGS = 'view_guild_settings';
-    case VIEW_GUILD_DUTIES_STATS = 'view_guild_duties_stats';
+    case VIEW_GUILD_USERS = 'view_guild_users';
+    case VIEW_DUTIES = 'view_duties';
+    case VIEW_DUTIES_STATS = 'view_duties_stats';
+
+
+    // Szerver szintű jogok
+    case EDIT_SETTINGS = 'edit_settings';
+
 
     /**
      * @return array
@@ -27,15 +50,6 @@ enum PermissionEnum: string
      */
     public function getLabel(?string $lang = null): string
     {
-        return match ($this) {
-            self::ADD_USERS_TO_GUILD => __('permission.add_users_to_guild', [], $lang),
-            self::DELETE_USERS_FROM_GUILD => __('permission.delete_users_from_guild', [], $lang),
-            self::EDIT_GUILD_USERS => __('permission.edit_guild_users', [], $lang),
-            self::EDIT_GUILD_SETTINGS => __('permission.edit_guild_settings', [], $lang),
-            self::EDIT_GUILD_USERS_DUTIES => __('permission.edit_guild_users_duties', [], $lang),
-            self::VIEW_GUILD_USERS => __('permission.view_guild_users', [], $lang),
-            self::VIEW_GUILD_SETTINGS => __('permission.view_guild_settings', [], $lang),
-            self::VIEW_GUILD_DUTIES_STATS => __('permission.view_guild_duties_stats', [], $lang)
-        };
+        return __('permission.'.$this->value, [], $lang);
     }
 }
