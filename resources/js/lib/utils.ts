@@ -26,3 +26,14 @@ export const formatDuty = (totalMinutes: number | null | undefined): string => {
 
     return `${formattedHours}:${formattedMinutes}`;
 };
+
+export const formatDate = (
+    date_string: string | undefined,
+    fallback: string = '',
+) => {
+    if (!date_string) {
+        return fallback;
+    }
+
+    return new Date(date_string).toLocaleString();
+};

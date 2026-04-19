@@ -38,6 +38,13 @@ class DutyService
         });
     }
 
+    public function updateDutiesStatus(array $duty_ids, DutyStatusEnum $status): void
+    {
+        DB::transaction(function () use ($duty_ids, $status) {
+            Duty::whereIn('id', $duty_ids)->update(['status' => $status]);
+        });
+    }
+
     /**
      * @param array $duty_ids
      * @param DutyStatusEnum $status

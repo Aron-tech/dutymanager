@@ -12,6 +12,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { formatDate } from '@/lib/utils';
 
 const SORT_ORDER: Record<string, number> = {
     verbal_warning: 1,
@@ -46,20 +47,6 @@ const getPunishmentConfig = (type: string) => {
                 label: 'Büntetés',
             };
     }
-};
-
-const formatDate = (dateString?: string | null) => {
-    if (!dateString) {
-        return 'Soha';
-    }
-
-    return new Intl.DateTimeFormat('hu-HU', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(new Date(dateString));
 };
 
 export default function PunishmentsCell({

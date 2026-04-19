@@ -87,10 +87,7 @@ class GuildUser extends Model
 
     public function punishments(): HasMany
     {
-        return $this->hasMany(Punishment::class, 'user_id', 'user_id')
-            ->when($this->guild_id, function ($query) {
-                $query->where('guild_id', $this->guild_id);
-            })->withTrashed();
+        return $this->hasMany(Punishment::class, 'guild_user_id', 'id')->withTrashed();
     }
 
     /**
@@ -98,10 +95,7 @@ class GuildUser extends Model
      */
     public function activePunishments(): HasMany
     {
-        return $this->hasMany(Punishment::class, 'user_id', 'user_id')
-            ->when($this->guild_id, function ($query) {
-                $query->where('guild_id', $this->guild_id);
-            })
+        return $this->hasMany(Punishment::class, 'guild_user_id', 'id')
             ->where(function ($query) {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());

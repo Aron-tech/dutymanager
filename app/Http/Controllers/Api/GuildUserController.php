@@ -11,10 +11,10 @@ use App\Services\GuildService;
 
 class GuildUserController extends Controller
 {
-
     public function __construct(
         private readonly GuildService $service
     ) {}
+
     public function store(StoreGuildUserRequest $request)
     {
         $data = $request->validated();

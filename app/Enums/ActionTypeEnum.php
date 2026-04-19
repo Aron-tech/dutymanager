@@ -19,6 +19,9 @@ enum ActionTypeEnum: string
     case ADD_DUTY_TO_GUILD_USER = 'add_duty_to_guild_user';
     case UPDATE_DUTY_TO_GUILD_USER = 'update_duty_to_guild_user';
     case DELETE_DUTY_FROM_GUILD_USER = 'delete_duty_from_guild_user';
+
+    case ADD_PUNISHMENT_TO_GUILD_USER = 'add_punishment_to_guild_user';
+    case DELETE_PUNISHMENT_FROM_GUILD_USER = 'delete_punishment_from_guild_user';
     case SETUP_GUILD = 'setup_guild';
 
     /**

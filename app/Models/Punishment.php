@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['user_id', 'guild_id', 'type', 'level', 'reason', 'expires_at', 'created_by'])]
+#[Fillable(['user_id', 'guild_id', 'guild_user_id', 'type', 'level', 'reason', 'expires_at', 'created_by'])]
 class Punishment extends Model
 {
     use SoftDeletes;
@@ -18,30 +18,36 @@ class Punishment extends Model
     {
         return [
             'expires_at' => 'datetime',
+            'type' => PunishmentTypeEnum::class,
         ];
     }
 
-    public static function make(User $target_user, ?Guild $guild, PunishmentTypeEnum $type, ?int $level, string $reason, ?int $expires_at, ?User $created_by): ?Punishment
+    public static function make(?GuildUser $guild_user, ?User $target_user, ?Guild $guild, PunishmentTypeEnum $type, ?int $level, string $reason, ?string $expires_at, ?User $created_by): ?Punishment
     {
-        $guild = $guild ?: SelectedGuildService::get() ?? null;
 
-        if (empty($guild)) {
+        $guild_id = $guild_user ? $guild_user->guild_id : ($guild ? $guild->id : SelectedGuildService::get());
+        $target_user_id = $guild_user ? $guild_user->user_id : ($target_user?->id);
+
+        if (empty($guild_id)) {
             return null;
         }
 
-        if (! $level && in_array($type, [PunishmentTypeEnum::VERBAL_WARNING, PunishmentTypeEnum::VERBAL_WARNING], true)) {
-            $level = Punishment::where('user_id', $target_user->id)->where('guild_id', $guild->id)->where('type', $type)->max('level') ?? 0;
+        $guild_user = $guild_user ?: GuildUser::where('guild_id', $guild_id)->where('user_id', $target_user->id)->first();
+
+        if (empty($level) && in_array($type, [PunishmentTypeEnum::VERBAL_WARNING, PunishmentTypeEnum::WARNING])) {
+            $level = Punishment::where('user_id', $target_user_id)->where('guild_id', $guild_id)->where('type', $type)->max('level') ?? 0;
             $level++;
         }
 
         return self::create([
-            'user_id' => $target_user->id,
-            'guild_id' => $guild->id,
+            'user_id' => $target_user_id,
+            'guild_id' => $guild_id,
+            'guild_user_id' => $guild_user->id,
             'type' => $type,
             'level' => $level,
             'reason' => $reason,
-            'expires_at' => $expires_at,
-            'created_by' => $created_by ?: auth()->id(),
+            'expires_at' => $expires_at ?: null,
+            'created_by' => $created_by?->id ?: auth()->id(),
         ]);
     }
 
@@ -62,7 +68,7 @@ class Punishment extends Model
 
     public function guildUser(): BelongsTo
     {
-        return $this->belongsTo(GuildUser::class, 'user_id', 'user_id')->where('guild_id', $this->guild_id);
+        return $this->belongsTo(GuildUser::class, 'guild_user_id', 'id');
     }
 
     public function createdByGuildUser(): BelongsTo

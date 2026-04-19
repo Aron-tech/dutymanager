@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\DiscordController;
  use App\Http\Controllers\GuildController;
  use App\Http\Controllers\GuildUserController;
  use App\Http\Controllers\PageController;
+ use App\Http\Controllers\PunishmentController;
  use App\Http\Middleware\RequireGuildSetupMiddleware;
 use App\Http\Middleware\SelectedGuildMiddleware;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
@@ -46,9 +47,16 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('duty')->group(function () {
             Route::post('/{guild_user}', [GuildUserController::class, 'toggleDuty'])->name('duty.toggle');
             Route::post('/', [DutyController::class, 'store'])->name('duty.store');
+            Route::put('/status', [DutyController::class, 'updateStatuses'])->name('duty.update.status');
             Route::put('/{duty}', [DutyController::class, 'update'])->name('duty.update');
-            Route::delete('/{duty}', [DutyController::class, 'delete'])->name('duty.delete');
             Route::delete('/', [DutyController::class, 'bulkDelete'])->name('duty.bulk.delete');
+            Route::delete('/{duty}', [DutyController::class, 'delete'])->name('duty.delete');
+        });
+
+        Route::prefix('punishment')->group(function () {
+            Route::post('/', [PunishmentController::class, 'store'])->name('punishment.store');
+            Route::delete('/', [PunishmentController::class, 'bulkDelete'])->name('punishment.bulk.delete');
+            Route::delete('/{punishment}', [PunishmentController::class, 'delete'])->name('punishment.delete');
         });
     });
 });

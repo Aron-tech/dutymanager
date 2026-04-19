@@ -99,7 +99,6 @@ export default function UserImageGallery({
                     file_input_ref.current.value = '';
                 }
                 fetchImages();
-                toast.success('Kép feltöltve!');
             },
         });
     };
@@ -114,7 +113,6 @@ export default function UserImageGallery({
             onSuccess: () => {
                 setImageToDelete(null);
                 fetchImages();
-                toast.success('Kép törölve.');
             },
         });
     };

@@ -1,9 +1,11 @@
+import { router } from '@inertiajs/react';
 import axios from 'axios';
 import { ShieldAlert, Trash2, Search, Loader2 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/data-table';
 import type { ColumnDef } from '@/components/data-table';
+import { DataTablePagination } from '@/components/data-table-pagination';
 import {
     Accordion,
     AccordionContent,
@@ -40,6 +42,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useClientPagination } from '@/hooks/use-client-pagination';
+import { formatDate } from '@/lib/utils';
 import type { GuildUser, Punishment } from '@/types';
 
 interface EditPunishmentModalProps {
@@ -49,41 +53,46 @@ interface EditPunishmentModalProps {
 }
 
 export default function EditPunishmentModal({
-                                                is_open,
-                                                onClose,
-                                                user,
-                                            }: EditPunishmentModalProps) {
+    is_open,
+    onClose,
+    user,
+}: EditPunishmentModalProps) {
     const [is_loading, setIsLoading] = useState(false);
     const [is_submitting, setIsSubmitting] = useState(false);
 
-    // Adatok a backendről
     const [punishments, setPunishments] = useState<Punishment[]>([]);
-    const [available_types, setAvailableTypes] = useState<Record<string, string>>({});
+    const [available_types, setAvailableTypes] = useState<
+        Record<string, string>
+    >({});
 
-    // Form state
     const [type, setType] = useState<string>('');
     const [reason, setReason] = useState('');
     const [duration_days, setDurationDays] = useState('');
+    const [level, setLevel] = useState(''); // ÚJ: Szint állapota
 
-    // Table state
     const [search_query, setSearchQuery] = useState('');
     const [sort_column, setSortColumn] = useState('created_at');
     const [sort_direction, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [selected_rows, setSelectedRows] = useState<(string | number)[]>([]);
 
-    // Törlés állapot
     const [delete_state, setDeleteState] = useState<{
         is_open: boolean;
         is_bulk: boolean;
         punishment_id: number | null;
         is_processing: boolean;
-    }>({ is_open: false, is_bulk: false, punishment_id: null, is_processing: false });
+    }>({
+        is_open: false,
+        is_bulk: false,
+        punishment_id: null,
+        is_processing: false,
+    });
 
     useEffect(() => {
         if (is_open && user) {
             fetchPunishments();
             setReason('');
             setDurationDays('');
+            setLevel('');
             setSearchQuery('');
             setSelectedRows([]);
         }
@@ -100,11 +109,13 @@ export default function EditPunishmentModal({
             const response = await axios.get(
                 route('guild.users.punishments', user.id),
             );
-
             setPunishments(response.data.punishments || []);
             setAvailableTypes(response.data.types || {});
 
-            if (response.data.types && Object.keys(response.data.types).length > 0) {
+            if (
+                response.data.types &&
+                Object.keys(response.data.types).length > 0
+            ) {
                 setType(Object.keys(response.data.types)[0]);
             }
         } catch (error) {
@@ -114,73 +125,87 @@ export default function EditPunishmentModal({
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!user) {
+        if (!user || !user.user_id) {
+            toast.error('Hiányzó felhasználó azonosító.');
             return;
         }
 
         setIsSubmitting(true);
 
-        try {
-            await axios.post(route('punishments.store'), {
-                guild_user_id: user.id,
-                type,
-                reason,
-                duration_days: duration_days ? parseInt(duration_days) : null,
-            });
-
-            toast.success('Büntetés sikeresen kiosztva.');
-            setReason('');
-            setDurationDays('');
-            fetchPunishments();
-        } catch (error: any) {
-            toast.error(
-                error.response?.data?.message || 'Hiba történt a mentés során.',
-            );
-        } finally {
-            setIsSubmitting(false);
-        }
+        router.post(
+            route('punishment.store'),
+            {
+                user_id: user.user_id,
+                type: type,
+                reason: reason,
+                level: level ? parseInt(level) : null,
+                expire_days: duration_days ? parseInt(duration_days) : null,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: (page: any) => {
+                    setReason('');
+                    setDurationDays('');
+                    setLevel('');
+                    fetchPunishments();
+                    setIsSubmitting(false);
+                },
+                onError: (errors: any) => {
+                    setIsSubmitting(false);
+                    const firstError = Object.values(errors)[0] as string;
+                    toast.error(firstError || 'Hiba történt a mentés során.');
+                },
+            },
+        );
     };
 
-    const handleBulkDelete = async () => {
-        setDeleteState({ is_open: true, is_bulk: true, punishment_id: null, is_processing: false });
+    const handleBulkDelete = () => {
+        setDeleteState({
+            is_open: true,
+            is_bulk: true,
+            punishment_id: null,
+            is_processing: false,
+        });
     };
 
-    const confirmDelete = async () => {
+    const confirmDelete = () => {
         setDeleteState((prev) => ({ ...prev, is_processing: true }));
 
-        try {
-            const ids_to_delete = delete_state.is_bulk ? selected_rows : [delete_state.punishment_id];
-
-            await axios.delete(route('punishments.bulk-destroy'), {
-                data: { ids: ids_to_delete },
-            });
-
-            toast.success(delete_state.is_bulk ? 'Kijelölt büntetések visszavonva/törölve.' : 'Büntetés visszavonva/törölve.');
-
-            if (delete_state.is_bulk) {
+        const inertiaCallbacks = {
+            preserveScroll: true,
+            onSuccess: (page: any) => {
                 setSelectedRows([]);
-            }
+                fetchPunishments();
+                setDeleteState({
+                    is_open: false,
+                    is_bulk: false,
+                    punishment_id: null,
+                    is_processing: false,
+                });
+            },
+            onError: (errors: any) => {
+                setDeleteState((prev) => ({ ...prev, is_processing: false }));
+                const firstError = Object.values(errors)[0] as string;
+                toast.error(firstError || 'Hiba történt a visszavonás során.');
+            },
+        };
 
-            fetchPunishments();
-            setDeleteState({ is_open: false, is_bulk: false, punishment_id: null, is_processing: false });
-        } catch (error) {
-            toast.error('Hiba történt a törlés során.');
-            setDeleteState((prev) => ({ ...prev, is_processing: false }));
+        if (delete_state.is_bulk) {
+            router.delete(route('punishment.bulk.delete'), {
+                data: { punishment_ids: selected_rows },
+                ...inertiaCallbacks,
+            });
+        } else if (delete_state.punishment_id !== null) {
+            router.delete(
+                route('punishment.delete', delete_state.punishment_id),
+                {
+                    ...inertiaCallbacks,
+                },
+            );
         }
-    };
-
-    const formatDate = (
-        date_string: string | undefined,
-        fallback: string = 'Végleges',
-    ) => {
-        if (!date_string) {
-            return fallback;
-        }
-
-        return new Date(date_string).toLocaleString();
     };
 
     const filtered_and_sorted_data = useMemo(() => {
@@ -191,7 +216,9 @@ export default function EditPunishmentModal({
             result = result.filter(
                 (p) =>
                     p.reason.toLowerCase().includes(q) ||
-                    (available_types[p.type] || p.type).toLowerCase().includes(q) ||
+                    (available_types[p.type] || p.type)
+                        .toLowerCase()
+                        .includes(q) ||
                     (p.created_by_user?.name || '').toLowerCase().includes(q),
             );
         }
@@ -231,10 +258,25 @@ export default function EditPunishmentModal({
         });
 
         return result;
-    }, [punishments, search_query, sort_column, sort_direction, available_types]);
+    }, [
+        punishments,
+        search_query,
+        sort_column,
+        sort_direction,
+        available_types,
+    ]);
+
+    const { currentData, currentPage, totalPages, setPage } =
+        useClientPagination(filtered_and_sorted_data, 10);
+
+    const handleSearchChange = (val: string) => {
+        setSearchQuery(val);
+        setPage(1);
+    };
 
     const handleSort = (col_id: string) => {
-        const new_dir = sort_column === col_id && sort_direction === 'asc' ? 'desc' : 'asc';
+        const new_dir =
+            sort_column === col_id && sort_direction === 'asc' ? 'desc' : 'asc';
         setSortColumn(col_id);
         setSortDirection(new_dir);
     };
@@ -331,6 +373,9 @@ export default function EditPunishmentModal({
         },
     ];
 
+    // Csak a warning és verbal_warning esetén mutatjuk a szint inputot
+    const showLevelInput = type === 'warning' || type === 'verbal_warning';
+
     return (
         <>
             <Dialog open={is_open} onOpenChange={(open) => !open && onClose()}>
@@ -339,45 +384,101 @@ export default function EditPunishmentModal({
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <ShieldAlert className="h-5 w-5 text-destructive" />
-                                Büntetések kezelése: {user?.ic_name}
+                                Büntetések kezelése:{' '}
+                                {user?.ic_name || user?.user?.name}
                             </DialogTitle>
                             <DialogDescription>
-                                Új büntetés kiosztása és az eddigi előzmények megtekintése.
+                                Új büntetés kiosztása és az eddigi előzmények
+                                megtekintése.
                             </DialogDescription>
                         </DialogHeader>
                     </div>
 
                     <div className="flex-1 overflow-y-auto px-6 pb-6">
-                        {/* Új büntetés form (Összecsukható) */}
-                        <Accordion type="single" collapsible className="mb-8 w-full rounded-lg border bg-muted/30 px-4">
-                            <AccordionItem value="new-punishment" className="border-b-0">
+                        <Accordion
+                            type="single"
+                            collapsible
+                            defaultValue="new-punishment"
+                            className="mb-8 w-full rounded-lg border bg-muted/30 px-4"
+                        >
+                            <AccordionItem
+                                value="new-punishment"
+                                className="border-b-0"
+                            >
                                 <AccordionTrigger className="text-sm font-semibold hover:no-underline">
                                     Új büntetés hozzáadása
                                 </AccordionTrigger>
                                 <AccordionContent className="pt-2 pb-4">
-                                    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                                        <div className="flex flex-col gap-2">
-                                            <Label htmlFor="punishment-type">Típus</Label>
-                                            <Select value={type} onValueChange={setType}>
-                                                <SelectTrigger id="punishment-type">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {Object.entries(available_types).map(([val, label]) => (
-                                                        <SelectItem key={val} value={val}>
-                                                            {label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                    <form
+                                        onSubmit={handleSubmit}
+                                        className="flex flex-col gap-5"
+                                    >
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div className="flex flex-col gap-2">
+                                                <Label htmlFor="punishment-type">
+                                                    Típus{' '}
+                                                    <span className="text-destructive">
+                                                        *
+                                                    </span>
+                                                </Label>
+                                                <Select
+                                                    value={type}
+                                                    onValueChange={setType}
+                                                >
+                                                    <SelectTrigger id="punishment-type">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {Object.entries(
+                                                            available_types,
+                                                        ).map(
+                                                            ([val, label]) => (
+                                                                <SelectItem
+                                                                    key={val}
+                                                                    value={val}
+                                                                >
+                                                                    {label}
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            {showLevelInput && (
+                                                <div className="flex animate-in flex-col gap-2 fade-in slide-in-from-top-2">
+                                                    <Label htmlFor="punishment-level">
+                                                        Szint (Opcionális)
+                                                    </Label>
+                                                    <Input
+                                                        id="punishment-level"
+                                                        type="number"
+                                                        min="1"
+                                                        value={level}
+                                                        onChange={(e) =>
+                                                            setLevel(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="Pl.: 1, 2, 3..."
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="flex flex-col gap-2">
-                                            <Label htmlFor="punishment-reason">Indok</Label>
+                                            <Label htmlFor="punishment-reason">
+                                                Indok{' '}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </Label>
                                             <Textarea
                                                 id="punishment-reason"
                                                 value={reason}
-                                                onChange={(e) => setReason(e.target.value)}
+                                                onChange={(e) =>
+                                                    setReason(e.target.value)
+                                                }
                                                 placeholder="Add meg a büntetés pontos okát..."
                                                 rows={3}
                                                 required
@@ -386,24 +487,35 @@ export default function EditPunishmentModal({
                                         </div>
 
                                         <div className="flex flex-col gap-2">
-                                            <Label htmlFor="punishment-duration">Időtartam (napban)</Label>
+                                            <Label htmlFor="punishment-duration">
+                                                Időtartam (napban)
+                                            </Label>
                                             <Input
                                                 id="punishment-duration"
                                                 type="number"
                                                 min="1"
                                                 value={duration_days}
-                                                onChange={(e) => setDurationDays(e.target.value)}
+                                                onChange={(e) =>
+                                                    setDurationDays(
+                                                        e.target.value,
+                                                    )
+                                                }
                                                 placeholder="Ha üresen hagyod, a büntetés végleges lesz."
                                             />
                                         </div>
 
-                                        <div className="pt-2 flex justify-end">
+                                        <div className="flex justify-end pt-2">
                                             <Button
                                                 type="submit"
-                                                disabled={is_submitting || !reason.trim()}
-                                                className="w-full sm:w-auto"
+                                                disabled={
+                                                    is_submitting ||
+                                                    !reason.trim()
+                                                }
+                                                className="w-full shadow-sm sm:w-auto"
                                             >
-                                                {is_submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                {is_submitting && (
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                )}
                                                 Büntetés kiosztása
                                             </Button>
                                         </div>
@@ -412,18 +524,23 @@ export default function EditPunishmentModal({
                             </AccordionItem>
                         </Accordion>
 
-                        {/* Előzmények Szekció */}
                         <div className="space-y-4 border-t pt-6">
                             <div className="flex flex-wrap items-center justify-between gap-4">
-                                <h3 className="text-lg font-semibold tracking-tight">Előzmények</h3>
+                                <h3 className="text-lg font-semibold tracking-tight">
+                                    Előzmények
+                                </h3>
                                 <div className="flex items-center gap-3">
                                     <div className="relative">
-                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
                                         <Input
                                             placeholder="Keresés az előzményekben..."
                                             className="w-[250px] pl-9"
                                             value={search_query}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            onChange={(e) =>
+                                                handleSearchChange(
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
                                     </div>
                                     {selected_rows.length > 0 && (
@@ -433,7 +550,7 @@ export default function EditPunishmentModal({
                                             onClick={handleBulkDelete}
                                             className="shadow-sm"
                                         >
-                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            <Trash2 className="mr-2 h-4 w-4" />{' '}
                                             Visszavonás ({selected_rows.length})
                                         </Button>
                                     )}
@@ -447,12 +564,14 @@ export default function EditPunishmentModal({
                             ) : (
                                 <div className="rounded-md border bg-background">
                                     <DataTable<Punishment>
-                                        data={filtered_and_sorted_data}
+                                        data={currentData}
                                         columns={columns}
                                         key_field="id"
                                         selected_rows={selected_rows}
                                         onSelectionChange={setSelectedRows}
-                                        is_row_selectable={(row) => !row.deleted_at}
+                                        is_row_selectable={(row) =>
+                                            !row.deleted_at
+                                        }
                                         sort_column={sort_column}
                                         sort_direction={sort_direction}
                                         onSort={handleSort}
@@ -461,13 +580,25 @@ export default function EditPunishmentModal({
                                                 variant="ghost"
                                                 size="icon"
                                                 className="text-destructive hover:bg-destructive/10"
-                                                onClick={() => setDeleteState({ is_open: true, is_bulk: false, punishment_id: row.id, is_processing: false })}
+                                                onClick={() =>
+                                                    setDeleteState({
+                                                        is_open: true,
+                                                        is_bulk: false,
+                                                        punishment_id: row.id,
+                                                        is_processing: false,
+                                                    })
+                                                }
                                                 disabled={!!row.deleted_at}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         )}
                                         empty_message="A felhasználónak nincsenek rögzített büntetései az előzményekben."
+                                    />
+                                    <DataTablePagination
+                                        currentPage={currentPage}
+                                        totalPages={totalPages}
+                                        onPageChange={setPage}
                                     />
                                 </div>
                             )}
@@ -476,17 +607,42 @@ export default function EditPunishmentModal({
                 </DialogContent>
             </Dialog>
 
-            <AlertDialog open={delete_state.is_open} onOpenChange={(open) => !open && !delete_state.is_processing && setDeleteState(prev => ({ ...prev, is_open: false }))}>
+            <AlertDialog
+                open={delete_state.is_open}
+                onOpenChange={(open) =>
+                    !open &&
+                    !delete_state.is_processing &&
+                    setDeleteState((prev) => ({
+                        ...prev,
+                        is_open: false,
+                    }))
+                }
+            >
                 <AlertDialogContent size="sm">
                     <AlertDialogHeader>
-                        <AlertDialogMedia className="bg-destructive/10 text-destructive"><Trash2 className="h-6 w-6" /></AlertDialogMedia>
+                        <AlertDialogMedia className="bg-destructive/10 text-destructive">
+                            <Trash2 className="h-6 w-6" />
+                        </AlertDialogMedia>
                         <AlertDialogTitle>Megerősítés</AlertDialogTitle>
-                        <AlertDialogDescription>Biztosan szeretnéd visszavonni/törölni a kijelölt büntetés(eke)t?</AlertDialogDescription>
+                        <AlertDialogDescription>
+                            Biztosan szeretnéd visszavonni/törölni a kijelölt
+                            büntetés(eke)t?
+                        </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={delete_state.is_processing}>Mégse</AlertDialogCancel>
-                        <AlertDialogAction variant="destructive" onClick={confirmDelete} disabled={delete_state.is_processing}>
-                            {delete_state.is_processing ? 'Folyamatban...' : 'Törlés / Visszavonás'}
+                        <AlertDialogCancel
+                            disabled={delete_state.is_processing}
+                        >
+                            Mégse
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            variant="destructive"
+                            onClick={confirmDelete}
+                            disabled={delete_state.is_processing}
+                        >
+                            {delete_state.is_processing
+                                ? 'Folyamatban...'
+                                : 'Visszavonás'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
