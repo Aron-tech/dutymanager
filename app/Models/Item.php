@@ -6,7 +6,7 @@ use App\Enums\ItemTypeEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 #[Fillable(['guild_id', 'name', 'type', 'details', 'position'])]
 class Item extends Model
@@ -25,8 +25,8 @@ class Item extends Model
         return $this->belongsTo(Guild::class);
     }
 
-    public function images(): MorphMany
+    public function image(): MorphOne
     {
-        return $this->morphMany(Image::class, 'imageable');
+        return $this->morphOne(Image::class, 'imageable');
     }
 }

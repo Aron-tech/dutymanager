@@ -196,3 +196,33 @@ export interface UserManagerProps {
     has_rank_system?: boolean;
     available_ranks?: Rank[];
 }
+
+export interface ItemDetails {
+    roles?: string[];
+    season?: string;
+    spawn_code?: string;
+    max_speed?: string | number;
+    mask?: string;
+    jackets?: string;
+    body_armor?: string;
+    hands?: string;
+    decals?: string;
+    hats?: string;
+    ears?: string;
+    scarves_chains?: string;
+    shirts?: string;
+    bags?: string;
+    pants?: string;
+    shoes?: string;
+    glasses?: string;
+    watches?: string;
+    [key: string]: any;
+}
+
+export interface Item {
+    id: number;
+    type: 'clothing' | 'vehicle';
+    name: string;
+    details?: ItemDetails;
+    image?: Image | null;
+}

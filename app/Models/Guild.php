@@ -66,6 +66,14 @@ class Guild extends Model
     }
 
     /**
+     * @return HasMany
+     */
+    public function items(): HasMany
+    {
+        return $this->hasMany(Item::class);
+    }
+
+    /**
      * @param DutyStatusEnum $status
      * @return int
      */

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import { DataTable } from '@/components/data-table';
 import type { ColumnDef } from '@/components/data-table';
 import { DataTablePagination } from '@/components/data-table-pagination';
@@ -19,17 +20,6 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from '@/components/ui/accordion';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogMedia,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -181,7 +171,6 @@ export default function EditDutyModal({
         );
     };
 
-    // 1. Engedélyezzük, hogy (string | number)[] típus érkezzen be
     const handleUpdateStatus = (duty_ids: (string | number)[], targetStatus: number) => {
         const numericIds = duty_ids.map(id => Number(id));
 
@@ -615,46 +604,13 @@ export default function EditDutyModal({
                 </DialogContent>
             </Dialog>
 
-            <AlertDialog
-                open={delete_state.is_open}
-                onOpenChange={(open) =>
-                    !open &&
-                    !delete_state.is_processing &&
-                    setDeleteState((prev) => ({
-                        ...prev,
-                        is_open: false,
-                    }))
-                }
-            >
-                <AlertDialogContent size="sm">
-                    <AlertDialogHeader>
-                        <AlertDialogMedia className="bg-destructive/10 text-destructive">
-                            <Trash2 className="h-6 w-6" />
-                        </AlertDialogMedia>
-                        <AlertDialogTitle>Megerősítés</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Biztosan törölni szeretnéd a kijelölt eleme(ke)t?
-                            Ezzel az összesített idő is csökkenni fog.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel
-                            disabled={delete_state.is_processing}
-                        >
-                            Mégse
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                            variant="destructive"
-                            onClick={confirmDelete}
-                            disabled={delete_state.is_processing}
-                        >
-                            {delete_state.is_processing
-                                ? 'Folyamatban...'
-                                : 'Törlés'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDeleteDialog
+                isOpen={delete_state.is_open}
+                onClose={() => setDeleteState(prev => ({ ...prev, is_open: false }))}
+                onConfirm={confirmDelete}
+                isProcessing={delete_state.is_processing}
+                description="Biztosan törölni szeretnéd a kijelölt eleme(ke)t? Ezzel az összesített idő is csökkenni fog."
+            />
         </>
     );
 }

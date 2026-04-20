@@ -2,8 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\Guild;
 use App\Models\GuildUser;
+use App\Models\Image;
+use App\Models\Item;
+use App\Observers\GuildObserver;
 use App\Observers\GuildUserObserver;
+use App\Observers\ImageObserver;
+use App\Observers\ItemObserver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +38,10 @@ class AppServiceProvider extends ServiceProvider
 
         // observers
         GuildUser::observe(GuildUserObserver::class);
+        Guild::observe(GuildObserver::class);
+        Image::observe(ImageObserver::class);
+        Item::observe(ItemObserver::class);
+
 
         Event::listen(function (SocialiteWasCalled $event) {
             $event->extendSocialite('discord', Provider::class);

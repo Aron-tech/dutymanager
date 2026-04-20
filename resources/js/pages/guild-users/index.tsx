@@ -1,5 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import React, {
     useState,
     useMemo,
@@ -8,32 +8,22 @@ import React, {
     useRef,
 } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import { DataTable } from '@/components/data-table';
 import type { ColumnDef } from '@/components/data-table';
 import { DataTableToolbar } from '@/components/data-table-toolbar';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogMedia,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useDebounce } from '@/hooks/use-debounce';
 import AppLayout from '@/layouts/app-layout';
 import { formatDuty } from '@/lib/utils';
 import EditDutyModal from '@/pages/guild-users/_edit-duty-modal';
+import EditPunishmentModal from '@/pages/guild-users/_edit-punishment-modal';
 import type { GuildUser, UserManagerProps } from '@/types';
 import CreateEditUserModal from './_create-edit-modal';
 import UserImageGallery from './_image-gallery-modal';
 import PunishmentsCell from './_punishments-cell';
 import UserTableActions from './_user-table-actions';
-import EditPunishmentModal from '@/pages/guild-users/_edit-punishment-modal';
 
 export default function UserManagerView({
     guild_users,
@@ -437,51 +427,21 @@ export default function UserManagerView({
                 onClose={() => setGalleryUser(null)}
             />
 
-            <AlertDialog
-                open={delete_state.is_open}
-                onOpenChange={(open) =>
-                    !open &&
-                    !delete_state.is_processing &&
-                    setDeleteState((prev) => ({ ...prev, is_open: false }))
+            <ConfirmDeleteDialog
+                isOpen={delete_state.is_open}
+                onClose={() => setDeleteState((prev) => ({ ...prev, is_open: false }))}
+                onConfirm={confirmDelete}
+                isProcessing={delete_state.is_processing}
+                description={
+                    <>
+                        Biztosan törölni szeretnéd{' '}
+                        {delete_state.ids.length === 1
+                            ? 'ezt a felhasználót'
+                            : `ezt a(z) ${delete_state.ids.length} felhasználót`}
+                        ? Ez a művelet végleges, és minden kapcsolódó adat elvész.
+                    </>
                 }
-            >
-                <AlertDialogContent size="sm">
-                    <AlertDialogHeader>
-                        <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
-                            <Trash2 className="h-6 w-6" />
-                        </AlertDialogMedia>
-                        <AlertDialogTitle>Törlés megerősítése</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Biztosan törölni szeretnéd{' '}
-                            {delete_state.ids.length === 1
-                                ? 'ezt a felhasználót'
-                                : `ezt a(z) ${delete_state.ids.length} felhasználót`}
-                            ? Ez a művelet végleges, és minden kapcsolódó adat
-                            elvész.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel
-                            variant="outline"
-                            disabled={delete_state.is_processing}
-                        >
-                            Mégse
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                            variant="destructive"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                confirmDelete();
-                            }}
-                            disabled={delete_state.is_processing}
-                        >
-                            {delete_state.is_processing
-                                ? 'Törlés folyamatban...'
-                                : 'Törlés'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            />
         </AppLayout>
     );
 }

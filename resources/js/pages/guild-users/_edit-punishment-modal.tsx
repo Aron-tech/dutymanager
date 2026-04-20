@@ -3,6 +3,7 @@ import axios from 'axios';
 import { ShieldAlert, Trash2, Search, Loader2 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import { DataTable } from '@/components/data-table';
 import type { ColumnDef } from '@/components/data-table';
 import { DataTablePagination } from '@/components/data-table-pagination';
@@ -12,17 +13,6 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from '@/components/ui/accordion';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogMedia,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -607,46 +597,15 @@ export default function EditPunishmentModal({
                 </DialogContent>
             </Dialog>
 
-            <AlertDialog
-                open={delete_state.is_open}
-                onOpenChange={(open) =>
-                    !open &&
-                    !delete_state.is_processing &&
-                    setDeleteState((prev) => ({
-                        ...prev,
-                        is_open: false,
-                    }))
-                }
-            >
-                <AlertDialogContent size="sm">
-                    <AlertDialogHeader>
-                        <AlertDialogMedia className="bg-destructive/10 text-destructive">
-                            <Trash2 className="h-6 w-6" />
-                        </AlertDialogMedia>
-                        <AlertDialogTitle>Megerősítés</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Biztosan szeretnéd visszavonni/törölni a kijelölt
-                            büntetés(eke)t?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel
-                            disabled={delete_state.is_processing}
-                        >
-                            Mégse
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                            variant="destructive"
-                            onClick={confirmDelete}
-                            disabled={delete_state.is_processing}
-                        >
-                            {delete_state.is_processing
-                                ? 'Folyamatban...'
-                                : 'Visszavonás'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDeleteDialog
+                isOpen={delete_state.is_open}
+                onClose={() => setDeleteState(prev => ({ ...prev, is_open: false }))}
+                onConfirm={confirmDelete}
+                isProcessing={delete_state.is_processing}
+                title="Megerősítés"
+                confirmText="Visszavonás"
+                description="Biztosan szeretnéd visszavonni/törölni a kijelölt büntetés(eke)t?"
+            />
         </>
     );
 }

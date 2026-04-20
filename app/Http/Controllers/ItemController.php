@@ -3,14 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\IndexItemRequest;
+use App\Http\Requests\StoreItemRequest;
 use App\Models\Item;
+use App\Services\ItemService;
+use App\Services\SelectedGuildService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
+use Inertia\Response;
+use Throwable;
 
 class ItemController extends Controller
 {
-    public function index(IndexItemRequest $request)
+    public function __construct(private readonly ItemService $service) {}
+
+    public function index(IndexItemRequest $request): Response
     {
         $type = $request->validated()['type'];
+
+        $items = Item::with('image')->where('type', $type)->orderBy('position')->get();
+
+        return Inertia::render('items/index', [
+            'items' => $items,
+            'type' => $type,
+        ]);
     }
 
     /**
@@ -24,9 +41,21 @@ class ItemController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreItemRequest $request)
     {
-        //
+        $guild = SelectedGuildService::get();
+        $data = $request->validated();
+        try {
+            $item = DB::transaction(function () use ($request, $data, $guild) {
+                $item = $this->service->createItem($guild, $data, $request->file('image'));
+
+                return $item;
+            });
+
+            return back()->with('success', 'Sikeresen létrehoztad a(z) '.$item->name.'.');
+        } catch (Throwable $e) {
+            return back()->with('error', $e->getMessage())->withInput();
+        }
     }
 
     /**
@@ -56,8 +85,17 @@ class ItemController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Item $item)
+    public function delete(Item $item)
     {
-        //
+        try {
+            $item_model = $item;
+            $item->delete();
+
+            return back()->with('success', 'Sikeresen törölve a(z) '.$item_model?->name.'.');
+        } catch (Throwable $e) {
+            Log::error($e);
+
+            return back()->with('error', $e->getMessage())->withInput();
+        }
     }
 }

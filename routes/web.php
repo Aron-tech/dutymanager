@@ -1,12 +1,13 @@
  <?php
 
 use App\Http\Controllers\Auth\DiscordController;
- use App\Http\Controllers\DutyController;
- use App\Http\Controllers\GuildController;
- use App\Http\Controllers\GuildUserController;
- use App\Http\Controllers\PageController;
- use App\Http\Controllers\PunishmentController;
- use App\Http\Middleware\RequireGuildSetupMiddleware;
+use App\Http\Controllers\DutyController;
+use App\Http\Controllers\GuildController;
+use App\Http\Controllers\GuildUserController;
+use App\Http\Controllers\ItemController;
+use App\Http\Controllers\PageController;
+use App\Http\Controllers\PunishmentController;
+use App\Http\Middleware\RequireGuildSetupMiddleware;
 use App\Http\Middleware\SelectedGuildMiddleware;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
@@ -30,7 +31,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/guilds/setup/feature/{feature_id}', [GuildController::class, 'saveFeatureSettings'])->name('guild.setup.feature.save')->middleware([HandlePrecognitiveRequests::class]);
         Route::post('/guilds/setup/finish', [GuildController::class, 'finish'])->name('guild.setup.finish');
 
-        Route::prefix('user-panel')->group(function () {
+        Route::prefix('panel')->group(function () {
             Route::get('/', [GuildUserController::class, 'index'])->name('guild.users.index');
             Route::post('/', [GuildUserController::class, 'store'])->name('guild.users.store');
             Route::put('/{guild_user}', [GuildUserController::class, 'update'])->name('guild.users.update');
@@ -57,6 +58,11 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/', [PunishmentController::class, 'store'])->name('punishment.store');
             Route::delete('/', [PunishmentController::class, 'bulkDelete'])->name('punishment.bulk.delete');
             Route::delete('/{punishment}', [PunishmentController::class, 'delete'])->name('punishment.delete');
+        });
+
+        Route::prefix('item')->group(function () {
+            Route::get('/', [ItemController::class, 'index'])->name('items.index');
+            Route::post('/', [ItemController::class, 'store'])->name('items.store');
         });
     });
 });
