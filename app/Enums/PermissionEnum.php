@@ -27,7 +27,6 @@ enum PermissionEnum: string
     case DELETE_WARNING = 'delete_warning';
     case DELETE_VERBAL_WARNING = 'delete_verbal_warning';
 
-
     // Megtekintési jogok
     case VIEW_GUILD_SETTINGS = 'view_guild_settings';
     case VIEW_GUILD_USERS = 'view_guild_users';
@@ -35,7 +34,7 @@ enum PermissionEnum: string
     case VIEW_DUTIES_STATS = 'view_duties_stats';
     case VIEW_PUNISHMENTS = 'view_punishments';
 
-// Szerver szintű jogok
+    // Szerver szintű jogok
     case EDIT_SETTINGS = 'edit_settings';
 
     // Alap jogosultságok
@@ -43,19 +42,11 @@ enum PermissionEnum: string
     case GET_HOLIDAY = 'get_holiday';
     case CANCEL_HOLIDAY = 'cancel_holiday';
 
-
-    /**
-     * @return array
-     */
     public static function getOptions(): array
     {
         return array_column(self::cases(), 'value');
     }
 
-    /**
-     * @param string|null $lang
-     * @return string
-     */
     public function getLabel(?string $lang = null): string
     {
         return __('permission.'.$this->value, [], $lang);

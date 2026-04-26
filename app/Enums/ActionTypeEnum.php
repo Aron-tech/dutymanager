@@ -7,6 +7,7 @@ enum ActionTypeEnum: string
     case FIRST_LOGIN_TO_WEBSITE = 'first_login_to_website';
     case ADD_USER_TO_GUILD = 'add_user_to_guild';
     case ADD_USER_TO_GUILD_WITH_RESTORE = 'add_user_to_guild_with_restore';
+    case ACCEPTED_USER_TO_GUILD = 'accepted_user_to_guild';
     case UPDATE_USER_TO_GUILD = 'update_user_to_guild';
     case DELETE_USER_FROM_GUILD = 'delete_user_from_guild';
 

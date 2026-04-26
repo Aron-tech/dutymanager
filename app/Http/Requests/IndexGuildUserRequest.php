@@ -8,14 +8,6 @@ use Illuminate\Foundation\Http\FormRequest;
 class IndexGuildUserRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, ValidationRule|array|string>
@@ -27,6 +19,7 @@ class IndexGuildUserRequest extends FormRequest
             'per_page' => 'nullable|int|min:1|max:100',
             'sort' => 'nullable|string|max:64',
             'direction' => 'nullable|in:asc,desc',
+            'status' => 'nullable|in:pending,accepted',
         ];
     }
 }

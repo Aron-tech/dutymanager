@@ -32,6 +32,11 @@ class GuildUserService
             'lang_code' => $data['language'] ?? $guild->lang_code,
         ]);
 
+        $exists_guild_user = $guild->acceptedGuildUsers()->where('user_id', $data['user_id'])->exists();
+        if ($exists_guild_user) {
+            return $this->makeResponse(false, null, __('guild_user.already_exists_user', ['user' => $user->name]), 409);
+        }
+
         $added_by = null;
         if (isset($data['added_by'])) {
             $added_by = User::findOrFail($data['added_by']);

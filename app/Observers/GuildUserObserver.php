@@ -10,6 +10,7 @@ class GuildUserObserver
     {
         $guildUser->duties()->update(['guild_user_id' => null]);
         $guildUser->punishments()->update(['guild_user_id' => null]);
+        $guildUser->holidays()->update(['guild_user_id' => null]);
         $guildUser->images()->delete();
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Concerns\ValidatesDynamicUserDetailsTrait;
+use App\Enums\PermissionEnum;
 use App\Services\SelectedGuildService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -10,14 +11,6 @@ use Illuminate\Foundation\Http\FormRequest;
 class UpdateGuildUserRequest extends FormRequest
 {
     use ValidatesDynamicUserDetailsTrait;
-
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
 
     /**
      * Get the validation rules that apply to the request.

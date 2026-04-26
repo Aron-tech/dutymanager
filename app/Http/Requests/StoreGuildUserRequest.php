@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Concerns\ValidatesDynamicUserDetailsTrait;
+use App\Enums\PermissionEnum;
 use App\Services\SelectedGuildService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Foundation\Validation\ValidatesRequests;
@@ -10,11 +11,6 @@ use Illuminate\Foundation\Validation\ValidatesRequests;
 class StoreGuildUserRequest extends FormRequest
 {
     use ValidatesDynamicUserDetailsTrait;
-
-    public function authorize(): bool
-    {
-        return true;
-    }
 
     public function rules(): array
     {

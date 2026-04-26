@@ -3,7 +3,6 @@
 namespace App\Concerns;
 
 use App\Models\Guild;
-use App\Services\SelectedGuildService;
 
 trait ValidatesDynamicUserDetailsTrait
 {

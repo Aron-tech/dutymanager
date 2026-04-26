@@ -7,6 +7,7 @@ use App\Models\ActivityLog;
 use App\Models\Duty;
 use App\Models\Guild;
 use App\Models\GuildUser;
+use App\Models\Holiday;
 use App\Models\Punishment;
 use App\Models\User;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -43,5 +44,6 @@ class JoinUserToGuildAction
     {
         Duty::where('guild_id', $guild_user->guild_id)->where('user_id', $guild_user->user_id)->update(['guild_user_id' => $guild_user->id]);
         Punishment::where('guild_id', $guild_user->guild_id)->where('user_id', $guild_user->user_id)->update(['guild_user_id' => $guild_user->id]);
+        Holiday::where('guild_id', $guild_user->guild_id)->where('user_id', $guild_user->user_id)->update(['guild_user_id' => $guild_user->id]);
     }
 }

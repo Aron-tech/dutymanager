@@ -16,6 +16,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\AbstractPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class GuildUserService
@@ -43,6 +44,7 @@ class GuildUserService
         $per_page = $filter['per_page'] ?? 20;
         $sort = $filter['sort'] ?? 'created_at';
         $direction = strtolower($filter['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+        $status = $filter['status'] ?? 'accepted';
 
         $query = GuildUser::query()
             ->where('guild_id', $guild->id)
@@ -60,6 +62,12 @@ class GuildUserService
                 $q->where('status', '<=', DutyStatusEnum::CURRENT_PERIOD);
             }], 'value')
             ->withSum('duties as all_period_duties_sum_value', 'value');
+
+        if ($status == 'pending') {
+            $query->notAccepted();
+        } else {
+            $query->accepted();
+        }
 
         if ($search_query) {
             $query->where(function ($q) use ($search_query) {
@@ -106,7 +114,7 @@ class GuildUserService
     public function joinUserToGuild(array $data): GuildUser
     {
         return DB::transaction(function () use ($data) {
-            $guild = $data['guild'];
+            $guild = $data['guild'] ?? null;
 
             if (! $guild) {
                 throw new Exception('A megadott szerver nem található az adatbázisban.');
@@ -123,7 +131,7 @@ class GuildUserService
 
             $added_by = auth()->user();
 
-            $is_assigned_user = GuildUser::where('user_id', $data['user_id'])->where('guild_id', $data['guild_id'])->exists();
+            $is_assigned_user = GuildUser::where('user_id', $data['user_id'])->where('guild_id', $guild->id)->exists();
 
             if ($is_assigned_user) {
                 throw new Exception('A felhasználó már be van regisztrálva.');
@@ -156,6 +164,39 @@ class GuildUserService
 
             return $guild_user;
         });
+    }
+
+    public function acceptUser(GuildUser $guild_user, ?User $auth_user = null): bool
+    {
+        $auth_user = $auth_user ?: auth()->user();
+
+        if (! is_null($guild_user->accepted_at)) {
+            return false;
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $guild_user->update([
+                'accepted_at' => now(),
+                'added_by' => $auth_user->id,
+            ]);
+
+            ActivityLog::make($guild_user->guild_id, $auth_user->id, $guild_user->user_id, ActionTypeEnum::ACCEPTED_USER_TO_GUILD, $guild_user->toArray());
+
+            DB::commit();
+
+            return true;
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            Log::error('Hiba a felhasználó elfogadásakor: '.$e->getMessage(), [
+                'guild_user_id' => $guild_user->id,
+                'auth_user_id' => $auth_user->id,
+            ]);
+
+            return false;
+        }
     }
 
     /**

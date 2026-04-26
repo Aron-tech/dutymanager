@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Actions\JoinUserToGuildAction;
 use App\Concerns\ServiceTrait;
 use App\Models\Guild;
 use App\Models\GuildSettings;
@@ -224,11 +225,16 @@ class GuildService
     {
         $this->ensureModelLoaded();
 
-        DB::transaction(function () {
+        $auth_user = auth()->user();
+
+        DB::transaction(function () use ($auth_user) {
             $guild_settings = GuildSettings::where('guild_id', $this->guild->id)->first();
+
             if ($guild_settings) {
                 $guild_settings->update(['is_complete' => true]);
             }
+
+            JoinUserToGuildAction::run($auth_user, $this->guild, '', [], false, $auth_user, false);
         });
     }
 

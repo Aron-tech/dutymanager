@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ActionTypeEnum;
 use App\Enums\DutyActionEnum;
 use App\Enums\DutyStatusEnum;
+use App\Enums\PermissionEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
@@ -121,7 +122,16 @@ class GuildUser extends Model
      */
     public function scopeAccepted(Builder $query): Builder
     {
-        return $query->whereNotNull('accepted_at')->whereNotNull('added_by');
+        return $query->whereNotNull('accepted_at');
+    }
+
+    /**
+     * @param Builder $query
+     * @return Builder
+     */
+    public function scopeNotAccepted(Builder $query): Builder
+    {
+        return $query->whereNull('accepted_at');
     }
 
     public function duty(): array
@@ -163,7 +173,7 @@ class GuildUser extends Model
      */
     public function getPermissionsAttribute(): array
     {
-        return Cache::rememberForever("guild_{$this->guild_id}_user_{$this->user_id}_permissions", function () {
+        $permissions = Cache::rememberForever("guild_{$this->guild_id}_user_{$this->user_id}_permissions", function () {
             return GuildRole::where('guild_id', $this->guild_id)
                 ->whereIn('role_id', $this->cached_roles ?? [])
                 ->pluck('permissions')
@@ -171,5 +181,11 @@ class GuildUser extends Model
                 ->unique()
                 ->toArray();
         });
+
+        if (in_array(PermissionEnum::ALL->value, $permissions)) {
+            return PermissionEnum::getOptions();
+        }
+
+        return $permissions;
     }
 }

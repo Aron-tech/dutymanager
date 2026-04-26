@@ -35,7 +35,7 @@ class GuildUserController extends Controller
     public function index(IndexGuildUserRequest $request): Response
     {
         if (auth()->user()->cannot(PermissionEnum::VIEW_GUILD_USERS)) {
-            abort(403, __('app.error.no_permission'));
+            abort(403, __('app.error_no_permission'));
         }
 
         $guild = SelectedGuildService::get();
@@ -47,7 +47,7 @@ class GuildUserController extends Controller
     public function store(StoreGuildUserRequest $request): RedirectResponse
     {
         if (auth()->user()->cannot(PermissionEnum::ADD_GUILD_USERS)) {
-            abort(403, __('app.error.no_permission'));
+            abort(403, __('app.error_no_permission'));
         }
 
         $data = $request->validated();
@@ -68,7 +68,7 @@ class GuildUserController extends Controller
     public function update(GuildUser $guild_user, UpdateGuildUserRequest $request): RedirectResponse
     {
         if (auth()->user()->cannot(PermissionEnum::EDIT_GUILD_USERS)) {
-            abort(403, __('app.error.no_permission'));
+            abort(403, __('app.error_no_permission'));
         }
 
         $data = $request->validated();
@@ -83,10 +83,28 @@ class GuildUserController extends Controller
         }
     }
 
+    public function accept(GuildUser $guild_user)
+    {
+        $auth_user = auth()->user();
+
+        if ($auth_user->cannot(PermissionEnum::ADD_GUILD_USERS)) {
+            abort(403, 'app.error_no_permission');
+        }
+
+        $success = $this->service->acceptUser($guild_user, $auth_user);
+
+        if ($success) {
+            $guild_user->load(['user:id,name']);
+            return back()->with('success', __('guild_user.success_accepted_user', ['user' => $guild_user->user->name]));
+        } else {
+            return back()->withErrors(['error' => __('guild_user.error_accept_user')]);
+        }
+    }
+
     public function delete(GuildUser $guild_user): RedirectResponse
     {
         if (auth()->user()->cannot(PermissionEnum::DELETE_GUILD_USERS)) {
-            abort(403, __('app.error.no_permission'));
+            abort(403, __('app.error_no_permission'));
         }
 
         $guild = SelectedGuildService::get();
@@ -105,7 +123,7 @@ class GuildUserController extends Controller
     public function bulkDelete(BulkDeleteGuildUserRequest $request): RedirectResponse
     {
         if (auth()->user()->cannot(PermissionEnum::DELETE_GUILD_USERS)) {
-            abort(403, __('app.error.no_permission'));
+            abort(403, __('app.error_no_permission'));
         }
 
         $guild = SelectedGuildService::get();
@@ -125,7 +143,7 @@ class GuildUserController extends Controller
     public function getDutiesData(GuildUser $guild_user): JsonResponse
     {
         if (auth()->user()->cannot(PermissionEnum::VIEW_GUILD_USERS)) {
-            abort(403, __('app.error.no_permission'));
+            abort(403, __('app.error_no_permission'));
         }
 
         $guild_user->load(['user', 'duties']);
@@ -139,7 +157,7 @@ class GuildUserController extends Controller
     public function getPunishmentsData(GuildUser $guild_user): JsonResponse
     {
         if (auth()->user()->cannot(PermissionEnum::VIEW_GUILD_USERS)) {
-            abort(403, __('app.error.no_permission'));
+            abort(403, __('app.error_no_permission'));
         }
 
         $guild_user->load(['punishments.createdByUser:id,name']);
@@ -153,7 +171,7 @@ class GuildUserController extends Controller
     public function getImagesData(GuildUser $guild_user): JsonResponse
     {
         if (auth()->user()->cannot(PermissionEnum::VIEW_GUILD_USERS)) {
-            abort(403, __('app.error.no_permission'));
+            abort(403, __('app.error_no_permission'));
         }
 
         $guild_user->load(['user', 'images']);
@@ -177,7 +195,7 @@ class GuildUserController extends Controller
     public function storeImage(UploadImageRequest $request, GuildUser $guild_user): RedirectResponse
     {
         if (auth()->user()->cannot(PermissionEnum::EDIT_GUILD_USERS)) {
-            abort(403, __('app.error.no_permission'));
+            abort(403, __('app.error_no_permission'));
         }
 
         $request->validated();
@@ -196,7 +214,7 @@ class GuildUserController extends Controller
     public function deleteImage(Image $image): RedirectResponse
     {
         if (auth()->user()->cannot(PermissionEnum::EDIT_GUILD_USERS)) {
-            abort(403, __('app.error.no_permission'));
+            abort(403, __('app.error_no_permission'));
         }
 
         try {
@@ -211,7 +229,7 @@ class GuildUserController extends Controller
     public function toggleDuty(GuildUser $guild_user): JsonResponse
     {
         if (auth()->user()->cannot(PermissionEnum::TOGGLE_DUTY)) {
-            abort(403, __('app.error.no_permission'));
+            abort(403, __('app.error_no_permission'));
         }
 
         $message = null;
