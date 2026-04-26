@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PermissionEnum;
 use App\Enums\PunishmentTypeEnum;
 use App\Http\Requests\BulkDeletePunishmentRequest;
 use App\Http\Requests\IndexPunishmentRequest;
@@ -21,6 +22,10 @@ class PunishmentController extends Controller
 
     public function index(IndexPunishmentRequest $request, PunishmentService $service): Response
     {
+        if (auth()->user()->cannot(PermissionEnum::VIEW_PUNISHMENTS)) {
+            abort(403, __('app.error.no_permission'));
+        }
+
         $guild = SelectedGuildService::get();
         $filters = $request->validated();
 
@@ -32,10 +37,10 @@ class PunishmentController extends Controller
             ->map(function ($gu) {
                 return [
                     'id' => $gu->id,
-                    'label' => ($gu->ic_name ? $gu->ic_name.' - ' : '').($gu->user?->name ?? 'Ismeretlen'),
+                    'label' => ($gu->ic_name ? $gu->ic_name.' - ' : '').($gu->name ?? 'Ismeretlen'),
                     'full_user' => $gu,
                 ];
-            })->values()->toArray();
+            })->toArray();
 
         $available_types = PunishmentTypeEnum::getOptions();
 
@@ -47,8 +52,12 @@ class PunishmentController extends Controller
         ]);
     }
 
-    public function store(StorePunishmentRequest $request)
+    public function store(StorePunishmentRequest $request): RedirectResponse
     {
+        if (auth()->user()->cannot(PermissionEnum::ADD_PUNISHMENTS)) {
+            abort(403, __('app.error.no_permission'));
+        }
+
         $data = $request->validated();
         try {
             $this->service->create($data);
@@ -63,6 +72,10 @@ class PunishmentController extends Controller
 
     public function delete(Punishment $punishment): RedirectResponse
     {
+        if (auth()->user()->cannot(PermissionEnum::DELETE_PUNISHMENTS)) {
+            abort(403, __('app.error.no_permission'));
+        }
+
         try {
             $type = $punishment->type->getLabel();
             $this->service->delete($punishment);
@@ -77,6 +90,10 @@ class PunishmentController extends Controller
 
     public function bulkDelete(BulkDeletePunishmentRequest $request): RedirectResponse
     {
+        if (auth()->user()->cannot(PermissionEnum::DELETE_PUNISHMENTS)) {
+            abort(403, __('app.error.no_permission'));
+        }
+
         $data = $request->validated();
 
         try {

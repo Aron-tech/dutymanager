@@ -12,9 +12,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\Cache;
 
-#[Fillable(['user_id', 'guild_id', 'ic_name', 'details', 'is_request', 'accepted_at', 'added_by', 'cached_roles', 'roles_last_synced', 'rank_changed_at'])]
-#[Hidden(['cached_roles', 'roles_last_synced'])]
+#[Fillable(['user_id', 'guild_id', 'ic_name', 'details', 'is_request', 'accepted_at', 'added_by', 'cached_roles', 'rank_changed_at'])]
+#[Hidden(['cached_roles'])]
 class GuildUser extends Model
 {
     protected $appends = ['joined_ago'];
@@ -135,5 +136,19 @@ class GuildUser extends Model
         } else {
             return ['duty_model' => $current_duty, 'duty_action' => null];
         }
+    }
+
+    /**
+     * @return array
+     */
+    public function getPermissionsAttribute(): array
+    {
+        return Cache::rememberForever("guild_{$this->guild_id}_user_{$this->user_id}_permissions", function () {
+            return GuildRole::whereIn('role_id', $this->cached_roles ?? [])
+                ->pluck('permissions')
+                ->flatten()
+                ->unique()
+                ->toArray();
+        });
     }
 }

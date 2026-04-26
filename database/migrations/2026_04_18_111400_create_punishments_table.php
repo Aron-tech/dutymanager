@@ -2,6 +2,7 @@
 
 use App\Enums\PunishmentTypeEnum;
 use App\Models\Guild;
+use App\Models\GuildUser;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -18,6 +19,7 @@ return new class extends Migration
             $table->id();
             $table->foreignIdFor(User::class)->constrained();
             $table->foreignIdFor(Guild::class)->constrained();
+            $table->foreignIdFor(GuildUser::class)->nullable()->constrained()->nullOnDelete();
             $table->enum('type', PunishmentTypeEnum::getOptions());
             $table->unsignedTinyInteger('level')->nullable();
             $table->text('reason');

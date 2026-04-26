@@ -30,10 +30,15 @@ enum PermissionEnum: string
     case VIEW_GUILD_USERS = 'view_guild_users';
     case VIEW_DUTIES = 'view_duties';
     case VIEW_DUTIES_STATS = 'view_duties_stats';
+    case VIEW_PUNISHMENTS = 'view_punishments';
 
-
-    // Szerver szintű jogok
+// Szerver szintű jogok
     case EDIT_SETTINGS = 'edit_settings';
+
+    // Alap jogosultságok
+    case TOGGLE_DUTY = 'toggle_duty';
+    case GET_HOLIDAY = 'get_holiday';
+    case CANCEL_HOLIDAY = 'cancel_holiday';
 
 
     /**

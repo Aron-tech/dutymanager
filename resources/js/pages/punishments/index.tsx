@@ -176,7 +176,6 @@ export default function PunishmentsIndexView({
             onSuccess: () => {
                 setSelectedRows([]);
                 setDeleteState({ is_open: false, is_bulk: false, ids: [], is_processing: false });
-                toast.success('Büntetés(ek) sikeresen visszavonva.');
             },
             onError: () => {
                 setDeleteState((prev) => ({ ...prev, is_processing: false }));

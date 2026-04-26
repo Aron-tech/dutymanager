@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('duties', function (Blueprint $table) {
-            $table->integer('value')->nullable()->change();
+        Schema::table('guild_users', function (Blueprint $table) {
+            $table->dropColumn('roles_last_synced');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('duties', function (Blueprint $table) {
-            $table->integer('value')->change();
+        Schema::table('guild_users', function (Blueprint $table) {
+            $table->timestamp('roles_last_synced')->nullable();
         });
     }
 };

@@ -32,6 +32,8 @@ enum ActionTypeEnum: string
     case CANCEL_GUILD = 'cancel_duty';
 
     case REQUEST_JOIN_GUILD = 'request_join_guild';
+    case GET_HOLIDAY = 'get_holiday';
+    case CANCEL_HOLIDAY = 'cancel_holiday';
 
     /**
      * @return array

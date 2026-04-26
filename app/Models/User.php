@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\GlobalRoleEnum;
+use App\Enums\LanguageEnum;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -34,6 +36,8 @@ class User extends Authenticatable
     {
         return [
             'access_expires_at' => 'datetime',
+            'global_role' => GlobalRoleEnum::class,
+            'lang_code' => LanguageEnum::class,
         ];
     }
 

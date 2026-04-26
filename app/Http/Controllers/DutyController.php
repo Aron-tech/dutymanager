@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\DutyStatusEnum;
+use App\Enums\PermissionEnum;
 use App\Http\Requests\BulkDeleteDutyRequest;
 use App\Http\Requests\IndexDutyRequest;
 use App\Http\Requests\StoreDutyRequest;
@@ -24,6 +25,10 @@ class DutyController extends Controller
 
     public function index(IndexDutyRequest $request): Response
     {
+        if (auth()->user()->cannot(PermissionEnum::VIEW_DUTIES)) {
+            abort(403, __('app.error.no_permission'));
+        }
+
         $guild = SelectedGuildService::get();
         $filters = $request->validated();
 
@@ -49,6 +54,10 @@ class DutyController extends Controller
 
     public function active(IndexDutyRequest $request): Response
     {
+        if (auth()->user()->cannot(PermissionEnum::VIEW_DUTIES)) {
+            abort(403, __('app.error.no_permission'));
+        }
+
         $guild = SelectedGuildService::get();
         $filters = $request->validated();
 
@@ -98,7 +107,6 @@ class DutyController extends Controller
             ];
         }
 
-        // 2. Adatbázis lekérdezés
         $db_data = DB::table('duties')
             ->join('guild_users', 'duties.guild_user_id', '=', 'guild_users.id')
             ->where('guild_users.guild_id', $guild->id)
@@ -107,15 +115,12 @@ class DutyController extends Controller
             ->groupBy('date')
             ->get();
 
-        // 3. Adatok rátöltése a tömbre
         foreach ($db_data as $row) {
-            // Ellenőrizzük, hogy az óra létezik-e az alap tömbben
             if (isset($chart_data_array[$row->date])) {
                 $chart_data_array[$row->date]['count'] = (int) $row->count;
             }
         }
 
-        // 4. Az asszociatív tömb kulcsait eldobjuk (hogy egy sima JSON listát kapjon a React)
         $chart_data = array_values($chart_data_array);
 
         return Inertia::render('duties/active', [
@@ -128,6 +133,10 @@ class DutyController extends Controller
 
     public function store(StoreDutyRequest $request): RedirectResponse
     {
+        if (auth()->user()->cannot(PermissionEnum::ADD_DUTIES)) {
+            abort(403, __('app.error.no_permission'));
+        }
+
         $data = $request->validated();
         try {
             $this->service->storeDuty($data);
@@ -142,6 +151,10 @@ class DutyController extends Controller
 
     public function update(Duty $duty, UpdateDutyRequest $request): RedirectResponse
     {
+        if (auth()->user()->cannot(PermissionEnum::EDIT_DUTIES)) {
+            abort(403, __('app.error.no_permission'));
+        }
+
         $data = $request->validated();
         try {
             $duty->update($data);
@@ -156,6 +169,10 @@ class DutyController extends Controller
 
     public function updateStatuses(UpdateStatusDutyRequest $request): RedirectResponse
     {
+        if (auth()->user()->cannot(PermissionEnum::DELETE_DUTIES)) {
+            abort(403, __('app.error.no_permission'));
+        }
+
         $data = $request->validated();
         try {
             $status_enum = DutyStatusEnum::from($data['status']);
@@ -172,6 +189,10 @@ class DutyController extends Controller
 
     public function delete(Duty $duty)
     {
+        if (auth()->user()->cannot(PermissionEnum::DELETE_DUTIES)) {
+            abort(403, __('app.error.no_permission'));
+        }
+
         try {
             $this->service->deleteDuty($duty);
 
@@ -186,6 +207,11 @@ class DutyController extends Controller
     public function bulkDelete(BulkDeleteDutyRequest $request)
     {
         $data = $request->validated();
+
+        if (auth()->user()->cannot(PermissionEnum::DELETE_DUTIES)) {
+            abort(403, __('app.error.no_permission'));
+        }
+
         $status = isset($data['status']) ? DutyStatusEnum::from((int) $data['status']) : DutyStatusEnum::ALL_PERIOD;
 
         try {

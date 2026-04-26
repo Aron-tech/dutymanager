@@ -22,13 +22,6 @@ class GuildUserService
 {
     use FileHandlerTrait;
 
-    private ?GuildUser $guild_user = null;
-
-    public function loadModel(?GuildUser $guild_user = null, ?int $guild_user_id = null): void
-    {
-        $this->guild_user = $guild_user ?? GuildUser::findOrFail($guild_user_id);
-    }
-
     public function getIndexData(Guild $guild, array $data): array
     {
         $paginated_users = $this->getGuildUserPagination($guild, $data);
@@ -113,7 +106,7 @@ class GuildUserService
     public function joinUserToGuild(array $data): GuildUser
     {
         return DB::transaction(function () use ($data) {
-            $guild = Guild::find($data['guild_id']);
+            $guild = $data['guild'];
 
             if (! $guild) {
                 throw new Exception('A megadott szerver nem található az adatbázisban.');
@@ -122,6 +115,7 @@ class GuildUserService
             $user = User::firstOrCreate(
                 ['id' => $data['user_id']],
                 [
+                    'id' => $data['user_id'],
                     'name' => $data['name'] ?? 'Ismeretlen',
                     'lang_code' => $data['language'] ?? $guild->lang_code,
                 ]
