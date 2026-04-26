@@ -23,6 +23,8 @@ class UpdateRolesGuildUserRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'guild_id' => ['required', 'string', 'exists:guild_users.guild_id'],
+            'user_id' => ['required', 'string', 'exists:guild_users.user_id'],
             'role_ids' => ['required', 'array'],
             'role_ids.*' => ['string'],
         ];

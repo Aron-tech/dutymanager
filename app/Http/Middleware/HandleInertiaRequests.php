@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\GlobalRoleEnum;
+use App\Services\SelectedGuildService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
@@ -36,11 +38,37 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $permissions = [];
+        $user = $request->user();
+
+        if ($user) {
+            if ($user->global_role == GlobalRoleEnum::DEVELOPER) {
+                $permissions = ['*'];
+            } else {
+                $guild = SelectedGuildService::get();
+                if ($guild) {
+                    if ($guild->owner_id == $user->id) {
+                        $permissions = ['*'];
+                    } else {
+                        $guild_user = $guild->acceptedGuildUsers()->where('user_id', $user->id)->first();
+                        if ($guild_user) {
+                            if ($guild_user->global_role == GlobalRoleEnum::ADMIN) {
+                                $permissions = ['*'];
+                            } else {
+                                $permissions = $guild_user->getPermissionsAttribute();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
+                'permissions' => $permissions,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'activeGuild' => $request->session()->get('selected_guild_id'),

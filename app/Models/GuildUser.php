@@ -7,6 +7,7 @@ use App\Enums\DutyActionEnum;
 use App\Enums\DutyStatusEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -104,6 +105,25 @@ class GuildUser extends Model
             ->latest();
     }
 
+    public function holidays(): HasMany
+    {
+        return $this->hasMany(Holiday::class)->withTrashed();
+    }
+
+    public function activeHoliday(): HasOne
+    {
+        return $this->hasOne(Holiday::class)->where('ended_at', '>', now());
+    }
+
+    /**
+     * @param Builder $query
+     * @return Builder
+     */
+    public function scopeAccepted(Builder $query): Builder
+    {
+        return $query->whereNotNull('accepted_at')->whereNotNull('added_by');
+    }
+
     public function duty(): array
     {
         $current_duty = $this->currentDuty;
@@ -144,7 +164,8 @@ class GuildUser extends Model
     public function getPermissionsAttribute(): array
     {
         return Cache::rememberForever("guild_{$this->guild_id}_user_{$this->user_id}_permissions", function () {
-            return GuildRole::whereIn('role_id', $this->cached_roles ?? [])
+            return GuildRole::where('guild_id', $this->guild_id)
+                ->whereIn('role_id', $this->cached_roles ?? [])
                 ->pluck('permissions')
                 ->flatten()
                 ->unique()

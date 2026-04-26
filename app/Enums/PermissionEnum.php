@@ -4,6 +4,9 @@ namespace App\Enums;
 
 enum PermissionEnum: string
 {
+    // Összes jogosultság
+    case ALL = 'all';
+
     // Sima guild user információk
     case ADD_GUILD_USERS = 'add_guild_users';
     case EDIT_GUILD_USERS = 'edit_guild_users';

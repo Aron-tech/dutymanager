@@ -11,7 +11,9 @@ use App\Enums\DutyActionEnum;
 use App\Enums\FeatureEnum;
 use App\Models\ActivityLog;
 use App\Models\Guild;
+use App\Models\GuildUser;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -88,6 +90,42 @@ class GuildUserService
             Log::error('Toggle duty hiba: '.$e->getMessage(), ['data' => $data]);
 
             return $this->makeResponse(false, null, __('app.error_action'), 400);
+        }
+    }
+
+    public function updateRoles(array $data): ServiceResponseDTO
+    {
+        DB::beginTransaction();
+
+        try {
+            $updated = GuildUser::where('guild_id', $data['guild_id'])
+                ->where('user_id', $data['user_id'])
+                ->accepted()
+                ->update([
+                    'cached_roles' => $data['role_ids'],
+                ]);
+
+            if (! $updated) {
+                DB::rollBack();
+                return $this->makeResponse(false, 'Nem található elfogadott felhasználó a megadott azonosítókkal.');
+            }
+
+            Cache::forget("guild_{$data['guild_id']}_user_{$data['user_id']}_permissions");
+
+            DB::commit();
+
+            return $this->makeResponse(true);
+
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            Log::error('Hiba a rangok frissítésekor: '.$e->getMessage(), [
+                'guild_id' => $data['guild_id'] ?? null,
+                'user_id' => $data['user_id'] ?? null,
+                'exception' => $e,
+            ]);
+
+            return $this->makeResponse(false, 'Sajnos hiba történt a mentés során.');
         }
     }
 }

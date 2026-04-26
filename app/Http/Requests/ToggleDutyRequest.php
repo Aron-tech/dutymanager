@@ -24,8 +24,8 @@ class ToggleDutyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'guild_id' => ['required', 'exists:guilds,id'],
-            'user_id' => ['required', 'exists:users,id'],
+            'guild_id' => ['required', 'string', 'exists:guild_users,guild_id'],
+            'user_id' => ['required', 'string', 'exists:guild_users,user_id'],
             'duty_action' => ['required', new (DutyActionEnum::class)],
             'forced_by' => ['nullable', 'exists:users,id'],
         ];

@@ -81,7 +81,7 @@ class DutyService
     public function storeDuty(array $data): Duty
     {
         return DB::transaction(function () use ($data) {
-            $guild_user = GuildUser::findOrFail($data['guild_user_id']);
+            $guild_user = GuildUser::where('id', $data['guild_user_id'])->accepted()->firstOrFail();
             $duty = $guild_user->duties()->create([
                 ...$data,
                 'user_id' => $guild_user->user_id,

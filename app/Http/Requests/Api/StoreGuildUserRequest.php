@@ -44,7 +44,8 @@ class StoreGuildUserRequest extends FormRequest
             'ic_name' => ['required', 'string', 'max:255'],
             'details' => ['nullable', 'array'],
             'details.*' => ['nullable', 'string'],
-            'added_by' => ['string', 'exists:users,id', 'max:30'],
+            'is_request' => ['required', 'boolean'],
+            'added_by' => ['string', 'exists:guild_users,user_id', 'max:30'],
             'use_restore' => ['boolean'],
         ];
     }

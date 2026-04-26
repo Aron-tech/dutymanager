@@ -47,6 +47,10 @@ class AuthServiceProvider extends ServiceProvider
                 return null;
             }
 
+            if ($guild->owner_id == $user->id) {
+                return true;
+            }
+
             $guild_user = $guild->acceptedGuildUsers()->where('user_id', $user->id)->first();
 
             if (! $guild_user) {
