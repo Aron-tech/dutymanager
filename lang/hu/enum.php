@@ -3,7 +3,7 @@
 return [
     'global_role' => 'Globális szerepkör',
     'developer' => 'Fejlesztő',
-    'amdin' => 'Admin',
+    'admin' => 'Admin',
     'user' => 'Felhasználó',
     'hungarian' => 'Magyar',
     'english' => 'Angol',

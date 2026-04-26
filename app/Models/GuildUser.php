@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\ActionTypeEnum;
 use App\Enums\DutyActionEnum;
 use App\Enums\DutyStatusEnum;
-use App\Services\SelectedGuildService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
@@ -72,7 +72,7 @@ class GuildUser extends Model
 
     public function currentDuty(): HasOne
     {
-        return $this->hasOne(Duty::class)->where('status', '<=', DutyStatusEnum::CURRENT_PERIOD)->whereNull('finished_at')->latest();
+        return $this->hasOne(Duty::class)->where('status', '<=', DutyStatusEnum::CURRENT_PERIOD)->whereNull('finished_at')->latest('started_at');
     }
 
     public function hasActiveDuty(): bool
@@ -117,6 +117,8 @@ class GuildUser extends Model
                 'status' => DutyStatusEnum::CURRENT_PERIOD,
             ]);
 
+            ActivityLog::make($this->guild_id, $this->user_id, null, ActionTypeEnum::ON_DUTY);
+
             return ['duty_model' => $current_duty, 'duty_action' => DutyActionEnum::ON_DUTY];
         }
 
@@ -126,6 +128,8 @@ class GuildUser extends Model
                 'finished_at' => $now,
                 'value' => $diff_in_minutes,
             ]);
+
+            ActivityLog::make($this->guild_id, $this->user_id, null, ActionTypeEnum::OFF_DUTY);
 
             return ['duty_model' => $current_duty, 'duty_action' => DutyActionEnum::OFF_DUTY];
         } else {

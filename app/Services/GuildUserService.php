@@ -50,7 +50,6 @@ class GuildUserService
         $per_page = $filter['per_page'] ?? 20;
         $sort = $filter['sort'] ?? 'created_at';
         $direction = strtolower($filter['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
-        $db_driver = DB::connection()->getDriverName();
 
         $query = GuildUser::query()
             ->where('guild_id', $guild->id)
@@ -101,11 +100,7 @@ class GuildUserService
             default:
                 if (str_starts_with($sort, 'detail_')) {
                     $field_name = str_replace('detail_', '', $sort);
-                    if ($db_driver === 'sqlite') {
-                        $query->orderByRaw("json_extract(details, '$.\"$field_name\"') $direction");
-                    } else {
-                        $query->orderByRaw("JSON_UNQUOTE(JSON_EXTRACT(details, '$.\"$field_name\"')) $direction");
-                    }
+                    $query->orderByRaw("JSON_UNQUOTE(JSON_EXTRACT(details, '$.\"$field_name\"')) $direction");
                 } else {
                     $query->orderBy($sort, $direction);
                 }

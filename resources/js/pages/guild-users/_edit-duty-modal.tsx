@@ -431,23 +431,6 @@ export default function EditDutyModal({
                                     Előzmények
                                 </h3>
                                 <div className="flex items-center gap-3">
-                                    <Select
-                                        value={period_filter}
-                                        onValueChange={handleFilterChange}
-                                    >
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="current">
-                                                Jelenlegi időszak
-                                            </SelectItem>
-                                            <SelectItem value="all">
-                                                Minden időszak
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-
                                     {selected_rows.length > 0 && (
                                         <div className="flex items-center gap-2">
                                             <DropdownMenu>
@@ -505,6 +488,22 @@ export default function EditDutyModal({
                                             </Button>
                                         </div>
                                     )}
+                                    <Select
+                                        value={period_filter}
+                                        onValueChange={handleFilterChange}
+                                    >
+                                        <SelectTrigger className="w-[180px]">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="current">
+                                                Jelenlegi időszak
+                                            </SelectItem>
+                                            <SelectItem value="all">
+                                                Minden időszak
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
 

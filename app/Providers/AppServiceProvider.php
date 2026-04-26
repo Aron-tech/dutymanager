@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Duty;
 use App\Models\Guild;
 use App\Models\GuildUser;
 use App\Models\Image;
 use App\Models\Item;
+use App\Observers\DutyObserver;
 use App\Observers\GuildObserver;
 use App\Observers\GuildUserObserver;
 use App\Observers\ImageObserver;
@@ -41,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
         Guild::observe(GuildObserver::class);
         Image::observe(ImageObserver::class);
         Item::observe(ItemObserver::class);
+        Duty::observe(DutyObserver::class);
 
 
         Event::listen(function (SocialiteWasCalled $event) {

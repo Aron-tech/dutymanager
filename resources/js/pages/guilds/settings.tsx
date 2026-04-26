@@ -1,54 +1,129 @@
-import { router } from '@inertiajs/react';
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { feature_registry } from '@/features/config/features';
+import { Head } from '@inertiajs/react';
+import { LayoutGrid, Settings2, ShieldCheck, Wrench } from 'lucide-react';
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FeatureEnum } from '@/features/config/features'; // Ellenőrizd, hogy a FeatureEnum import útvonala helyes-e!
+import DutyManagerView from '@/features/duty-manager/view';
+import GeneralSettings from '@/features/general-settings';
+import ModulesView from '@/features/modules-view';
+import RankSystemView from '@/features/rank-system/view';
+import WarningSystemView from '@/features/warning-system/view';
+import AppLayout from '@/layouts/app-layout';
+import type { Guild } from '@/types';
 
-export default function GuildSettings({ guild, settings, context_data }: any) {
-    const [feature_settings, setFeatureSettings] = useState<Record<string, any>>(settings.feature_settings || {});
+interface SettingsProps {
+    guild_data: Guild & { guildSettings?: any[] }; // Típus kiterjesztése a relációval
+    enabled_features: string[];
+}
 
-    const handleFeatureDataChange = (feature_id: string, field_name: string, value: any) => {
-        setFeatureSettings(prev => ({
-            ...prev,
-            [feature_id]: { ...prev[feature_id], [field_name]: value }
-        }));
-    };
+export default function SettingsPage({ guild_data, enabled_features }: SettingsProps) {
 
-    const handleSaveAll = () => {
-        router.post(`/guilds/${guild.id}/settings`, { feature_settings });
+    // Konfigurációs nézetek dinamikus betöltése
+    const renderFeatureConfig = (feature_id: string) => {
+        // A guildSettings relációból keressük ki az adott modulhoz tartozó adatokat
+        const current_settings = guild_data.guildSettings?.find(s => s.feature === feature_id)?.settings || {};
+
+        const props = {
+            guild_id: guild_data.id,
+            initial_data: current_settings,
+            is_settings_mode: true
+        };
+
+        // Switch a megfelelő nézet kiválasztására
+        switch (feature_id) {
+            case FeatureEnum.DUTY_MANAGER:
+                return <DutyManagerView {...props} />;
+            case FeatureEnum.RANK_SYSTEM:
+                return <RankSystemView {...props} />;
+            case FeatureEnum.WARNING_SYSTEM:
+                return <WarningSystemView {...props} />;
+            default:
+                return null;
+        }
     };
 
     return (
-        <div className="max-w-4xl mx-auto py-10 space-y-8">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">Szerver Beállítások</h1>
-                <Button onClick={handleSaveAll}>Minden mentése</Button>
+        <AppLayout>
+            <Head title="Szerver beállítások" />
+
+            <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-8">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Beállítások</h1>
+                    <p className="text-muted-foreground">Módosítsd a szerver működését és a modulok konfigurációját.</p>
+                </div>
+
+                <Tabs defaultValue="general" className="w-full space-y-6">
+                    <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+                        <TabsTrigger value="general" className="flex gap-2">
+                            <Settings2 className="h-4 w-4" /> Alapok
+                        </TabsTrigger>
+                        <TabsTrigger value="features" className="flex gap-2">
+                            <LayoutGrid className="h-4 w-4" /> Modulok
+                        </TabsTrigger>
+                        <TabsTrigger value="config" className="flex gap-2">
+                            <Wrench className="h-4 w-4" /> Konfiguráció
+                        </TabsTrigger>
+                    </TabsList>
+
+                    {/* ALAP BEÁLLÍTÁSOK */}
+                    <TabsContent value="general" className="space-y-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Általános beállítások</CardTitle>
+                                <CardDescription>Szervernév és alapvető paraméterek kezelése.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <GeneralSettings
+                                    initial_data={{ name: guild_data.name }}
+                                    submit_url={route('guild.settings.general.update')}
+                                    method="put"
+                                />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* MODULOK BE/KIKAPCSOLÁSA */}
+                    <TabsContent value="features">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Modulok kezelése</CardTitle>
+                                <CardDescription>Kapcsold be vagy ki a szerver funkcióit.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ModulesView
+                                    initial_features={enabled_features}
+                                    submit_url={route('guild.setup.features.save')}
+                                />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* AKTÍV MODULOK RÉSZLETES KONFIGURÁCIÓJA */}
+                    <TabsContent value="config" className="space-y-6">
+                        {enabled_features.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center">
+                                <ShieldCheck className="mb-4 h-12 w-12 text-muted-foreground" />
+                                <h3 className="font-semibold">Nincs aktív modul</h3>
+                                <p className="text-sm text-muted-foreground">A konfigurációhoz előbb aktiválj egy modult a Modulok fül alatt.</p>
+                            </div>
+                        ) : (
+                            enabled_features.map((feature_id) => (
+                                <Card key={feature_id}>
+                                    <CardHeader>
+                                        <CardTitle className="capitalize">
+                                            {feature_id.replace('_', ' ')} Beállítások
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {renderFeatureConfig(feature_id)}
+                                    </CardContent>
+                                </Card>
+                            ))
+                        )}
+                    </TabsContent>
+                </Tabs>
             </div>
-
-            {settings.features.map((feature_id: string) => {
-                const feature = feature_registry[feature_id];
-                const FeatureComponent = feature?.view;
-
-                if (!FeatureComponent) {
-                    return null;
-                }
-
-                return (
-                    <Card key={feature_id}>
-                        <CardHeader>
-                            <CardTitle>{feature.title}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {/* Ugyanaz a komponens, mint a varázslóban! */}
-                            <FeatureComponent
-                                data={feature_settings[feature_id] || {}}
-                                context_data={context_data}
-                                onChange={(field, val) => handleFeatureDataChange(feature_id, field, val)}
-                            />
-                        </CardContent>
-                    </Card>
-                );
-            })}
-        </div>
+        </AppLayout>
     );
 }

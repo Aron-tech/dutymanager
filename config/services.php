@@ -43,4 +43,8 @@ return [
         'dev_guild_id' => env('DISCORD_DEV_GUILD_ID'),
     ],
 
+    'bot_api' => [
+        'url' => env('BOT_API_URL', 'http://localhost:3000'),
+        'key' => env('BOT_API_KEY'),
+    ],
 ];

@@ -51,7 +51,7 @@ interface DashboardProps {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: dashboard() },
+    { title: 'Kezdőlap', href: dashboard() },
 ];
 
 export default function Dashboard({

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\FeatureEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,8 +11,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class GuildSettings extends Model
 {
     protected $table = 'guild_settings';
+
     protected $primaryKey = 'guild_id';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     /**
@@ -28,12 +32,30 @@ class GuildSettings extends Model
         ];
     }
 
-    /**
-     * @return BelongsTo
-     */
     public function guild(): BelongsTo
     {
         return $this->belongsTo(Guild::class, 'guild_id', 'guild_id');
     }
 
+    /**
+     * @param FeatureEnum $feature
+     * @return bool
+     */
+    public function isEnabledFeature(FeatureEnum $feature): bool
+    {
+        return in_array($feature->value, $this->features);
+    }
+
+    public function getFeatureSettings(FeatureEnum $feature, $settings_name = null): string|int|float|array|null
+    {
+        if (isset($this->feature_settings[$feature->value])) {
+            if (is_null($settings_name)) {
+                return $this->feature_settings[$feature->value];
+            } else {
+                return $this->feature_settings[$feature->value][$settings_name];
+            }
+        }
+
+        return null;
+    }
 }

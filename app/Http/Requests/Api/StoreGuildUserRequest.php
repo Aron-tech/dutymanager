@@ -2,11 +2,26 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Concerns\ValidatesDynamicUserDetailsTrait;
+use App\Models\Guild;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreGuildUserRequest extends FormRequest
 {
+    use ValidatesDynamicUserDetailsTrait;
+
+    protected ?Guild $guild = null;
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->guild_id) {
+            $this->guild = Guild::with('guildSettings')
+                ->where('id', $this->guild_id)
+                ->first();
+        }
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -30,9 +45,13 @@ class StoreGuildUserRequest extends FormRequest
             'details' => ['nullable', 'array'],
             'details.*' => ['nullable', 'string'],
             'is_request' => ['required', 'boolean'],
-            'accepted_at' => ['nullable', 'boolean'],
-            'added_by' => ['nullable', 'string', 'exists:users,id', 'max:30'],
-            'language' => ['nullable', 'string', 'min:2', 'max:4'],
+            'added_by' => ['string', 'exists:users,id', 'max:30'],
+            'use_restore' => ['boolean'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return $this->getDynamicDetailsMessages();
     }
 }

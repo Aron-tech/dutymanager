@@ -11,6 +11,11 @@ class PageController extends Controller
 {
     public function __construct(protected readonly PageService $service) {}
 
+    public function welcome(): Response
+    {
+        return Inertia::render('welcome', ['canRegister' => false]);
+    }
+
     public function dashboard(DashboardRequest $request): Response
     {
         $data = $request->validated();

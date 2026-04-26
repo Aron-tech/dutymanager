@@ -50,6 +50,14 @@ class Guild extends Model
     }
 
     /**
+     * @return HasMany
+     */
+    public function acceptedGuildUsers(): HasMany
+    {
+        return $this->hasMany(GuildUser::class)->whereNotNull('accepted_at');
+    }
+
+    /**
      * @return HasManyThrough
      */
     public function users(): HasManyThrough

@@ -4,14 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Enums\DutyActionEnum;
 use App\Enums\DutyStatusEnum;
+use App\Enums\FeatureEnum;
 use App\Enums\PunishmentTypeEnum;
 use App\Http\Requests\BulkDeleteGuildUserRequest;
 use App\Http\Requests\IndexGuildUserRequest;
 use App\Http\Requests\StoreGuildUserRequest;
 use App\Http\Requests\UpdateGuildUserRequest;
 use App\Http\Requests\UploadImageRequest;
+use App\Models\GuildSettings;
 use App\Models\GuildUser;
 use App\Models\Image;
+use App\Services\DiscordFetchService;
 use App\Services\GuildUserService;
 use App\Services\SelectedGuildService;
 use Illuminate\Http\JsonResponse;
@@ -79,7 +82,7 @@ class GuildUserController extends Controller
         } catch (Throwable $e) {
             Log::error($e);
 
-            return back()->withErrors(['error' => 'Hiba történt a törlés során!']);
+            return back()->withErrors(['error' => __('app.error_action')]);
         }
     }
 
@@ -95,7 +98,7 @@ class GuildUserController extends Controller
         } catch (Throwable $e) {
             Log::error($e);
 
-            return back()->withErrors(['error' => 'Hiba történt a törlés során!']);
+            return back()->withErrors(['error' => __('app.error_action')]);
         }
     }
 
@@ -150,7 +153,7 @@ class GuildUserController extends Controller
         } catch (Throwable $e) {
             Log::error($e->getMessage());
 
-            return back()->withErrors(['error' => 'Sikertelen feltöltés.']);
+            return back()->withErrors(['error' => __('app.error_action')]);
         }
     }
 
@@ -161,28 +164,35 @@ class GuildUserController extends Controller
 
             return back()->with('success', 'Kép törölve.');
         } catch (Throwable $e) {
-            return back()->withErrors(['error' => 'Hiba a törlés során.']);
+            return back()->withErrors(['error' => __('app.error_action')]);
         }
     }
 
     public function toggleDuty(GuildUser $guild_user): JsonResponse
     {
         $message = null;
+        $success = false;
+        $guild = SelectedGuildService::get();
 
         try {
             $result = DB::transaction(function () use ($guild_user, &$message) {
                 return $guild_user->duty();
             });
 
-            if (! empty($result['action'])) {
+            if (! empty($result['duty_action'])) {
+                $duty_role = $guild->guildSettings->getFeatureSettings(FeatureEnum::DUTY, 'duty_role_id');
+
                 if ($result['duty_action'] == DutyActionEnum::ON_DUTY) {
+                    DiscordFetchService::addRoleToMember($guild_user->guild_id, $guild_user->user_id, $duty_role);
                     $message = __('duty.success_duty_on');
                 } elseif ($result['duty_action'] == DutyActionEnum::OFF_DUTY) {
+                    DiscordFetchService::removeRoleFromMember($guild_user->guild_id, $guild_user->user_id, $duty_role);
                     $message = __('duty.success_duty_off');
                 }
+                $success = true;
             }
 
-            return response()->json(['success' => true, 'message' => $message, 'result' => $result]);
+            return response()->json(['success' => $success, 'message' => $message, 'result' => $result]);
         } catch (Throwable $e) {
             Log::error($e);
 

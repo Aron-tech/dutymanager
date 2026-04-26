@@ -3,7 +3,8 @@
 use App\Http\Controllers\Auth\DiscordController;
 use App\Http\Controllers\DutyController;
 use App\Http\Controllers\GuildController;
-use App\Http\Controllers\GuildUserController;
+ use App\Http\Controllers\GuildSettingsController;
+ use App\Http\Controllers\GuildUserController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PunishmentController;
@@ -16,9 +17,11 @@ use Laravel\Fortify\Features;
 Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
+Route::inertia('/docs', 'docs', [])->name('docs');
 
 Route::get('/login/discord', [DiscordController::class, 'redirectToDiscord'])->name('login.discord');
 Route::get('/login/callback', [DiscordController::class, 'handleDiscordCallback']);
+Route::get('/guild/settings', [GuildSettingsController::class, 'index'])->name('guild.settings');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/guilds/selector', [GuildController::class, 'selector'])->name('guilds.selector');
@@ -46,6 +49,8 @@ Route::middleware(['auth'])->group(function () {
         });
 
         Route::prefix('duty')->group(function () {
+            Route::get('/', [DutyController::class, 'index'])->name('duty.index');
+            Route::get('/active', [DutyController::class, 'active'])->name('duty.active');
             Route::post('/{guild_user}', [GuildUserController::class, 'toggleDuty'])->name('duty.toggle');
             Route::post('/', [DutyController::class, 'store'])->name('duty.store');
             Route::put('/status', [DutyController::class, 'updateStatuses'])->name('duty.update.status');
@@ -55,6 +60,7 @@ Route::middleware(['auth'])->group(function () {
         });
 
         Route::prefix('punishment')->group(function () {
+            Route::get('/', [PunishmentController::class, 'index'])->name('punishment.index');
             Route::post('/', [PunishmentController::class, 'store'])->name('punishment.store');
             Route::delete('/', [PunishmentController::class, 'bulkDelete'])->name('punishment.bulk.delete');
             Route::delete('/{punishment}', [PunishmentController::class, 'delete'])->name('punishment.delete');

@@ -27,10 +27,7 @@ export const formatDuty = (totalMinutes: number | null | undefined): string => {
     return `${formattedHours}:${formattedMinutes}`;
 };
 
-export const formatDate = (
-    date_string: string | undefined,
-    fallback: string = '',
-) => {
+export const formatDate = (date_string: string | null, fallback: string = '') => {
     if (!date_string) {
         return fallback;
     }

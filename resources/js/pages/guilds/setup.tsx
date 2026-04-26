@@ -6,9 +6,9 @@ import { feature_registry } from '@/features/config/features';
 import FinishView from '@/features/finish-view';
 import GeneralSettings from '@/features/general-settings';
 import ModulesView from '@/features/modules-view';
+import UserDetailsView from '@/features/user-details';
 import AppLayout from '@/layouts/app-layout';
 import type { Guild, GuildSettings } from '@/types';
-import UserDetailsView from '@/features/user-details';
 
 const MANDATORY_VIEWS = ['general_settings', 'user_details', 'modules'];
 

@@ -14,15 +14,6 @@ class GuildService
 {
     use ServiceTrait;
 
-    private ?Guild $guild;
-
-    private ?string $lang = null;
-
-    public function loadModel(?Guild $guild = null, ?string $guild_id = null): void
-    {
-        $this->guild = $guild ?? Guild::findOrFail($guild_id);
-        $this->lang = $this->guild->lang_code;
-    }
 
     /**
      * @throws Throwable
@@ -32,7 +23,7 @@ class GuildService
         DB::beginTransaction();
 
         try {
-            $this->guild = Guild::createOrRestore(
+            $guild = Guild::createOrRestore(
                 ['id' => $data['id']],
                 [
                     'name' => $data['name'],
@@ -41,11 +32,11 @@ class GuildService
                 ]
             );
 
-            ActivityLog::make($this->guild->id, null, null, ActionTypeEnum::ADD_BOT_TO_GUILD, $data);
+            ActivityLog::make($guild->id, null, null, ActionTypeEnum::ADD_BOT_TO_GUILD, $data);
 
             DB::commit();
 
-            return $this->guild;
+            return $guild;
 
         } catch (Throwable $exception) {
             DB::rollBack();

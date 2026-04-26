@@ -2,39 +2,29 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Actions\JoinUserToGuildAction;
+use App\DTO\ServiceResponseDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreGuildUserRequest;
-use App\Models\Guild;
-use App\Models\User;
-use App\Services\GuildService;
+use App\Http\Requests\ToggleDutyRequest;
+use App\Services\Api\GuildUserService;
 
 class GuildUserController extends Controller
 {
     public function __construct(
-        private readonly GuildService $service
+        private readonly GuildUserService $service
     ) {}
 
-    public function store(StoreGuildUserRequest $request)
+    public function store(StoreGuildUserRequest $request): ServiceResponseDTO
     {
         $data = $request->validated();
 
-        $guild = Guild::findOrFail($data['guild_id']);
+        return $this->service->addUserToGuild($data);
+    }
 
-        $user = User::findOrCreate($data['user_id'], [
-            'name' => $data['name'],
-            'lang_code' => $data['language'] ?? $guild->lang_code,
-        ]);
+    public function toggleDuty(ToggleDutyRequest $request): ServiceResponseDTO
+    {
+        $data = $request->validated();
 
-        $added_by = null;
-        if (isset($data['added_by'])) {
-            $added_by = User::findOrFail($data['added_by']);
-        }
-
-        $guild_user = JoinUserToGuildAction::run($user, $guild, $data['ic_name'], $data['details'] ?? [], $data['is_request'], $added_by);
-
-        return response()->json([
-            'guild_user' => $guild_user,
-        ]);
+        return $this->service->toggleDuty($data);
     }
 }

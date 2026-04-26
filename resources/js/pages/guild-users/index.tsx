@@ -383,13 +383,11 @@ export default function UserManagerView({
                                     link.url &&
                                     router.get(
                                         link.url,
+                                        {},
                                         {
-                                            search: debounced_search,
-                                            per_page: per_page_amount,
-                                            sort: sort_column,
-                                            direction: sort_direction,
+                                            preserveState: true,
+                                            preserveScroll: true
                                         },
-                                        { preserveScroll: true },
                                     )
                                 }
                                 dangerouslySetInnerHTML={{ __html: link.label }}

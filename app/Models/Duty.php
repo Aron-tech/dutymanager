@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\DutyStatusEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['user_id', 'guild_id', 'guild_user_id', 'value', 'started_at', 'finished_at', 'status'])]
@@ -41,5 +42,29 @@ class Duty extends Model
         $minutes = $value - 60 * $hours;
 
         return sprintf('%02d:%02d', $hours, $minutes);
+    }
+
+    /**
+     * @return BelongsTo
+     */
+    public function guildUser(): BelongsTo
+    {
+        return $this->belongsTo(GuildUser::class);
+    }
+
+    /**
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo
+     */
+    public function guild(): BelongsTo
+    {
+        return $this->belongsTo(Guild::class);
     }
 }

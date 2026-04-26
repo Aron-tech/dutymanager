@@ -6,6 +6,7 @@ enum ActionTypeEnum: string
 {
     case FIRST_LOGIN_TO_WEBSITE = 'first_login_to_website';
     case ADD_USER_TO_GUILD = 'add_user_to_guild';
+    case ADD_USER_TO_GUILD_WITH_RESTORE = 'add_user_to_guild_with_restore';
     case UPDATE_USER_TO_GUILD = 'update_user_to_guild';
     case DELETE_USER_FROM_GUILD = 'delete_user_from_guild';
 
@@ -18,11 +19,19 @@ enum ActionTypeEnum: string
 
     case ADD_DUTY_TO_GUILD_USER = 'add_duty_to_guild_user';
     case UPDATE_DUTY_TO_GUILD_USER = 'update_duty_to_guild_user';
+    case CANCELED_DUTY_FROM_GUILD_USER = 'canceled_duty_from_guild_user';
     case DELETE_DUTY_FROM_GUILD_USER = 'delete_duty_from_guild_user';
 
     case ADD_PUNISHMENT_TO_GUILD_USER = 'add_punishment_to_guild_user';
     case DELETE_PUNISHMENT_FROM_GUILD_USER = 'delete_punishment_from_guild_user';
     case SETUP_GUILD = 'setup_guild';
+
+    // DEFAULT logs
+    case ON_DUTY = 'on_duty';
+    case OFF_DUTY = 'off_duty';
+    case CANCEL_GUILD = 'cancel_duty';
+
+    case REQUEST_JOIN_GUILD = 'request_join_guild';
 
     /**
      * @return array

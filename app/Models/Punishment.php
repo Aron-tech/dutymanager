@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ActionTypeEnum;
 use App\Enums\PunishmentTypeEnum;
 use App\Services\SelectedGuildService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -25,8 +26,8 @@ class Punishment extends Model
     public static function make(?GuildUser $guild_user, ?User $target_user, ?Guild $guild, PunishmentTypeEnum $type, ?int $level, string $reason, ?string $expires_at, ?User $created_by): ?Punishment
     {
 
-        $guild_id = $guild_user ? $guild_user->guild_id : ($guild ? $guild->id : SelectedGuildService::get());
-        $target_user_id = $guild_user ? $guild_user->user_id : ($target_user?->id);
+        $guild_id = $guild_user?->guild_id ?: ($guild?->id ?: SelectedGuildService::get()?->id);
+        $target_user_id = $guild_user?->user_id ?: ($target_user?->id);
 
         if (empty($guild_id)) {
             return null;
@@ -39,7 +40,7 @@ class Punishment extends Model
             $level++;
         }
 
-        return self::create([
+        $punishment = self::create([
             'user_id' => $target_user_id,
             'guild_id' => $guild_id,
             'guild_user_id' => $guild_user->id,
@@ -49,6 +50,10 @@ class Punishment extends Model
             'expires_at' => $expires_at ?: null,
             'created_by' => $created_by?->id ?: auth()->id(),
         ]);
+
+        ActivityLog::make($guild_id, $created_by?->id, $target_user_id, ActionTypeEnum::ADD_PUNISHMENT_TO_GUILD_USER, $punishment->toArray());
+
+        return $punishment;
     }
 
     public function createdByUser(): BelongsTo

@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-react';
+import { Users, LayoutGrid, Gavel, History, Shirt, Car } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -16,17 +16,44 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
-
 const footerNavItems: NavItem[] = [];
 
 export function AppSidebar() {
+    const mainNavItems: NavItem[] = [
+        {
+            title: 'Kezdőlap',
+            href: dashboard(),
+            icon: LayoutGrid,
+        },
+        {
+            title: 'Ruházatok',
+            href: route('items.index', { type: 'clothing' }),
+            icon: Shirt,
+        },
+        {
+            title: 'Járművek',
+            href: route('items.index', { type: 'vehicle' }),
+            icon: Car,
+        }
+    ];
+    const adminNavItems: NavItem[] = [
+        {
+            title: 'Panel',
+            href: route('guild.users.index'),
+            icon: Users,
+        },
+        {
+            title: 'Büntetések',
+            href: route('punishment.index'),
+            icon: Gavel,
+        },
+        {
+            title: 'Duty log',
+            href: route('duty.index'),
+            icon: History,
+        }
+    ];
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -34,7 +61,7 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <Link href={dashboard()} prefetch>
-                                <AppLogo />
+                                    <AppLogo />
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -42,7 +69,8 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain title="Általános" items={mainNavItems} />
+                <NavMain title="Admin" items={adminNavItems} />
             </SidebarContent>
 
             <SidebarFooter>
