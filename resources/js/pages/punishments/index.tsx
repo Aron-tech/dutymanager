@@ -307,7 +307,6 @@ export default function PunishmentsIndexView({
             <div className="container mx-auto space-y-6 px-4 py-8">
                 <div>
                     <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                        <ShieldAlert className="h-6 w-6 text-destructive" />
                         Összes Büntetés
                     </h2>
                     <p className="text-sm text-muted-foreground mt-1">Szerveren lévő büntetések kezelése és visszavonása. Összesen: {punishments?.total || 0} bejegyzés.</p>

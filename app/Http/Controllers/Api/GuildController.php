@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AddBotToGuildRequest;
 use App\Models\Guild;
 use App\Services\Api\GuildService;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class GuildController extends Controller
 {
@@ -23,43 +23,8 @@ class GuildController extends Controller
         $this->service->addBotToGuild($validated_data);
     }
 
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function getGuildSettings(Guild $guild): JsonResponse
     {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Guild $guild)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Guild $guild)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Guild $guild)
-    {
-        //
+        return $guild->guildSettings->toJson();
     }
 }

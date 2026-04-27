@@ -1,10 +1,10 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\Api\GuildController;
+
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
-
-Route::middleware('auth:sanctum')->group(function () {});
+Route::prefix('/guild')->group(function () {
+    Route::post('/add', [GuildController::class, 'addBot']);
+    Route::get('/{guild}', [GuildController::class, 'getGuildSettings']);
+});

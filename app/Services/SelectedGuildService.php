@@ -9,34 +9,42 @@ class SelectedGuildService
 {
     public const string SESSION_KEY = 'selected_guild_id';
 
+    private static ?Guild $resolved_guild = null;
+
     public static function set(Guild $guild): void
     {
-        Session::put(self::SESSION_KEY, $guild->id);
+        self::$resolved_guild = $guild;
+
+        if (config('session.driver') !== null && ! request()->is('api/*')) {
+            Session::put(self::SESSION_KEY, $guild->id);
+        }
     }
 
     public static function get(): ?Guild
     {
-        return once(function () {
-            $id = Session::get(self::SESSION_KEY);
+        if (self::$resolved_guild) {
+            return self::$resolved_guild;
+        }
 
-            if (! $id) {
+        return once(function () {
+            if (! Session::has(self::SESSION_KEY)) {
                 return null;
             }
 
-            return Guild::with('guildSettings')->find($id);
+            self::$resolved_guild = Guild::with('guildSettings')->find(Session::get(self::SESSION_KEY));
+
+            return self::$resolved_guild;
         });
     }
 
-    /*
-     * @return bool
-     */
     public static function isSelected(): bool
     {
-        return Session::has(self::SESSION_KEY);
+        return self::$resolved_guild !== null || Session::has(self::SESSION_KEY);
     }
 
     public static function clear(): void
     {
+        self::$resolved_guild = null;
         Session::forget(self::SESSION_KEY);
     }
 }

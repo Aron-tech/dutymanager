@@ -7,22 +7,10 @@ use App\Models\Guild;
 use App\Models\User;
 use App\Services\SelectedGuildService;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
-    public function register(): void
-    {
-        //
-    }
-
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         Gate::before(function (User $user, string $ability) {
@@ -31,17 +19,34 @@ class AuthServiceProvider extends ServiceProvider
                 return true;
             }
 
-            $guild = SelectedGuildService::get();
+            $guild = once(function () {
+                if ($resolved = SelectedGuildService::get()) {
+                    return $resolved;
+                }
 
-            if (! $guild) {
+                $route_guild = request()->route('guild');
+
+                if ($route_guild instanceof Guild) {
+                    SelectedGuildService::set($route_guild);
+
+                    return $route_guild;
+                }
+
                 $guild_id = request()->input('guild_id')
-                        ?? request()->header('X-Guild-ID')
-                        ?? request()->route('guild')?->id;
+                    ?? request()->header('guild_id')
+                    ?? (is_scalar($route_guild) ? $route_guild : null);
 
                 if ($guild_id) {
                     $guild = Guild::find($guild_id);
+                    if ($guild) {
+                        SelectedGuildService::set($guild);
+                    }
+
+                    return $guild;
                 }
-            }
+
+                return null;
+            });
 
             if (! $guild) {
                 return null;
@@ -51,7 +56,9 @@ class AuthServiceProvider extends ServiceProvider
                 return true;
             }
 
-            $guild_user = $guild->acceptedGuildUsers()->where('user_id', $user->id)->first();
+            $guild_user = once(function () use ($guild, $user) {
+                return $guild->acceptedGuildUsers()->where('user_id', $user->id)->first();
+            });
 
             if (! $guild_user) {
                 return false;
@@ -61,7 +68,7 @@ class AuthServiceProvider extends ServiceProvider
                 return true;
             }
 
-            $permissions = $guild_user->getPermissionsAttribute();
+            $permissions = $guild_user->permissions;
 
             if (empty($permissions)) {
                 return false;

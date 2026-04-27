@@ -2,7 +2,9 @@
 
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\InitializeApiContextMiddleware;
 use App\Http\Middleware\SetLanguageMiddleware;
+use App\Http\Middleware\VerifyApiTokenMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -24,6 +26,14 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             SetLanguageMiddleware::class,
+        ]);
+
+        $middleware->api(append: [
+            VerifyApiTokenMiddleware::class,
+        ]);
+
+        $middleware->alias([
+            'api.context' => InitializeApiContextMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

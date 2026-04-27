@@ -47,4 +47,6 @@ return [
         'url' => env('BOT_API_URL', 'http://localhost:3000'),
         'key' => env('BOT_API_KEY'),
     ],
+
+    'api_key' => env('API_KEY'),
 ];
