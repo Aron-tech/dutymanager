@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Users, LayoutGrid, Gavel, History, Shirt, Car } from 'lucide-react';
+import { Users, LayoutGrid, Gavel, History, Shirt, Car, ActivitySquare } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -51,6 +51,11 @@ export function AppSidebar() {
             title: 'Duty log',
             href: route('duty.index'),
             icon: History,
+        },
+        {
+            title: 'Aktivitás Napló',
+            href: route('activity-log.index'),
+            icon: ActivitySquare,
         }
     ];
 

@@ -17,7 +17,7 @@ class InitializeApiContextMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $user_id = $request->header('user_id');
+        $user_id = $request->header('user-id');
 
         if ($user_id) {
             $user = User::find($user_id);

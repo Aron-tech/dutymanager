@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Concerns\ServiceTrait;
 use App\DTO\ServiceResponseDTO;
+use App\Enums\PermissionEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreGuildUserRequest;
 use App\Http\Requests\ToggleDutyRequest;
 use App\Http\Requests\UpdateRolesGuildUserRequest;
 use App\Services\Api\GuildUserService;
+use Illuminate\Http\JsonResponse;
 
 class GuildUserController extends Controller
 {
+    use ServiceTrait;
+
     public function __construct(
         private readonly GuildUserService $service
     ) {}
@@ -22,17 +27,21 @@ class GuildUserController extends Controller
         return $this->service->addUserToGuild($data);
     }
 
-    public function toggleDuty(ToggleDutyRequest $request): ServiceResponseDTO
+    public function toggleDuty(ToggleDutyRequest $request): JsonResponse
     {
+        if (auth()->user()->cannot(PermissionEnum::TOGGLE_DUTY)) {
+            return response()->json($this->makeResponse(false, null, __('app.error_no_permission'), 401));
+        }
+
         $data = $request->validated();
 
-        return $this->service->toggleDuty($data);
+        return response()->json($this->service->toggleDuty($data));
     }
 
     public function updateRoles(UpdateRolesGuildUserRequest $request)
     {
         $validated = $request->validated();
 
-        return $this->service->updateRoles($validated);
+        return response()->json($this->service->updateRoles($validated));
     }
 }

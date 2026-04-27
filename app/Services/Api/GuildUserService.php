@@ -6,13 +6,14 @@ use App\Actions\DeleteActiveDutyAction;
 use App\Actions\JoinUserToGuildAction;
 use App\Concerns\ServiceTrait;
 use App\DTO\ServiceResponseDTO;
-use App\Enums\ActionTypeEnum;
 use App\Enums\DutyActionEnum;
 use App\Enums\FeatureEnum;
 use App\Models\ActivityLog;
 use App\Models\Guild;
 use App\Models\GuildUser;
 use App\Models\User;
+use App\Services\DiscordFetchService;
+use App\Services\SelectedGuildService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -50,7 +51,7 @@ class GuildUserService
 
     public function toggleDuty(array $data): ServiceResponseDTO
     {
-        $guild = Guild::with('guildSettings')->findOrFail($data['guild_id']);
+        $guild = SelectedGuildService::get();
 
         if (! $guild->guildSettings->isEnabledFeature(FeatureEnum::DUTY)) {
             return $this->makeResponse(false, null, __('app.feature_not_enabled'), 400);
@@ -62,25 +63,40 @@ class GuildUserService
                 $result = [];
                 $message = '';
 
-                if ($data['action'] !== DutyActionEnum::CANCEL_DUTY->value) {
+                if ($data['duty_action'] !== DutyActionEnum::CANCEL_DUTY->value) {
                     $result = $guild_user->duty();
                     $success = ! empty($result['duty_action']);
                     if ($success) {
-                        ActivityLog::make($guild->id, $guild_user->user_id, null, ActionTypeEnum::from($result['duty_action']), $result['duty_model']->toArray());
+                        $result['duty_action'] = $result['duty_action']->value;
                     }
                 } else {
                     $result['duty_model'] = $guild_user->currentDuty()->firstOrFail();
+                    $result['duty_action'] = DutyActionEnum::CANCEL_DUTY->value;
                     $success = DeleteActiveDutyAction::run($result['duty_model'], ($data['forced_by'] ?? null));
                 }
 
-                switch ($data['action']) {
+                $duty_role = null;
+                if ($success) {
+                    $duty_role = $guild->guildSettings->getFeatureSettings(FeatureEnum::DUTY, 'duty_role_id');
+                }
+
+                switch ($result['duty_action']) {
                     case DutyActionEnum::ON_DUTY->value:
+                        if ($duty_role) {
+                            DiscordFetchService::addRoleToMember($guild->id, $guild_user->user_id, $duty_role);
+                        }
                         $message = __('duty.success_duty_on');
                         break;
                     case DutyActionEnum::OFF_DUTY->value:
+                        if ($duty_role) {
+                            DiscordFetchService::removeRoleFromMember($guild->id, $guild_user->user_id, $duty_role);
+                        }
                         $message = __('duty.success_duty_off');
                         break;
                     case DutyActionEnum::CANCEL_DUTY->value:
+                        if ($duty_role) {
+                            DiscordFetchService::removeRoleFromMember($guild->id, $guild_user->user_id, $duty_role);
+                        }
                         if (! empty($data['forced_by'])) {
                             $message = __('duty.success_duty_forced_cancel', ['user' => $guild_user->user->name]);
                         } else {
@@ -112,14 +128,15 @@ class GuildUserService
 
             if (! $updated) {
                 DB::rollBack();
-                return $this->makeResponse(false, 'Nem található elfogadott felhasználó a megadott azonosítókkal.');
+
+                return $this->makeResponse(false, null, __('app.error_action'), 400);
             }
 
             Cache::forget("guild_{$data['guild_id']}_user_{$data['user_id']}_permissions");
 
             DB::commit();
 
-            return $this->makeResponse(true);
+            return $this->makeResponse(false, null, __('app.success_action'));
 
         } catch (Throwable $e) {
             DB::rollBack();
@@ -130,7 +147,7 @@ class GuildUserService
                 'exception' => $e,
             ]);
 
-            return $this->makeResponse(false, 'Sajnos hiba történt a mentés során.');
+            return $this->makeResponse(false, null, __('app.error_action'), 400);
         }
     }
 }

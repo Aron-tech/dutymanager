@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\DutyStatusEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -38,8 +39,8 @@ class Duty extends Model
      */
     public static function standardFormat(int $value): string
     {
-        $hours = $value / 60;
-        $minutes = $value - 60 * $hours;
+        $hours = intdiv($value, 60);
+        $minutes = $value % 60;
 
         return sprintf('%02d:%02d', $hours, $minutes);
     }
@@ -66,5 +67,14 @@ class Duty extends Model
     public function guild(): BelongsTo
     {
         return $this->belongsTo(Guild::class);
+    }
+
+    /**
+     * @param Builder $query
+     * @return Builder
+     */
+    public function scopeActiveDuties(Builder $query): Builder
+    {
+        return $query->whereNull('finished_at');
     }
 }

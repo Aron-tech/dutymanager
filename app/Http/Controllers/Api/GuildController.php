@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AddBotToGuildRequest;
+use App\Http\Requests\IndexGuildSettingsRequest;
 use App\Models\Guild;
 use App\Services\Api\GuildService;
 use Illuminate\Http\JsonResponse;
@@ -23,8 +24,9 @@ class GuildController extends Controller
         $this->service->addBotToGuild($validated_data);
     }
 
-    public function getGuildSettings(Guild $guild): JsonResponse
+    public function getGuildSettings(IndexGuildSettingsRequest $request): JsonResponse
     {
-        return $guild->guildSettings->toJson();
+        $data = $request->validated();
+        return response()->json($this->service->getGuildSettings($data));
     }
 }

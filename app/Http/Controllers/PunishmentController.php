@@ -37,7 +37,7 @@ class PunishmentController extends Controller
             ->map(function ($gu) {
                 return [
                     'id' => $gu->id,
-                    'label' => ($gu->ic_name ? $gu->ic_name.' - ' : '').($gu->name ?? 'Ismeretlen'),
+                    'label' => ($gu->ic_name ? $gu->ic_name.' - ' : '').($gu->user->name ?? 'Ismeretlen'),
                     'full_user' => $gu,
                 ];
             })->toArray();

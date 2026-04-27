@@ -44,4 +44,9 @@ class GuildService
             throw $exception;
         }
     }
+
+    public function getGuildSettings(array $data)
+    {
+        $guild = Guild::find($data['guild_id']);
+    }
 }

@@ -1,16 +1,16 @@
- <?php
+<?php
 
-use App\Http\Controllers\Auth\DiscordController;
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\DutyController;
 use App\Http\Controllers\GuildController;
- use App\Http\Controllers\GuildSettingsController;
- use App\Http\Controllers\GuildUserController;
+use App\Http\Controllers\GuildSettingsController;
+use App\Http\Controllers\GuildUserController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PunishmentController;
+use App\Http\Controllers\SetupController;
 use App\Http\Middleware\RequireGuildSetupMiddleware;
 use App\Http\Middleware\SelectedGuildMiddleware;
-use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -45,7 +45,6 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/image/{image}', [GuildUserController::class, 'showImage'])->name('guild.users.image.show');
             Route::post('/{guild_user}/image', [GuildUserController::class, 'storeImage'])->name('guild.users.image.store');
             Route::delete('/image/{image}', [GuildUserController::class, 'deleteImage'])->name('guild.users.image.delete');
-            Route::delete('/{guild_user}', [GuildUserController::class, 'delete'])->name('guild.users.delete');
             Route::delete('/', [GuildUserController::class, 'bulkDelete'])->name('guild.users.bulk.delete');
         });
 
@@ -70,6 +69,10 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('item')->group(function () {
             Route::get('/', [ItemController::class, 'index'])->name('items.index');
             Route::post('/', [ItemController::class, 'store'])->name('items.store');
+        });
+
+        Route::prefix('activity-log')->group(function () {
+            Route::get('/', [ActivityLogController::class, 'index'])->name('activity-log.index');
         });
     });
 });

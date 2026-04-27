@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ActionTypeEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable(['guild_id', 'user_id', 'target_id', 'action', 'details', 'created_at'])]
 class ActivityLog extends Model
@@ -18,6 +19,16 @@ class ActivityLog extends Model
             'details' => 'json',
             'created_at' => 'datetime',
         ];
+    }
+
+    public function actor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    public function target(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'target_id', 'id');
     }
 
     /**

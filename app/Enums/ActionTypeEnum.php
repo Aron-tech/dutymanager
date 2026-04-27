@@ -43,4 +43,9 @@ enum ActionTypeEnum: string
     {
         return array_column(self::cases(), 'value');
     }
+
+    public function getLabel(): string
+    {
+        return __('log.'.$this->value);
+    }
 }

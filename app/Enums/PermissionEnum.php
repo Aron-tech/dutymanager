@@ -33,6 +33,7 @@ enum PermissionEnum: string
     case VIEW_DUTIES = 'view_duties';
     case VIEW_DUTIES_STATS = 'view_duties_stats';
     case VIEW_PUNISHMENTS = 'view_punishments';
+    case VIEW_LOGS = 'view_logs';
 
     // Szerver szintű jogok
     case EDIT_SETTINGS = 'edit_settings';

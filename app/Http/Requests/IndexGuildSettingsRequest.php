@@ -2,11 +2,12 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\DutyActionEnum;
+use App\Enums\FeatureEnum;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Enum;
 
-class ToggleDutyRequest extends FormRequest
+class IndexGuildSettingsRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,10 +25,9 @@ class ToggleDutyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'guild_id' => ['required', 'string', 'exists:guild_users,guild_id'],
-            'user_id' => ['required', 'string', 'exists:guild_users,user_id'],
-            'duty_action' => ['required', 'string', 'in:on_duty,off_duty,cancel_duty'],
-            'forced_by' => ['nullable', 'exists:users,id'],
+            'guild_id' => ['required', 'string', 'exists:guilds,id'],
+            'feature' => ['required', new Enum(FeatureEnum::class)],
+            'settings_name' => ['nullable', 'string'],
         ];
     }
 }

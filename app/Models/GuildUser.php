@@ -148,7 +148,7 @@ class GuildUser extends Model
                 'status' => DutyStatusEnum::CURRENT_PERIOD,
             ]);
 
-            ActivityLog::make($this->guild_id, $this->user_id, null, ActionTypeEnum::ON_DUTY);
+            ActivityLog::make($this->guild_id, $this->user_id, null, ActionTypeEnum::ON_DUTY, $current_duty->toArray());
 
             return ['duty_model' => $current_duty, 'duty_action' => DutyActionEnum::ON_DUTY];
         }
@@ -160,7 +160,7 @@ class GuildUser extends Model
                 'value' => $diff_in_minutes,
             ]);
 
-            ActivityLog::make($this->guild_id, $this->user_id, null, ActionTypeEnum::OFF_DUTY);
+            ActivityLog::make($this->guild_id, $this->user_id, null, ActionTypeEnum::OFF_DUTY, $current_duty->toArray());
 
             return ['duty_model' => $current_duty, 'duty_action' => DutyActionEnum::OFF_DUTY];
         } else {
