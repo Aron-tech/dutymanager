@@ -100,6 +100,8 @@ class PunishmentService
             $is_deleted = $punishment->delete();
 
             ActivityLog::make($guild->id, auth()->id(), null, ActionTypeEnum::DELETE_PUNISHMENT_FROM_GUILD_USER, $punishment_id_array);
+
+            return $is_deleted;
         });
     }
 

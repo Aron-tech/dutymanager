@@ -77,10 +77,11 @@ class PunishmentController extends Controller
         }
 
         try {
-            $type = $punishment->type->getLabel();
-            $this->service->delete($punishment);
+            if (! $this->service->delete($punishment)) {
+                abort(400, 'app.error_action');
+            }
 
-            return back()->with('success', 'Sikeresen visszavonva a(z) '.$type.'.');
+            return back()->with('success', 'Sikeresen visszavonva a büntetést!');
         } catch (Throwable $e) {
             Log::error($e);
 
