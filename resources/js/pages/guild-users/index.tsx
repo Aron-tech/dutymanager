@@ -94,7 +94,7 @@ export default function UserManagerView({
             { id: 'user_id', label: 'Discord ID', required: true },
             { id: 'global_name', label: 'Discord Név', required: true },
             { id: 'ic_name', label: 'IC Név', required: true },
-            { id: 'punishments', label: 'Büntetések', required: true },
+            { id: 'statuses', label: 'Státuszok', required: true },
         ];
         const config_cols = safe_user_details.map((config) => ({
             id: `detail_${config.name}`,
@@ -214,8 +214,11 @@ return;
                     render_func = (row: GuildUser) => row.user?.name;
                 } else if (col.id === 'ic_name') {
                     render_func = (row: GuildUser) => <span className="font-semibold">{row.ic_name}</span>;
-                } else if (col.id === 'punishments') {
-                    render_func = (row: any) => <PunishmentsCell punishments={row.active_punishments || row.activePunishments || []} />;
+                } else if (col.id === 'statuses') {
+                    render_func = (row: any) => <PunishmentsCell
+                        punishments={row.active_punishments || row.activePunishments || []}
+                        active_holiday={row.active_holiday || row.activeHoliday || null}
+                    />;
                 } else if (col.id === 'current_duty') {
                     render_func = (row: GuildUser) => <Badge>{formatDuty(row.current_period_duties_sum_value)}</Badge>;
                 } else if (col.id === 'all_duty') {

@@ -54,6 +54,7 @@ class GuildUserService
                     $q->where('guild_id', $guild->id)
                         ->with('createdByUser:id,name');
                 },
+                'activeHoliday',
             ])
             ->withCount(['activePunishments' => function ($q) use ($guild) {
                 $q->where('guild_id', $guild->id);
