@@ -84,7 +84,7 @@ export default function PunishmentsCell({
         <TooltipProvider delayDuration={150}>
             <div className="flex items-center gap-2">
                 {active_holiday && (
-                    <Tooltip key="holiday">
+                    <Tooltip key="holiday" closeDelay={0}>
                         <TooltipTrigger className="cursor-help transition-all hover:scale-105 focus:outline-none">
                             <div className="relative flex h-8 w-8 items-center justify-center rounded-full border text-muted-foreground hover:text-emerald-500 bg-muted border-border shadow-sm">
                                 <Palmtree className="h-4 w-4" />
@@ -156,7 +156,7 @@ export default function PunishmentsCell({
                         config.color.match(/bg-[^\s]+/g)?.join(' ') || '';
 
                     return (
-                        <Tooltip key={type}>
+                        <Tooltip key={type} closeDelay={0}>
                             <TooltipTrigger className="cursor-help transition-all hover:scale-105 focus:outline-none">
                                 <div
                                     className={`relative flex h-8 w-8 items-center justify-center rounded-full border ${config.color} shadow-sm`}
