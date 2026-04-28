@@ -6,6 +6,7 @@ use App\Concerns\ServiceTrait;
 use App\DTO\ServiceResponseDTO;
 use App\Enums\PermissionEnum;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\DeleteGuildUserRequest;
 use App\Http\Requests\Api\StoreGuildUserRequest;
 use App\Http\Requests\ToggleDutyRequest;
 use App\Http\Requests\UpdateRolesGuildUserRequest;
@@ -27,10 +28,18 @@ class GuildUserController extends Controller
         return $this->service->addUserToGuild($data);
     }
 
+    public function delete(DeleteGuildUserRequest $request)
+    {
+        if (auth()->user()->cannot(PermissionEnum::DELETE_GUILD_USERS)) {
+            return response()->json($this->makeResponse(false, null, __('app.error_no_permission'), 403));
+        }
+
+    }
+
     public function toggleDuty(ToggleDutyRequest $request): JsonResponse
     {
         if (auth()->user()->cannot(PermissionEnum::TOGGLE_DUTY)) {
-            return response()->json($this->makeResponse(false, null, __('app.error_no_permission'), 401));
+            return response()->json($this->makeResponse(false, null, __('app.error_no_permission'), 403));
         }
 
         $data = $request->validated();

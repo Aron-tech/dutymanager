@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DutyStatusEnum;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
@@ -79,6 +80,23 @@ class Guild extends Model
     public function items(): HasMany
     {
         return $this->hasMany(Item::class);
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function guildRoles(): HasMany
+    {
+        return $this->hasMany(GuildRole::class);
+    }
+
+    /**
+     * @param Builder $query
+     * @return Builder
+     */
+    public function scopeInstalled(Builder $query): Builder
+    {
+        return $query->where('is_installed', true);
     }
 
     /**
