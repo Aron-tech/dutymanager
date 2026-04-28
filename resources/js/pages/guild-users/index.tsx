@@ -28,6 +28,7 @@ import { useDebounce } from '@/hooks/use-debounce';
 import AppLayout from '@/layouts/app-layout';
 import { formatDuty } from '@/lib/utils';
 import EditDutyModal from '@/pages/guild-users/_edit-duty-modal';
+import EditHolidayModal from '@/pages/guild-users/_edit-holiday-modal';
 import EditPunishmentModal from '@/pages/guild-users/_edit-punishment-modal';
 import type { GuildUser, UserManagerProps } from '@/types';
 import CreateEditUserModal from './_create-edit-modal';
@@ -70,6 +71,7 @@ export default function UserManagerView({
     const [edit_user, setEditUser] = useState<GuildUser | null>(null);
     const [duty_user, setDutyUser] = useState<GuildUser | null>(null);
     const [punishment_user, setPunishmentUser] = useState<GuildUser | null>(null);
+    const [holiday_user, setHolidayUser] = useState<GuildUser | null>(null);
     const [gallery_user, setGalleryUser] = useState<GuildUser | null>(null);
 
     const [delete_state, setDeleteState] = useState<{
@@ -105,6 +107,7 @@ export default function UserManagerView({
             { id: 'all_duty', label: 'Összes Duty', required: true },
             { id: 'joined_at', label: 'Csatlakozott', required: true },
         ];
+
         return [...base_cols, ...config_cols, ...duty_cols];
     }, [safe_user_details]);
 
@@ -127,6 +130,7 @@ export default function UserManagerView({
     useEffect(() => {
         if (!is_mounted.current) {
             is_mounted.current = true;
+
             return;
         }
 
@@ -164,7 +168,10 @@ export default function UserManagerView({
     };
 
     const confirmDelete = () => {
-        if (delete_state.ids.length === 0) return;
+        if (delete_state.ids.length === 0) {
+return;
+}
+
         setDeleteState((prev) => ({ ...prev, is_processing: true }));
 
         const is_single = delete_state.ids.length === 1;
@@ -183,7 +190,10 @@ export default function UserManagerView({
     };
 
     const confirmAccept = () => {
-        if (!accept_state.id) return;
+        if (!accept_state.id) {
+return;
+}
+
         setAcceptState((prev) => ({ ...prev, is_processing: true }));
 
         router.put(route('guild.users.accept', accept_state.id), {}, {
@@ -197,17 +207,26 @@ export default function UserManagerView({
             .filter((col) => visible_columns.includes(col.id))
             .map((col) => {
                 let render_func;
-                if (col.id === 'user_id') render_func = (row: GuildUser) => row.user_id;
-                else if (col.id === 'global_name') render_func = (row: GuildUser) => row.user?.name;
-                else if (col.id === 'ic_name') render_func = (row: GuildUser) => <span className="font-semibold">{row.ic_name}</span>;
-                else if (col.id === 'punishments') render_func = (row: any) => <PunishmentsCell punishments={row.active_punishments || row.activePunishments || []} />;
-                else if (col.id === 'current_duty') render_func = (row: GuildUser) => <Badge>{formatDuty(row.current_period_duties_sum_value)}</Badge>;
-                else if (col.id === 'all_duty') render_func = (row: GuildUser) => formatDuty(row.all_period_duties_sum_value);
-                else if (col.id === 'joined_at') render_func = (row: GuildUser) => row.joined_ago;
-                else if (col.id.startsWith('detail_')) {
+
+                if (col.id === 'user_id') {
+                    render_func = (row: GuildUser) => row.user_id;
+                } else if (col.id === 'global_name') {
+                    render_func = (row: GuildUser) => row.user?.name;
+                } else if (col.id === 'ic_name') {
+                    render_func = (row: GuildUser) => <span className="font-semibold">{row.ic_name}</span>;
+                } else if (col.id === 'punishments') {
+                    render_func = (row: any) => <PunishmentsCell punishments={row.active_punishments || row.activePunishments || []} />;
+                } else if (col.id === 'current_duty') {
+                    render_func = (row: GuildUser) => <Badge>{formatDuty(row.current_period_duties_sum_value)}</Badge>;
+                } else if (col.id === 'all_duty') {
+                    render_func = (row: GuildUser) => formatDuty(row.all_period_duties_sum_value);
+                } else if (col.id === 'joined_at') {
+                    render_func = (row: GuildUser) => row.joined_ago;
+                } else if (col.id.startsWith('detail_')) {
                     const key = col.id.replace('detail_', '');
                     render_func = (row: GuildUser) => row.details?.[key] || '-';
                 }
+
                 return { id: col.id, label: col.label, sortable: true, render: render_func };
             });
     }, [column_definitions, visible_columns]);
@@ -240,9 +259,12 @@ export default function UserManagerView({
             return (
                 <UserTableActions
                     user={row}
-                    onEdit={(u) => { setEditUser(u); setIsModalOpen(true); }}
+                    onEdit={(u) => {
+ setEditUser(u); setIsModalOpen(true);
+}}
                     onShowDuties={(u) => setDutyUser(u)}
                     onShowPunishments={(u) => setPunishmentUser(u)}
+                    onShowHolidays={(u) => setHolidayUser(u)}
                     onShowGallery={(u) => setGalleryUser(u)}
                     onDelete={(u) => setDeleteState({ is_open: true, ids: [u.id], is_processing: false })}
                 />
@@ -272,7 +294,9 @@ export default function UserManagerView({
                         <Button
                             className="w-full shadow-sm"
                             variant="default"
-                            onClick={() => { setEditUser(null); setIsModalOpen(true); }}
+                            onClick={() => {
+ setEditUser(null); setIsModalOpen(true);
+}}
                         >
                             <Plus className="mr-2 h-4 w-4" /> Új felhasználó
                         </Button>
@@ -364,7 +388,9 @@ export default function UserManagerView({
 
             <CreateEditUserModal
                 is_open={is_modal_open}
-                onClose={() => { setIsModalOpen(false); setEditUser(null); }}
+                onClose={() => {
+                 setIsModalOpen(false); setEditUser(null);
+                }}
                 edit_user={edit_user}
                 user_details_config={safe_user_details}
                 unattached_guild_users={unattached_guild_users}
@@ -374,6 +400,7 @@ export default function UserManagerView({
 
             <EditDutyModal is_open={!!duty_user} onClose={() => setDutyUser(null)} user={duty_user} />
             <EditPunishmentModal is_open={!!punishment_user} onClose={() => setPunishmentUser(null)} user={punishment_user} />
+            <EditHolidayModal is_open={!!holiday_user} onClose={() => setHolidayUser(null)} user={holiday_user} />
             <UserImageGallery user={gallery_user} onClose={() => setGalleryUser(null)} />
 
             <ConfirmDeleteDialog

@@ -13,13 +13,8 @@ class Holiday extends Model
 {
     use SoftDeletes;
 
-    /**
-     * @param GuildUser $guild_user
-     * @param string $reason
-     * @param int $duration_in_days
-     * @param int $holiday_start_delay_days
-     * @return Holiday|null
-     */
+    public $timestamps = false;
+
     public static function make(GuildUser $guild_user, string $reason, int $duration_in_days, int $holiday_start_delay_days = 0): ?Holiday
     {
         $has_active_holiday = $guild_user->activeHoliday()->exists();
@@ -46,25 +41,16 @@ class Holiday extends Model
         return $holiday;
     }
 
-    /**
-     * @return BelongsTo
-     */
     public function guildUser(): BelongsTo
     {
         return $this->belongsTo(GuildUser::class);
     }
 
-    /**
-     * @return BelongsTo
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * @return BelongsTo
-     */
     public function guild(): BelongsTo
     {
         return $this->belongsTo(Guild::class);

@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Users, LayoutGrid, Gavel, History, Shirt, Car, ActivitySquare } from 'lucide-react';
+import { Users, LayoutGrid, Gavel, History, Shirt, Car, ActivitySquare, CalendarOff } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -46,6 +46,11 @@ export function AppSidebar() {
             title: 'Büntetések',
             href: route('punishment.index'),
             icon: Gavel,
+        },
+        {
+            title: 'Szabadságok',
+            href: route('holiday.index'),
+            icon: CalendarOff,
         },
         {
             title: 'Duty log',

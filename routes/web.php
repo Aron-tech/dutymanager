@@ -1,16 +1,18 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\Auth\DiscordController;
 use App\Http\Controllers\DutyController;
 use App\Http\Controllers\GuildController;
 use App\Http\Controllers\GuildSettingsController;
 use App\Http\Controllers\GuildUserController;
+use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PunishmentController;
-use App\Http\Controllers\SetupController;
 use App\Http\Middleware\RequireGuildSetupMiddleware;
 use App\Http\Middleware\SelectedGuildMiddleware;
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -42,6 +44,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{guild_user}/image', [GuildUserController::class, 'getImagesData'])->name('guild.users.image');
             Route::get('/{guild_user}/duties', [GuildUserController::class, 'getDutiesData'])->name('guild.users.duties');
             Route::get('/{guild_user}/punishments', [GuildUserController::class, 'getPunishmentsData'])->name('guild.users.punishments');
+            Route::get('/{guild_user}/holidays', [GuildUserController::class, 'getHolidaysData'])->name('guild.users.holidays');
             Route::get('/image/{image}', [GuildUserController::class, 'showImage'])->name('guild.users.image.show');
             Route::post('/{guild_user}/image', [GuildUserController::class, 'storeImage'])->name('guild.users.image.store');
             Route::delete('/image/{image}', [GuildUserController::class, 'deleteImage'])->name('guild.users.image.delete');
@@ -64,6 +67,12 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/', [PunishmentController::class, 'store'])->name('punishment.store');
             Route::delete('/', [PunishmentController::class, 'bulkDelete'])->name('punishment.bulk.delete');
             Route::delete('/{punishment}', [PunishmentController::class, 'delete'])->name('punishment.delete');
+        });
+
+        Route::prefix('holiday')->group(function () {
+            Route::get('/', [HolidayController::class, 'index'])->name('holiday.index');
+            Route::delete('/', [HolidayController::class, 'bulkDelete'])->name('holiday.bulk.delete');
+            Route::delete('/{holiday}', [HolidayController::class, 'delete'])->name('holiday.delete');
         });
 
         Route::prefix('item')->group(function () {

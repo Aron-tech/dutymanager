@@ -168,6 +168,17 @@ class GuildUserController extends Controller
         ]);
     }
 
+    public function getHolidaysData(GuildUser $guild_user): JsonResponse
+    {
+        if (auth()->user()->cannot(PermissionEnum::VIEW_GUILD_USERS)) {
+            abort(403, __('app.error_no_permission'));
+        }
+
+        $guild_user->load(['holidays']);
+
+        return response()->json($guild_user->holidays);
+    }
+
     public function getImagesData(GuildUser $guild_user): JsonResponse
     {
         if (auth()->user()->cannot(PermissionEnum::VIEW_GUILD_USERS)) {

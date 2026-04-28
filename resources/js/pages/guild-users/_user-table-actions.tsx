@@ -5,6 +5,7 @@ import {
     ImageIcon,
     Trash2,
     Shield,
+    CalendarOff,
 } from 'lucide-react';
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,7 @@ interface UserTableActionsProps {
     user: GuildUser;
     onEdit: (user: GuildUser) => void;
     onShowDuties: (user: GuildUser) => void;
+    onShowHolidays: (user: GuildUser) => void;
     onShowGallery: (user: GuildUser) => void;
     onShowPunishments: (user: GuildUser) => void;
     onDelete: (user: GuildUser) => void;
@@ -31,6 +33,7 @@ export default function UserTableActions({
     user,
     onEdit,
     onShowDuties,
+    onShowHolidays,
     onShowPunishments,
     onShowGallery,
     onDelete,
@@ -42,7 +45,7 @@ export default function UserTableActions({
                     <MoreVertical className="h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => onEdit(user)}>
                     <Edit className="mr-2 h-4 w-4" /> Szerkesztés
                 </DropdownMenuItem>
@@ -53,6 +56,10 @@ export default function UserTableActions({
 
                 <DropdownMenuItem onClick={() => onShowPunishments(user)}>
                     <Shield className="mr-2 h-4 w-4" /> Büntetések kezelése
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => onShowHolidays(user)}>
+                    <CalendarOff className="mr-2 h-4 w-4" /> Szabadság előzmények
                 </DropdownMenuItem>
 
                 <DropdownMenuItem onClick={() => onShowGallery(user)}>
