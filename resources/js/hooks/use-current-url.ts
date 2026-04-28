@@ -28,32 +28,45 @@ export type UseCurrentUrlReturn = {
 
 export function useCurrentUrl(): UseCurrentUrlReturn {
     const page = usePage();
-    const currentUrlPath = new URL(
+    const currentUrlObject = new URL(
         page.url,
         typeof window !== 'undefined'
             ? window.location.origin
             : 'http://localhost',
-    ).pathname;
+    );
+    const currentUrlPath = currentUrlObject.pathname;
 
     const isCurrentUrl: IsCurrentUrlFn = (
         urlToCheck: NonNullable<InertiaLinkProps['href']>,
         currentUrl?: string,
         startsWith: boolean = false,
     ) => {
-        const urlToCompare = currentUrl ?? currentUrlPath;
         const urlString = toUrl(urlToCheck);
 
-        const comparePath = (path: string): boolean =>
-            startsWith ? urlToCompare.startsWith(path) : path === urlToCompare;
-
-        if (!urlString.startsWith('http')) {
-            return comparePath(urlString);
-        }
-
         try {
-            const absoluteUrl = new URL(urlString);
+            const checkUrlObject = new URL(urlString, 'http://localhost');
+            const checkPath = checkUrlObject.pathname;
 
-            return comparePath(absoluteUrl.pathname);
+            const compareUrlObject = currentUrl
+                ? new URL(currentUrl, 'http://localhost')
+                : currentUrlObject;
+            const urlToComparePath = compareUrlObject.pathname;
+
+            const pathMatches = startsWith
+                ? urlToComparePath.startsWith(checkPath)
+                : checkPath === urlToComparePath;
+
+            if (!pathMatches) {
+                return false;
+            }
+
+            for (const [key, value] of checkUrlObject.searchParams.entries()) {
+                if (compareUrlObject.searchParams.get(key) !== value) {
+                    return false;
+                }
+            }
+
+            return true;
         } catch {
             return false;
         }
