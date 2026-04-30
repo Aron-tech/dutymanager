@@ -6,6 +6,7 @@ use App\Enums\PermissionEnum;
 use App\Models\Guild;
 use App\Models\GuildSettings;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -23,7 +24,6 @@ readonly class GuildSettingsService
         DB::transaction(function () use ($guild_settings, $enabled_features, $settings): void {
             $feature_settings = $guild_settings->feature_settings ?? [];
 
-            // User Details konfiguráció kezelése
             if (isset($settings['user_details']['config']) && is_array($settings['user_details']['config'])) {
                 $guild_settings->user_details_config = $settings['user_details']['config'];
                 unset($settings['user_details']['config']);
@@ -60,7 +60,7 @@ readonly class GuildSettingsService
     private function syncGuildRoles(Guild $guild, array $general_settings): void
     {
         $mode = Arr::get($general_settings, 'mode', 'preset');
-        $role_permissions = [];
+        $should_reset_cache = false;
 
         if ($mode === 'preset') {
             $preset_roles = Arr::get($general_settings, 'preset_roles', []);
@@ -83,6 +83,7 @@ readonly class GuildSettingsService
                 $existing_roles[$role_id]->update(['permissions' => $permissions]);
                 $existing_roles->forget($role_id);
             } else {
+                $should_reset_cache = true;
                 $guild->guildRoles()->create([
                     'role_id' => $role_id,
                     'permissions' => $permissions,
@@ -91,7 +92,15 @@ readonly class GuildSettingsService
         }
 
         foreach ($existing_roles as $role) {
+            $should_reset_cache = true;
             $role->delete();
+        }
+
+        if ($should_reset_cache) {
+            $accepted_user_ids = $guild->acceptedGuildUsers()->pluck('user_id');
+            foreach ($accepted_user_ids as $accepted_user_id) {
+                Cache::forget("guild_{$guild->id}_user_{$accepted_user_id}_permissions");
+            }
         }
     }
 

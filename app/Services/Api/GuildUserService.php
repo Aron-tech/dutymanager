@@ -124,7 +124,6 @@ class GuildUserService
         DB::beginTransaction();
 
         try {
-            Log::info($data['role_ids']);
             $updated = GuildUser::where('guild_id', $guild->id)->where('user_id', $data['user_id'])->accepted()->update(['cached_roles' => $data['role_ids']]);
 
             if ($updated < 1) {

@@ -188,4 +188,21 @@ class GuildUser extends Model
 
         return $permissions;
     }
+
+    /**
+     * @return bool
+     */
+    public function hasActiveHoliday(): bool
+    {
+        return $this->activeHoliday->exists();
+    }
+
+    /**
+     * @param string $role_id
+     * @return bool
+     */
+    public function hasRole(string $role_id): bool
+    {
+        return in_array($role_id, $this->cached_roles ?? []);
+    }
 }
