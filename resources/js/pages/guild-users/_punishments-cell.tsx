@@ -96,7 +96,6 @@ export default function PunishmentsCell({
                             className="max-w-2xl min-w-[450px] overflow-hidden border-border/50 p-0 shadow-xl"
                         >
                             <div className="flex items-center gap-2 border-b border-border/50 px-4 py-3 bg-muted">
-                                <Palmtree className="h-4 w-4" />
                                 <p className="text-sm font-bold text-foreground">
                                     Szabadság
                                 </p>
@@ -177,11 +176,10 @@ export default function PunishmentsCell({
                                 <div
                                     className={`flex items-center gap-2 border-b border-border/50 px-4 py-3 ${bgClass}`}
                                 >
-                                    {config.icon}
                                     <p className="text-sm font-bold text-foreground">
                                         {config.label}{' '}
                                         <span className="font-medium opacity-70">
-                                            ({items.length} db)
+                                            - {items.length} db
                                         </span>
                                     </p>
                                 </div>
