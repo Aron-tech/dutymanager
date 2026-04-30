@@ -23,9 +23,17 @@ class GuildSettingsController extends Controller
 
         $guild->load('guildSettings');
 
+        $initial_enabled_features = $guild_settings->features ?? [];
+
+        $initial_settings = $guild_settings->feature_settings ?? [];
+        if (isset($guild_settings->user_details_config)) {
+            $initial_settings['user_details'] = $guild_settings->user_details_config;
+        }
+
         return Inertia::render('guilds/settings', [
-            'guild_data' => $guild,
-            'enabled_features' => $guild->guildSettings->pluck('features')->toArray(),
+            'guild' => $guild,
+            'initialSettings' => $initial_settings,
+            'initialEnabledFeatures' => $initial_enabled_features,
         ]);
     }
 
