@@ -8,7 +8,6 @@ use App\Concerns\ServiceTrait;
 use App\DTO\ServiceResponseDTO;
 use App\Enums\DutyActionEnum;
 use App\Enums\FeatureEnum;
-use App\Models\ActivityLog;
 use App\Models\Guild;
 use App\Models\GuildUser;
 use App\Models\User;
@@ -114,35 +113,37 @@ class GuildUserService
         }
     }
 
-    public function updateRoles(array $data): ServiceResponseDTO
+    /**
+     * @param Guild $guild
+     * @param array $data
+     * @return ServiceResponseDTO
+     * @throws Throwable
+     */
+    public function updateRoles(Guild $guild, array $data): ServiceResponseDTO
     {
         DB::beginTransaction();
 
         try {
-            $updated = GuildUser::where('guild_id', $data['guild_id'])
-                ->where('user_id', $data['user_id'])
-                ->accepted()
-                ->update([
-                    'cached_roles' => $data['role_ids'],
-                ]);
+            Log::info($data['role_ids']);
+            $updated = GuildUser::where('guild_id', $guild->id)->where('user_id', $data['user_id'])->accepted()->update(['cached_roles' => $data['role_ids']]);
 
-            if (! $updated) {
+            if ($updated < 1) {
                 DB::rollBack();
 
                 return $this->makeResponse(false, null, __('app.error_action'), 400);
             }
 
-            Cache::forget("guild_{$data['guild_id']}_user_{$data['user_id']}_permissions");
+            Cache::forget("guild_{$guild->id}_user_{$data['user_id']}_permissions");
 
             DB::commit();
 
-            return $this->makeResponse(false, null, __('app.success_action'));
+            return $this->makeResponse(true, null, __('app.success_action'));
 
         } catch (Throwable $e) {
             DB::rollBack();
 
             Log::error('Hiba a rangok frissítésekor: '.$e->getMessage(), [
-                'guild_id' => $data['guild_id'] ?? null,
+                'guild_id' => $guild->id ?? null,
                 'user_id' => $data['user_id'] ?? null,
                 'exception' => $e,
             ]);

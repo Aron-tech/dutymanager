@@ -10,8 +10,10 @@ use App\Http\Requests\Api\DeleteGuildUserRequest;
 use App\Http\Requests\Api\StoreGuildUserRequest;
 use App\Http\Requests\ToggleDutyRequest;
 use App\Http\Requests\UpdateRolesGuildUserRequest;
+use App\Models\Guild;
 use App\Services\Api\GuildUserService;
 use Illuminate\Http\JsonResponse;
+use Throwable;
 
 class GuildUserController extends Controller
 {
@@ -47,10 +49,13 @@ class GuildUserController extends Controller
         return response()->json($this->service->toggleDuty($data));
     }
 
-    public function updateRoles(UpdateRolesGuildUserRequest $request)
+    /**
+     * @throws Throwable
+     */
+    public function updateRoles(Guild $guild, UpdateRolesGuildUserRequest $request)
     {
         $validated = $request->validated();
 
-        return response()->json($this->service->updateRoles($validated));
+        return response()->json($this->service->updateRoles($guild, $validated));
     }
 }
