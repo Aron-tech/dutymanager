@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\LanguageEnum;
+use App\Enums\PermissionEnum;
 use App\Http\Requests\UpdateGuildRequest;
 use App\Http\Requests\UpdateGuildSettingsRequest;
 use App\Models\Guild;
+use App\Services\DiscordFetchService;
 use App\Services\GuildSettingsService;
 use App\Services\SelectedGuildService;
 use Illuminate\Http\RedirectResponse;
@@ -20,20 +23,53 @@ class GuildSettingsController extends Controller
     public function index(): Response
     {
         $guild = SelectedGuildService::get();
+        $guild_settings = $guild->guildSettings;
 
-        $guild->load('guildSettings');
+        $initial_settings = $guild_settings?->feature_settings ?? [];
 
-        $initial_enabled_features = $guild_settings->features ?? [];
+        $initial_settings['general'] = $initial_settings['general'] ?? [];
+        $initial_settings['general']['mode'] = $initial_settings['general']['mode'] ?? 'preset';
 
-        $initial_settings = $guild_settings->feature_settings ?? [];
-        if (isset($guild_settings->user_details_config)) {
-            $initial_settings['user_details'] = $guild_settings->user_details_config;
+        $role_permissions = [];
+        foreach ($guild->guildRoles as $guild_role) {
+            foreach ($guild_role->permissions as $permission) {
+                $role_permissions[] = [
+                    'role_id' => $guild_role->role_id,
+                    'permission' => $permission,
+                ];
+            }
         }
+        $initial_settings['general']['role_permissions'] = $role_permissions;
+
+        $user_details_data = $initial_settings['user_details'] ?? [];
+        $user_details_data['config'] = $guild_settings?->user_details_config ?? [];
+        $initial_settings['user_details'] = $user_details_data;
+
+        $languages = collect(LanguageEnum::cases())->map(fn ($lang) => [
+            'value' => $lang->value,
+            'label' => $lang->getLabel(),
+        ]);
+
+        $permissions = collect(PermissionEnum::cases())->map(fn ($perm) => [
+            'value' => $perm->value,
+            'label' => $perm->getLabel(),
+        ]);
+
+        $discord_roles = DiscordFetchService::getGuildRoles($guild->id, true);
+        $discord_text_channels = DiscordFetchService::getGuildChannels($guild->id, true, [0, 5]);
+        $discord_voice_channels = DiscordFetchService::getGuildChannels($guild->id, true, [2]);
 
         return Inertia::render('guilds/settings', [
             'guild' => $guild,
             'initialSettings' => $initial_settings,
-            'initialEnabledFeatures' => $initial_enabled_features,
+            'initialEnabledFeatures' => $guild_settings?->features ?? [],
+            'context_data' => [
+                'languages' => $languages,
+                'permissions' => $permissions,
+                'discord_roles' => $discord_roles,
+                'discord_voice_channels' => $discord_voice_channels,
+                'discord_text_channels' => $discord_text_channels,
+            ],
         ]);
     }
 
@@ -41,7 +77,7 @@ class GuildSettingsController extends Controller
     {
         $validated = $request->validated();
 
-        $guild_settings = $guild->guildSettings()->first(['guild_id' => $guild->guild_id]);
+        $guild_settings = SelectedGuildService::get()->guildSettings;
 
         $this->guildSettingsService->updateSettings($guild_settings, $validated['enabled_features'], $validated['settings']);
 

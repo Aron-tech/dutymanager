@@ -34,7 +34,7 @@ class GuildSettings extends Model
 
     public function guild(): BelongsTo
     {
-        return $this->belongsTo(Guild::class, 'guild_id', 'guild_id');
+        return $this->belongsTo(Guild::class, 'guild_id', 'id');
     }
 
     public function isEnabledFeature(FeatureEnum $feature): bool
@@ -42,7 +42,7 @@ class GuildSettings extends Model
         return in_array($feature->value, $this->features);
     }
 
-    public function getFeatureSettings(FeatureEnum $feature, $settings_name = null): string|int|float|array|null
+    public function getFeatureSettings(FeatureEnum $feature, ?string $settings_name, mixed $fallback = null): mixed
     {
         if (isset($this->feature_settings[$feature->value])) {
             if (is_null($settings_name)) {
@@ -52,7 +52,7 @@ class GuildSettings extends Model
             }
         }
 
-        return null;
+        return $fallback;
     }
 
     public function setFeatureSettings(FeatureEnum $feature, ?string $settings_name, mixed $settings_value): void

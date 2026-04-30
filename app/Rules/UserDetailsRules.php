@@ -15,7 +15,11 @@ class UserDetailsRules implements ValidationRule
             'settings.user_details.require_real_name' => ['nullable', 'boolean'],
             'settings.user_details.name_format' => ['nullable', 'string'],
             'settings.user_details.log_channel_id' => ['nullable', 'string'],
+
             'settings.user_details.config' => ['nullable', 'array'],
+            'settings.user_details.config.*.name' => ['required_with:settings.user_details.config', 'string'],
+            'settings.user_details.config.*.type' => ['required_with:settings.user_details.config', 'string', 'in:int,string,boolean'], // módosítsd a támogatott típusokra
+            'settings.user_details.config.*.required' => ['required_with:settings.user_details.config', 'boolean'],
         ];
     }
 
@@ -23,6 +27,7 @@ class UserDetailsRules implements ValidationRule
     {
         return [];
     }
+
 
     /**
      * Run the validation rule.

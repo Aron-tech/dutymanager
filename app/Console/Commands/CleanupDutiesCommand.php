@@ -6,18 +6,33 @@ use App\Models\Duty;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
-#[Signature('app:cleanup-duties-command')]
+#[Signature('app:cleanup-duties-command {--loud : Output progress information}')]
 #[Description('Command description')]
 class CleanupDutiesCommand extends Command
 {
     /**
      * Execute the console command.
+     *
+     * @return void
+     * @throws \Throwable
      */
-    public function handle()
+    public function handle(): void
     {
-        $invalid_limit = now()->addHours(14);
+        $is_loud = $this->option('loud');
+        $invalid_limit = now()->subHours(14);
 
-        Duty::activeDuties()->where('started_at', '>', $invalid_limit)->delete();
+        if ($is_loud) {
+            $this->info('Automatic invalid duties deleting started.');
+        }
+
+        $deleted_duties = DB::transaction(function () use ($invalid_limit) {
+            return Duty::query()->activeDuties()->where('started_at', '<', $invalid_limit)->delete();
+        });
+
+        if ($is_loud) {
+            $this->info('Deleted '.$deleted_duties.' duty(ies).');
+        }
     }
 }

@@ -35,6 +35,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/guilds/setup/features', [GuildController::class, 'saveFeatures'])->name('guild.setup.features.save')->middleware([HandlePrecognitiveRequests::class]);
         Route::post('/guilds/setup/feature/{feature_id}', [GuildController::class, 'saveFeatureSettings'])->name('guild.setup.feature.save')->middleware([HandlePrecognitiveRequests::class]);
         Route::post('/guilds/setup/finish', [GuildController::class, 'finish'])->name('guild.setup.finish');
+        Route::put('/guild/settings', [GuildSettingsController::class, 'update'])->name('guild.settings.update');
 
         Route::prefix('panel')->group(function () {
             Route::get('/', [GuildUserController::class, 'index'])->name('guild.users.index');

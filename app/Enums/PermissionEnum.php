@@ -4,6 +4,13 @@ namespace App\Enums;
 
 enum PermissionEnum: string
 {
+    // Kategórizálás
+    const string USER_GROUP = 'user_group';
+
+    const string MODERATOR_GROUP = 'moderator_group';
+
+    const string ADMIN_GROUP = 'admin_group';
+
     // Összes jogosultság
     case ALL = 'all';
 
@@ -42,6 +49,7 @@ enum PermissionEnum: string
     case TOGGLE_DUTY = 'toggle_duty';
     case GET_HOLIDAY = 'get_holiday';
     case CANCEL_HOLIDAY = 'cancel_holiday';
+    case MAKE_REQUEST = 'make_request';
 
     public static function getOptions(): array
     {
@@ -51,5 +59,36 @@ enum PermissionEnum: string
     public function getLabel(?string $lang = null): string
     {
         return __('permission.'.$this->value, [], $lang);
+    }
+
+    public function getGroupPermissions(string $group): array
+    {
+        $default_permissions = [
+            PermissionEnum::TOGGLE_DUTY,
+            PermissionEnum::CANCEL_HOLIDAY,
+            PermissionEnum::GET_HOLIDAY,
+            PermissionEnum::MAKE_REQUEST,
+        ];
+
+        switch ($group) {
+            case PermissionEnum::USER_GROUP:
+                return $default_permissions;
+            case PermissionEnum::MODERATOR_GROUP:
+                return array_merge($default_permissions, [
+                    PermissionEnum::VIEW_GUILD_USERS,
+                    PermissionEnum::VIEW_DUTIES,
+                    PermissionEnum::VIEW_DUTIES_STATS,
+                    PermissionEnum::VIEW_PUNISHMENTS,
+                    PermissionEnum::ADD_DUTIES,
+                    PermissionEnum::ADD_VERBAL_WARNING,
+                    PermissionEnum::DELETE_VERBAL_WARNING,
+                    PermissionEnum::ADD_WARNING,
+                    PermissionEnum::DELETE_WARNING,
+                ]);
+            case PermissionEnum::ADMIN_GROUP:
+                return [
+                    PermissionEnum::ALL,
+                ];
+        }
     }
 }
