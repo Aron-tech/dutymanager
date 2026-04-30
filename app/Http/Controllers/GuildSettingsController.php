@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateGuildRequest;
+use App\Http\Requests\UpdateGuildSettingsRequest;
+use App\Models\Guild;
 use App\Services\SelectedGuildService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -10,6 +12,10 @@ use Inertia\Response;
 
 class GuildSettingsController extends Controller
 {
+    public function __construct(
+        private readonly GuildSettingsService $guildSettingsService
+    ) {}
+
     public function index(): Response
     {
         $guild = SelectedGuildService::get();
@@ -22,11 +28,14 @@ class GuildSettingsController extends Controller
         ]);
     }
 
-    public function updateGeneral(UpdateGuildRequest $request): RedirectResponse
+    public function update(UpdateGuildSettingsRequest $request, Guild $guild): RedirectResponse
     {
-        $guild = SelectedGuildService::get();
-        $guild->update($request->validated());
+        $validated = $request->validated();
 
-        return back()->with('success', __('app.settings_updated'));
+        $guild_settings = $guild->guildSettings()->first(['guild_id' => $guild->guild_id]);
+
+        $this->guildSettingsService->updateSettings($guild_settings, $validated['enabled_features'], $validated['settings']);
+
+        return back()->with('success', __('Beállítások sikeresen mentve.'));
     }
 }

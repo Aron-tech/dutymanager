@@ -37,10 +37,6 @@ class GuildSettings extends Model
         return $this->belongsTo(Guild::class, 'guild_id', 'guild_id');
     }
 
-    /**
-     * @param FeatureEnum $feature
-     * @return bool
-     */
     public function isEnabledFeature(FeatureEnum $feature): bool
     {
         return in_array($feature->value, $this->features);
@@ -57,5 +53,14 @@ class GuildSettings extends Model
         }
 
         return null;
+    }
+
+    public function setFeatureSettings(FeatureEnum $feature, ?string $settings_name, mixed $settings_value): void
+    {
+        if (is_null($settings_name)) {
+            $this->feature_settings[$feature->value] = $settings_value;
+        } else {
+            $this->feature_settings[$feature->value][$settings_name] = $settings_value;
+        }
     }
 }

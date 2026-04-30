@@ -1,129 +1,84 @@
-import { Head } from '@inertiajs/react';
-import { LayoutGrid, Settings2, ShieldCheck, Wrench } from 'lucide-react';
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+// resources/js/pages/guilds/settings.tsx
+import { FormEventHandler, useState } from 'react';
+import { useForm, usePage } from '@inertiajs/react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FeatureEnum } from '@/features/config/features'; // Ellenőrizd, hogy a FeatureEnum import útvonala helyes-e!
-import DutyManagerView from '@/features/duty-manager/view';
-import GeneralSettings from '@/features/general-settings';
-import ModulesView from '@/features/modules-view';
-import RankSystemView from '@/features/rank-system/view';
-import WarningSystemView from '@/features/warning-system/view';
-import AppLayout from '@/layouts/app-layout';
-import type { Guild } from '@/types';
+import { Button } from '@/components/ui/button';
+import GeneralSettingsTab from './tabs/general-settings-tab';
+import DutyManagerTab from './tabs/duty-manager-tab';
+import WarningSystemTab from './tabs/warning-system-tab';
 
-interface SettingsProps {
-    guild_data: Guild & { guildSettings?: any[] }; // Típus kiterjesztése a relációval
-    enabled_features: string[];
-}
+export default function GuildSettings() {
+    const { guild, initialSettings, initialEnabledFeatures } = usePage().props;
 
-export default function SettingsPage({ guild_data, enabled_features }: SettingsProps) {
+    const { data, setData, put, processing, errors, isDirty } = useForm({
+        enabled_features: initialEnabledFeatures as string[],
+        settings: initialSettings as Record<string, any>,
+    });
 
-    // Konfigurációs nézetek dinamikus betöltése
-    const renderFeatureConfig = (feature_id: string) => {
-        // A guildSettings relációból keressük ki az adott modulhoz tartozó adatokat
-        const current_settings = guild_data.guildSettings?.find(s => s.feature === feature_id)?.settings || {};
+    const [activeTab, setActiveTab] = useState('general');
 
-        const props = {
-            guild_id: guild_data.id,
-            initial_data: current_settings,
-            is_settings_mode: true
-        };
+    const toggleFeature = (feature: string, enabled: boolean) => {
+        setData('enabled_features', enabled
+            ? [...data.enabled_features, feature]
+            : data.enabled_features.filter(f => f !== feature)
+        );
+    };
 
-        // Switch a megfelelő nézet kiválasztására
-        switch (feature_id) {
-            case FeatureEnum.DUTY_MANAGER:
-                return <DutyManagerView {...props} />;
-            case FeatureEnum.RANK_SYSTEM:
-                return <RankSystemView {...props} />;
-            case FeatureEnum.WARNING_SYSTEM:
-                return <WarningSystemView {...props} />;
-            default:
-                return null;
-        }
+    const updateSetting = (feature: string, key: string, value: any) => {
+        setData('settings', {
+            ...data.settings,
+            [feature]: {
+                ...data.settings[feature],
+                [key]: value
+            }
+        });
+    };
+
+    const submit: FormEventHandler = (e) => {
+        e.preventDefault();
+        // Live validation kiegészíthető itt Zod schemas parse-szal mentés előtt
+        put(route('guilds.settings.update', guild.id), {
+            preserveScroll: true,
+        });
     };
 
     return (
-        <AppLayout>
-            <Head title="Szerver beállítások" />
-
-            <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-8">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Beállítások</h1>
-                    <p className="text-muted-foreground">Módosítsd a szerver működését és a modulok konfigurációját.</p>
-                </div>
-
-                <Tabs defaultValue="general" className="w-full space-y-6">
-                    <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-                        <TabsTrigger value="general" className="flex gap-2">
-                            <Settings2 className="h-4 w-4" /> Alapok
-                        </TabsTrigger>
-                        <TabsTrigger value="features" className="flex gap-2">
-                            <LayoutGrid className="h-4 w-4" /> Modulok
-                        </TabsTrigger>
-                        <TabsTrigger value="config" className="flex gap-2">
-                            <Wrench className="h-4 w-4" /> Konfiguráció
-                        </TabsTrigger>
-                    </TabsList>
-
-                    {/* ALAP BEÁLLÍTÁSOK */}
-                    <TabsContent value="general" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Általános beállítások</CardTitle>
-                                <CardDescription>Szervernév és alapvető paraméterek kezelése.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <GeneralSettings
-                                    initial_data={{ name: guild_data.name }}
-                                    submit_url={route('guild.settings.general.update')}
-                                    method="put"
-                                />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* MODULOK BE/KIKAPCSOLÁSA */}
-                    <TabsContent value="features">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Modulok kezelése</CardTitle>
-                                <CardDescription>Kapcsold be vagy ki a szerver funkcióit.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <ModulesView
-                                    initial_features={enabled_features}
-                                    submit_url={route('guild.setup.features.save')}
-                                />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* AKTÍV MODULOK RÉSZLETES KONFIGURÁCIÓJA */}
-                    <TabsContent value="config" className="space-y-6">
-                        {enabled_features.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center">
-                                <ShieldCheck className="mb-4 h-12 w-12 text-muted-foreground" />
-                                <h3 className="font-semibold">Nincs aktív modul</h3>
-                                <p className="text-sm text-muted-foreground">A konfigurációhoz előbb aktiválj egy modult a Modulok fül alatt.</p>
-                            </div>
-                        ) : (
-                            enabled_features.map((feature_id) => (
-                                <Card key={feature_id}>
-                                    <CardHeader>
-                                        <CardTitle className="capitalize">
-                                            {feature_id.replace('_', ' ')} Beállítások
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        {renderFeatureConfig(feature_id)}
-                                    </CardContent>
-                                </Card>
-                            ))
-                        )}
-                    </TabsContent>
-                </Tabs>
+        <form onSubmit={submit} className="max-w-5xl mx-auto p-6 space-y-6">
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold">Guild Beállítások</h1>
+                <Button type="submit" disabled={!isDirty || processing}>
+                    Módosítások Mentése
+                </Button>
             </div>
-        </AppLayout>
+
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid grid-cols-4 w-full">
+                    <TabsTrigger value="general">Általános</TabsTrigger>
+                    <TabsTrigger value="duty_manager">Duty Manager</TabsTrigger>
+                    <TabsTrigger value="warning_system">Warning System</TabsTrigger>
+                    <TabsTrigger value="rank_system">Rank System</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="general" className="mt-6">
+                    <GeneralSettingsTab
+                        settings={data.settings.general}
+                        onChange={(k, v) => updateSetting('general', k, v)}
+                        errors={errors}
+                    />
+                </TabsContent>
+
+                <TabsContent value="duty_manager" className="mt-6">
+                    <DutyManagerTab
+                        isEnabled={data.enabled_features.includes('duty_manager')}
+                        onToggle={(enabled) => toggleFeature('duty_manager', enabled)}
+                        settings={data.settings.duty_manager}
+                        onChange={(k, v) => updateSetting('duty_manager', k, v)}
+                        errors={errors}
+                    />
+                </TabsContent>
+
+                {/* Warning System, Rank System Tabs... */}
+            </Tabs>
+        </form>
     );
 }

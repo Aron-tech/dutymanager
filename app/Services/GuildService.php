@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Actions\JoinUserToGuildAction;
 use App\Concerns\ServiceTrait;
 use App\Models\Guild;
-use App\Models\GuildSettings;
 use App\Models\GuildRole;
+use App\Models\GuildSettings;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -121,15 +121,15 @@ class GuildService
 
         // Convert preset mode to role_permissions logic if necessary, or if frontend already sends it in role_permissions we skip
         if ($mode === 'preset') {
-           $preset_roles = $settings['preset_roles'] ?? [];
-           $role_permissions = $this->generateRolePermissionsFromPreset($preset_roles);
+            $preset_roles = $settings['preset_roles'] ?? [];
+            $role_permissions = $this->generateRolePermissionsFromPreset($preset_roles);
         }
 
         // Group permissions by role_id
         $grouped_permissions = [];
         foreach ($role_permissions as $rp) {
             $role_id = $rp['role_id'];
-            if (!isset($grouped_permissions[$role_id])) {
+            if (! isset($grouped_permissions[$role_id])) {
                 $grouped_permissions[$role_id] = [];
             }
             $grouped_permissions[$role_id][] = $rp['permission'];
@@ -162,35 +162,35 @@ class GuildService
 
     private function generateRolePermissionsFromPreset(array $preset_roles): array
     {
-         $permissions = [];
+        $permissions = [];
 
-         // Define which preset category gets which permissions
-         // This is an example, you might want to adjust the actual permissions
-         $user_perms = ['view_duties', 'add_duties'];
-         $staff_perms = ['view_guild_settings', 'view_guild_users', 'view_duties_stats', 'edit_duties', 'delete_duties', 'add_punishments', 'add_warning', 'add_verbal_warning'];
-         $owner_perms = ['edit_settings', 'add_guild_users', 'edit_guild_users', 'delete_guild_users', 'delete_punishments', 'delete_blacklist', 'delete_warning', 'delete_verbal_warning', 'add_blacklist'];
+        // Define which preset category gets which permissions
+        // This is an example, you might want to adjust the actual permissions
+        $user_perms = ['view_duties', 'add_duties'];
+        $staff_perms = ['view_guild_settings', 'view_guild_users', 'view_duties_stats', 'edit_duties', 'delete_duties', 'add_punishments', 'add_warning', 'add_verbal_warning'];
+        $owner_perms = ['edit_settings', 'add_guild_users', 'edit_guild_users', 'delete_guild_users', 'delete_punishments', 'delete_blacklist', 'delete_warning', 'delete_verbal_warning', 'add_blacklist'];
 
-         // In frontend it mentions "A rendszer automatikusan szétosztja a funkciókhoz szükséges jogosultságokat a kategóriák alapján."
-         $preset_map = [
-             'user' => $user_perms,
-             'staff' => array_merge($user_perms, $staff_perms),
-             'owner' => ['*'] // wildcard for owners
-         ];
+        // In frontend it mentions "A rendszer automatikusan szétosztja a funkciókhoz szükséges jogosultságokat a kategóriák alapján."
+        $preset_map = [
+            'user' => $user_perms,
+            'staff' => array_merge($user_perms, $staff_perms),
+            'owner' => ['*'], // wildcard for owners
+        ];
 
-         foreach ($preset_map as $type => $perms) {
-             if (isset($preset_roles[$type]) && is_array($preset_roles[$type])) {
-                 foreach ($preset_roles[$type] as $role_id) {
-                     foreach ($perms as $perm) {
-                         $permissions[] = [
-                             'role_id' => $role_id,
-                             'permission' => $perm
-                         ];
-                     }
-                 }
-             }
-         }
+        foreach ($preset_map as $type => $perms) {
+            if (isset($preset_roles[$type]) && is_array($preset_roles[$type])) {
+                foreach ($preset_roles[$type] as $role_id) {
+                    foreach ($perms as $perm) {
+                        $permissions[] = [
+                            'role_id' => $role_id,
+                            'permission' => $perm,
+                        ];
+                    }
+                }
+            }
+        }
 
-         return $permissions;
+        return $permissions;
     }
 
     /**
@@ -237,5 +237,6 @@ class GuildService
             JoinUserToGuildAction::run($auth_user, $this->guild, '', [], false, $auth_user, false);
         });
     }
+
 
 }
