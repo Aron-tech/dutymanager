@@ -1,11 +1,11 @@
 // resources/js/pages/guilds/settings.tsx
-import { FormEventHandler, useState } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { FormEventHandler} from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import GeneralSettingsTab from './tabs/general-settings-tab';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DutyManagerTab from './tabs/duty-manager-tab';
-import WarningSystemTab from './tabs/warning-system-tab';
+import GeneralSettingsTab from './tabs/general-settings-tab';
 
 export default function GuildSettings() {
     const { guild, initialSettings, initialEnabledFeatures } = usePage().props;
@@ -36,7 +36,6 @@ export default function GuildSettings() {
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        // Live validation kiegészíthető itt Zod schemas parse-szal mentés előtt
         put(route('guilds.settings.update', guild.id), {
             preserveScroll: true,
         });

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdateGuildRequest;
 use App\Http\Requests\UpdateGuildSettingsRequest;
 use App\Models\Guild;
+use App\Services\GuildSettingsService;
 use App\Services\SelectedGuildService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
