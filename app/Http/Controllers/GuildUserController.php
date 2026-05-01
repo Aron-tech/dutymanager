@@ -49,7 +49,7 @@ class GuildUserController extends Controller
         $data = $request->validated();
         $is_request = $data['is_request'] ?? false;
 
-        if (! $is_request && auth()->user()->cannot(PermissionEnum::ADD_GUILD_USERS) || $is_request && auth()->user()->cannot(PermissionEnum::MAKE_REQUEST)) {
+        if (! $is_request && auth()->user()->cannot(PermissionEnum::ADD_GUILD_USERS)) {
             abort(403, __('app.error_no_permission'));
         }
 

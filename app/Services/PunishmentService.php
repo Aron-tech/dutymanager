@@ -103,7 +103,7 @@ class PunishmentService
         return DB::transaction(function () use ($punishment, $deleted_id, $guild) {
             $is_deleted = $punishment->delete();
 
-            ActivityLog::make($guild->id, auth()->id(), null, ActionTypeEnum::DELETE_PUNISHMENT_FROM_GUILD_USER, $deleted_id);
+            ActivityLog::make($guild->id, auth()->id(), null, ActionTypeEnum::DELETE_PUNISHMENT_FROM_GUILD_USER, [$deleted_id]);
 
             return $is_deleted;
         });

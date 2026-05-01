@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Enums\LanguageEnum;
 use App\Enums\PermissionEnum;
-use App\Http\Requests\UpdateGuildRequest;
 use App\Http\Requests\UpdateGuildSettingsRequest;
 use App\Models\Guild;
 use App\Services\DiscordFetchService;
@@ -22,6 +21,10 @@ class GuildSettingsController extends Controller
 
     public function index(): Response
     {
+        if (auth()->user()->cannot(PermissionEnum::VIEW_GUILD_SETTINGS)) {
+            abort(403, 'app.error_no_permission');
+        }
+
         $guild = SelectedGuildService::get();
         $guild_settings = $guild->guildSettings;
 
@@ -75,6 +78,10 @@ class GuildSettingsController extends Controller
 
     public function update(UpdateGuildSettingsRequest $request, Guild $guild): RedirectResponse
     {
+        if (auth()->user()->cannot(PermissionEnum::EDIT_SETTINGS)) {
+            abort(403, 'app.error_no_permission');
+        }
+
         $validated = $request->validated();
 
         $guild_settings = SelectedGuildService::get()->guildSettings;

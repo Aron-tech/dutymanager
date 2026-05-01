@@ -1,45 +1,47 @@
 import { usePage } from '@inertiajs/react';
 
 export function usePermissions() {
-    const { auth } = usePage().props;
+    const { auth } = usePage().props as any;
 
     const can = (permission: string) => {
-
-        if (auth.user.global_role === 'developer') {
+        if (auth?.user?.global_role === 'developer') {
             return true;
         }
 
-        if (!auth?.permissions) {
+        const permissions = Array.isArray(auth?.permissions) ? auth.permissions : [];
+
+        if (permissions.length === 0) {
             return false;
         }
 
-        if (auth.permissions.includes('all')) {
+        if (permissions.includes('all')) {
             return true;
         }
 
-        return auth.permissions.includes(permission);
+        return permissions.includes(permission);
     };
 
-    const canAny = (permissions: string[]) => {
-
-        if (auth.user.global_role === 'developer') {
+    const canAny = (requested_permissions: string[]) => {
+        if (auth?.user?.global_role === 'developer') {
             return true;
         }
 
-        if (!auth?.permissions) {
+        const permissions = Array.isArray(auth?.permissions) ? auth.permissions : [];
+
+        if (permissions.length === 0) {
             return false;
         }
 
-        if (auth.permissions.includes('all')) {
+        if (permissions.includes('all')) {
             return true;
         }
 
-        return permissions.some((p) => auth?.permissions?.includes(p) ?? false);
+        return requested_permissions.some((p) => permissions.includes(p));
     };
 
     return {
         can,
         canAny,
-        permissions: auth?.permissions || [],
+        permissions: Array.isArray(auth?.permissions) ? auth.permissions : [],
     };
 }

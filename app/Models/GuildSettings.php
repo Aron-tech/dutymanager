@@ -55,6 +55,19 @@ class GuildSettings extends Model
         return $fallback;
     }
 
+    public function getGeneralSettings(?string $settings_name, mixed $fallback = null): mixed
+    {
+        if (isset($this->feature_settings['general'])) {
+            if (is_null($settings_name)) {
+                return $this->feature_settings['general'];
+            } else {
+                return $this->feature_settings['general'][$settings_name];
+            }
+        }
+
+        return $fallback;
+    }
+
     public function setFeatureSettings(FeatureEnum $feature, ?string $settings_name, mixed $settings_value): void
     {
         if (is_null($settings_name)) {

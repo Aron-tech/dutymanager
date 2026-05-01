@@ -1,6 +1,7 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { ChevronRight, Plus, Server } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,6 +43,17 @@ export default function Selector({
     const { my_servers, pending_addition } = guilds;
     const [is_modal_open, setIsModalOpen] =
         useState<boolean>(show_request_modal);
+    const { props } = usePage();
+    const flash = props.flash as { success: string | null; error: string | null };
+
+    useEffect(() => {
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
 
     // 1. Modal nyitásának kezelése
     useEffect(() => {

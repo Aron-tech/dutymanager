@@ -75,7 +75,7 @@ class GuildController extends Controller
         }
 
         if ($access_level === 'pending') {
-            return back()->with('error', __('app.error_pending_approval'));
+            return back()->with('error', __('guild_user.error_pending_approval'));
         }
 
         $access_token = session('discord_access_token') ?? $user->access_token;
@@ -95,7 +95,7 @@ class GuildController extends Controller
             'guilds' => $guilds,
             'is_hidden_nav_items' => true,
             'show_request_modal' => true,
-            'target_discord_id' => (string) $guild->id,
+            'target_discord_id' => $guild->id,
             'modal_config_data' => $this->service->getRegistrationConfig($guild),
             'original_url' => route('guilds.selector'),
         ]);

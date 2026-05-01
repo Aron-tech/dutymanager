@@ -23,6 +23,7 @@ class SaveFeatureSettingsRequest extends FormRequest
         if ($featureId === 'general_settings') {
             $rules = array_merge($rules, [
                 'settings.lang' => ['required', 'string'],
+                'settings.default_role' => ['required', 'string'],
                 'settings.mode' => ['required', 'in:preset,custom'],
                 'settings.subscription_id' => ['nullable', 'string'],
 
@@ -77,6 +78,7 @@ class SaveFeatureSettingsRequest extends FormRequest
         return [
             'settings.required' => __('Kérlek, konfiguráld a beállításokat.'),
             'settings.lang.required' => __('A szerver nyelvének kiválasztása kötelező.'),
+            'settings.default_role.required' => __('Az alapértelmezett rang kiválasztása kötelező.'),
 
             // Mivel a required_if le lett cserélve exclude_unless-re, itt a sima "required" és "min" üzeneteket kell megadnunk
             'settings.preset_roles.user.required' => __('Az Alapértelmezett rang kiválasztása kötelező egyszerű módban.'),

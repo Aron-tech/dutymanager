@@ -29,6 +29,7 @@ const getDefaultSettings = (viewName: string) => {
     if (viewName === 'general_settings') {
         return {
             lang: 'hu',
+            default_role: '',
             mode: 'preset',
             preset_roles: { user: [], staff: [], owner: [] },
             role_permissions: [],

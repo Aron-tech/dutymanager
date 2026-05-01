@@ -179,6 +179,12 @@ class GuildUserService
                 'added_by' => $auth_user->id,
             ]);
 
+            $guild = $guild_user->guild;
+            $default_role = $guild->guildSettings?->feature_settings['general']['default_role'] ?? null;
+            if ($default_role) {
+                DiscordFetchService::addRoleToMember($guild->id, $guild_user->user_id, $default_role);
+            }
+
             ActivityLog::make($guild_user->guild_id, $auth_user->id, $guild_user->user_id, ActionTypeEnum::ACCEPTED_USER_TO_GUILD, $guild_user->toArray());
 
             DB::commit();

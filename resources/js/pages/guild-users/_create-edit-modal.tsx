@@ -1,4 +1,4 @@
-import { useForm } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import { Clock } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { toast } from 'sonner';
@@ -54,6 +54,7 @@ export default function CreateEditUserModal({
                                                 target_discord_id,
                                             }: CreateEditUserModalProps) {
     const is_edit = !!edit_user;
+    const { auth } = usePage().props;
 
     const {
         data: form_data,
@@ -64,6 +65,7 @@ export default function CreateEditUserModal({
         errors: form_errors,
         reset,
         clearErrors,
+        transform,
     } = useForm({
         user_id: '',
         name: '',
@@ -106,47 +108,41 @@ export default function CreateEditUserModal({
     ]);
 
     const handleSubmit = () => {
+        transform((data) => {
+            if (is_request_mode) {
+                return {
+                    ...data,
+                    user_id: (auth?.user as any)?.id || '',
+                    name: (auth?.user as any)?.name || '',
+                    ic_name: data.ic_name || (auth?.user as any)?.name || '',
+                    is_request: true,
+                    details: data.config_data,
+                };
+            }
+            return data;
+        });
+
+        const common_options = {
+            preserveScroll: true,
+            onSuccess: () => {
+                onClose();
+                reset();
+            },
+            onError: (errors: any) => {
+                if (errors.form_error) {
+                    toast.error(errors.form_error);
+                }
+            },
+        };
+
         if (is_request_mode && target_discord_id) {
-            post(route('guild.users.store', target_discord_id), {
-                preserveScroll: true,
-                onSuccess: () => {
-                    onClose();
-                    reset();
-                },
-                onError: (errors) => {
-                    if (errors.form_error) {
-                        toast.error(errors.form_error);
-                    }
-                },
-            });
+            post(route('guild.users.store', target_discord_id), common_options);
         } else if (is_edit && edit_user) {
             // Felhasználó szerkesztése admin felületről
-            put(route('guild.users.update', edit_user.id), {
-                preserveScroll: true,
-                onSuccess: () => {
-                    onClose();
-                    reset();
-                },
-                onError: (errors) => {
-                    if (errors.form_error) {
-                        toast.error(errors.form_error);
-                    }
-                },
-            });
+            put(route('guild.users.update', edit_user.id), common_options);
         } else {
             // Felhasználó létrehozása admin felületről
-            post(route('guild.users.store'), {
-                preserveScroll: true,
-                onSuccess: () => {
-                    onClose();
-                    reset();
-                },
-                onError: (errors) => {
-                    if (errors.form_error) {
-                        toast.error(errors.form_error);
-                    }
-                },
-            });
+            post(route('guild.users.store'), common_options);
         }
     };
 

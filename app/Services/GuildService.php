@@ -8,6 +8,7 @@ use App\Enums\PermissionEnum;
 use App\Models\Guild;
 use App\Models\GuildRole;
 use App\Models\GuildSettings;
+use App\Models\GuildUser;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
