@@ -49,6 +49,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/image/{image}', [GuildUserController::class, 'showImage'])->name('guild.users.image.show');
             Route::post('/{guild_user}/image', [GuildUserController::class, 'storeImage'])->name('guild.users.image.store');
             Route::delete('/image/{image}', [GuildUserController::class, 'deleteImage'])->name('guild.users.image.delete');
+            Route::delete('/{guild_user}', [GuildUserController::class, 'delete'])->name('guild.users.delete');
             Route::delete('/', [GuildUserController::class, 'bulkDelete'])->name('guild.users.bulk.delete');
         });
 

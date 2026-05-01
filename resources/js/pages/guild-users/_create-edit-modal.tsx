@@ -37,6 +37,8 @@ interface CreateEditUserModalProps {
     unattached_guild_users: DiscordSelectItem[];
     has_rank_system: boolean;
     available_ranks: Rank[];
+    is_request_mode?: boolean;
+    target_discord_id?: string;
 }
 
 export default function CreateEditUserModal({
@@ -48,6 +50,8 @@ export default function CreateEditUserModal({
                                                 unattached_guild_users,
                                                 has_rank_system,
                                                 available_ranks,
+                                                is_request_mode = false,
+                                                target_discord_id,
                                             }: CreateEditUserModalProps) {
     const is_edit = !!edit_user;
 
@@ -66,6 +70,7 @@ export default function CreateEditUserModal({
         ic_name: '',
         rank_id: '',
         details: {} as Record<string, any>,
+        config_data: {} as Record<string, any>, // A backend a requestJoin metódusban ezt várja
     });
 
     useEffect(() => {
@@ -77,6 +82,7 @@ export default function CreateEditUserModal({
                     ic_name: edit_user.ic_name || '',
                     rank_id: (edit_user as any).rank_id?.toString() || '',
                     details: edit_user.details || {},
+                    config_data: {},
                 });
             } else {
                 reset();
@@ -100,7 +106,21 @@ export default function CreateEditUserModal({
     ]);
 
     const handleSubmit = () => {
-        if (is_edit && edit_user) {
+        if (is_request_mode && target_discord_id) {
+            post(route('guild.users.store', target_discord_id), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    onClose();
+                    reset();
+                },
+                onError: (errors) => {
+                    if (errors.form_error) {
+                        toast.error(errors.form_error);
+                    }
+                },
+            });
+        } else if (is_edit && edit_user) {
+            // Felhasználó szerkesztése admin felületről
             put(route('guild.users.update', edit_user.id), {
                 preserveScroll: true,
                 onSuccess: () => {
@@ -114,6 +134,7 @@ export default function CreateEditUserModal({
                 },
             });
         } else {
+            // Felhasználó létrehozása admin felületről
             post(route('guild.users.store'), {
                 preserveScroll: true,
                 onSuccess: () => {
@@ -151,14 +172,16 @@ export default function CreateEditUserModal({
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>
-                        {is_edit
-                            ? `Felhasználó szerkesztése - ${edit_user?.ic_name || edit_user?.user?.name}`
-                            : 'Új felhasználó hozzáadása'}
+                        {is_request_mode
+                            ? 'Csatlakozási kérelem'
+                            : is_edit
+                                ? `Felhasználó szerkesztése - ${edit_user?.ic_name || edit_user?.user?.name}`
+                                : 'Új felhasználó hozzáadása'}
                     </DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                    {/* CSAK LÉTREHOZÁSKOR LÁTSZIK A DISCORD KIVÁLASZTÓ */}
-                    {!is_edit && (
+                    {/* CSAK LÉTREHOZÁSKOR ÉS NEM KÉRELEM ESETÉN LÁTSZIK A DISCORD KIVÁLASZTÓ */}
+                    {!is_edit && !is_request_mode && (
                         <div className="space-y-2">
                             <Label>
                                 Discord Felhasználó <span className="text-destructive">*</span>
@@ -176,24 +199,26 @@ export default function CreateEditUserModal({
                         </div>
                     )}
 
-                    <div className="space-y-2">
-                        <Label htmlFor="ic_name">
-                            IC Név <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                            id="ic_name"
-                            value={form_data.ic_name}
-                            onChange={(e) => {
-                                setFormData('ic_name', e.target.value);
-                                clearErrors('ic_name');
-                            }}
-                        />
-                        {form_errors.ic_name && (
-                            <p className="text-sm font-medium text-destructive">{form_errors.ic_name}</p>
-                        )}
-                    </div>
+                    {!is_request_mode && (
+                        <div className="space-y-2">
+                            <Label htmlFor="ic_name">
+                                IC Név <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                                id="ic_name"
+                                value={form_data.ic_name}
+                                onChange={(e) => {
+                                    setFormData('ic_name', e.target.value);
+                                    clearErrors('ic_name');
+                                }}
+                            />
+                            {form_errors.ic_name && (
+                                <p className="text-sm font-medium text-destructive">{form_errors.ic_name}</p>
+                            )}
+                        </div>
+                    )}
 
-                    {has_rank_system && available_ranks.length > 0 && (
+                    {has_rank_system && available_ranks.length > 0 && !is_request_mode && (
                         <div className="space-y-2">
                             <Label>
                                 Duty Rang <span className="text-destructive">*</span>
@@ -230,32 +255,48 @@ export default function CreateEditUserModal({
                             {config.type === 'bool' ? (
                                 <div className="flex h-10 items-center">
                                     <Checkbox
-                                        checked={!!form_data.details[config.name]}
+                                        checked={is_request_mode ? !!form_data.config_data[config.name] : !!form_data.details[config.name]}
                                         onCheckedChange={(checked) => {
-                                            setFormData('details', {
-                                                ...form_data.details,
-                                                [config.name]: checked === true,
-                                            });
-                                            clearErrors(`details.${config.name}`);
+                                            if (is_request_mode) {
+                                                setFormData('config_data', {
+                                                    ...form_data.config_data,
+                                                    [config.name]: checked === true,
+                                                });
+                                                clearErrors(`config_data.${config.name}`);
+                                            } else {
+                                                setFormData('details', {
+                                                    ...form_data.details,
+                                                    [config.name]: checked === true,
+                                                });
+                                                clearErrors(`details.${config.name}`);
+                                            }
                                         }}
                                     />
                                 </div>
                             ) : (
                                 <Input
                                     type={config.type === 'int' || config.type === 'float' ? 'number' : 'text'}
-                                    value={form_data.details[config.name] || ''}
+                                    value={is_request_mode ? (form_data.config_data[config.name] || '') : (form_data.details[config.name] || '')}
                                     onChange={(e) => {
-                                        setFormData('details', {
-                                            ...form_data.details,
-                                            [config.name]: e.target.value,
-                                        });
-                                        clearErrors(`details.${config.name}`);
+                                        if (is_request_mode) {
+                                            setFormData('config_data', {
+                                                ...form_data.config_data,
+                                                [config.name]: e.target.value,
+                                            });
+                                            clearErrors(`config_data.${config.name}`);
+                                        } else {
+                                            setFormData('details', {
+                                                ...form_data.details,
+                                                [config.name]: e.target.value,
+                                            });
+                                            clearErrors(`details.${config.name}`);
+                                        }
                                     }}
                                 />
                             )}
-                            {form_errors[`details.${config.name}`] && (
+                            {form_errors[is_request_mode ? `config_data.${config.name}` : `details.${config.name}`] && (
                                 <p className="text-sm font-medium text-destructive">
-                                    {form_errors[`details.${config.name}`]}
+                                    {form_errors[is_request_mode ? `config_data.${config.name}` : `details.${config.name}`]}
                                 </p>
                             )}
                         </div>
@@ -263,7 +304,7 @@ export default function CreateEditUserModal({
                 </div>
                 <DialogFooter className="sm:justify-between">
                     <div>
-                        {is_edit && onEditDuty && (
+                        {is_edit && onEditDuty && !is_request_mode && (
                             <Button type="button" variant="secondary" onClick={() => onEditDuty(edit_user!)}>
                                 <Clock className="mr-2 h-4 w-4" /> Duty szerkesztése
                             </Button>
@@ -274,7 +315,7 @@ export default function CreateEditUserModal({
                             Mégse
                         </Button>
                         <Button onClick={handleSubmit} disabled={is_submitting}>
-                            {is_edit ? 'Mentés' : 'Hozzáadás'}
+                            {is_request_mode ? 'Jelentkezés' : is_edit ? 'Mentés' : 'Hozzáadás'}
                         </Button>
                     </div>
                 </DialogFooter>

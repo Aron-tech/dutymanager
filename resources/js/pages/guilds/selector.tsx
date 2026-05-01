@@ -1,21 +1,12 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { ChevronRight, Plus, Server } from 'lucide-react';
-import React, { useState } from 'react'; // A useEffect-et már nem használjuk
+import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import AppHeaderLayout from '@/layouts/app/app-header-layout';
-import type { BreadcrumbItem } from '@/types';
+import CreateEditModal from '@/pages/guild-users/_create-edit-modal';
+import type { BreadcrumbItem, UserDetailsConfig } from '@/types';
 
 const __ = (key: string): string => {
     return (window as any).translations?.[key] || key;
@@ -28,51 +19,43 @@ interface DiscordGuild {
     is_installed?: boolean;
 }
 
-interface ConfigField {
-    name: string;
-    label: string;
-    is_required: boolean;
-}
-
 interface SelectorPageProps {
     [key: string]: unknown;
+
     guilds: {
         my_servers: DiscordGuild[];
         pending_addition: DiscordGuild[];
     };
-    flash?: {
-        showRequestModal?: boolean;
-        modalConfigData?: ConfigField[];
-        targetDiscordId?: string;
-    };
+    show_request_modal?: boolean;
+    modal_config_data?: UserDetailsConfig[];
+    target_discord_id?: string;
+    original_url?: string;
 }
 
-export default function Selector({ guilds }: SelectorPageProps) {
+export default function Selector({
+    guilds,
+    show_request_modal = false,
+    modal_config_data = [],
+    target_discord_id,
+    original_url,
+}: SelectorPageProps) {
     const { my_servers, pending_addition } = guilds;
+    const [is_modal_open, setIsModalOpen] =
+        useState<boolean>(show_request_modal);
 
-    // Most már a TypeScript tökéletesen felismeri a struktúrát
-    const { flash } = usePage<SelectorPageProps>().props;
-
-    const [is_modal_open, setIsModalOpen] = useState<boolean>(false);
-    const [form_data, setFormData] = useState<Record<string, string>>({});
-
-    // Egy lokális state-ben tároljuk az "előző" flash állapotot az összehasonlításhoz
-    const [prev_flash, setPrevFlash] = useState(flash);
-
-    // ESLINT FIX: "Derived State Pattern" (Származtatott állapot render közben)
-    // Ez a React hivatalos megoldása a prop-változások lekezelésére useEffect nélkül.
-    if (flash !== prev_flash) {
-        setPrevFlash(flash); // Rögtön frissítjük az új referenciára
-
-        if (flash?.showRequestModal) {
+    // 1. Modal nyitásának kezelése
+    useEffect(() => {
+        if (show_request_modal) {
             setIsModalOpen(true);
-            const initial_data: Record<string, string> = {};
-            (flash.modalConfigData || []).forEach((field) => {
-                initial_data[field.name] = '';
-            });
-            setFormData(initial_data);
         }
-    }
+    }, [show_request_modal]);
+
+    // 2. Böngésző URL visszaírása (History API replaceState)
+    useEffect(() => {
+        if (original_url && window.location.href !== original_url) {
+            window.history.replaceState(window.history.state, '', original_url);
+        }
+    }, [original_url]);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: __('guilds.selector.breadcrumb'), href: '/guilds/selector' },
@@ -87,25 +70,7 @@ export default function Selector({ guilds }: SelectorPageProps) {
         const permissions = '8';
 
         window.location.assign(
-            `https://discord.com/oauth2/authorize?client_id=${client_id}&permissions=${permissions}&integration_type=0&scope=bot+applications.commands&guild_id=${discord_id}`
-        );
-    };
-
-    const handleRequestSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-
-        if (!flash?.targetDiscordId) {
-            return;
-        }
-
-        router.post(
-            route('guilds.request', flash.targetDiscordId),
-            {
-                config_data: form_data,
-            },
-            {
-                onSuccess: () => setIsModalOpen(false),
-            }
+            `https://discord.com/oauth2/authorize?client_id=${client_id}&permissions=${permissions}&integration_type=0&scope=bot+applications.commands&guild_id=${discord_id}`,
         );
     };
 
@@ -123,7 +88,6 @@ export default function Selector({ guilds }: SelectorPageProps) {
                     </p>
                 </div>
 
-                {/* --- SZERVEREIM SZEKCIÓ --- */}
                 <div>
                     <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
                         <Server className="h-5 w-5 text-primary" />
@@ -142,7 +106,9 @@ export default function Selector({ guilds }: SelectorPageProps) {
                                 <Card
                                     key={guild.discord_id}
                                     className="cursor-pointer overflow-hidden transition-colors hover:border-primary/50"
-                                    onClick={() => handleSelectServer(guild.discord_id)}
+                                    onClick={() =>
+                                        handleSelectServer(guild.discord_id)
+                                    }
                                 >
                                     <CardContent className="flex items-center justify-between gap-3 p-4">
                                         <div className="flex min-w-0 items-center space-x-3">
@@ -164,8 +130,12 @@ export default function Selector({ guilds }: SelectorPageProps) {
                                                 </span>
                                                 <span className="truncate text-xs text-muted-foreground">
                                                     {guild.is_installed
-                                                        ? __('guilds.status.installed')
-                                                        : __('guilds.status.install_required')}
+                                                        ? __(
+                                                              'guilds.status.installed',
+                                                          )
+                                                        : __(
+                                                              'guilds.status.install_required',
+                                                          )}
                                                 </span>
                                             </div>
                                         </div>
@@ -177,7 +147,6 @@ export default function Selector({ guilds }: SelectorPageProps) {
                     )}
                 </div>
 
-                {/* --- HOZZÁADÁSRA VÁR SZEKCIÓ --- */}
                 <div>
                     <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
                         <Plus className="h-5 w-5 text-primary" />
@@ -237,50 +206,16 @@ export default function Selector({ guilds }: SelectorPageProps) {
                 </div>
             </div>
 
-            <Dialog open={is_modal_open} onOpenChange={setIsModalOpen}>
-                <DialogContent className="sm:max-w-[425px]">
-                    <form onSubmit={handleRequestSubmit}>
-                        <DialogHeader>
-                            <DialogTitle>{__('guilds.modal.title')}</DialogTitle>
-                            <DialogDescription>
-                                {__('guilds.modal.description')}
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        <div className="grid gap-4 py-4">
-                            {(flash?.modalConfigData || []).map((field, index) => (
-                                <div className="grid gap-2" key={index}>
-                                    <Label htmlFor={field.name}>{field.label}</Label>
-                                    <Input
-                                        id={field.name}
-                                        required={field.is_required}
-                                        value={form_data[field.name] || ''}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...form_data,
-                                                [field.name]: e.target.value,
-                                            })
-                                        }
-                                    />
-                                </div>
-                            ))}
-                        </div>
-
-                        <DialogFooter>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => setIsModalOpen(false)}
-                            >
-                                {__('common.cancel')}
-                            </Button>
-                            <Button type="submit">
-                                {__('guilds.modal.submit')}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+            <CreateEditModal
+                is_open={is_modal_open}
+                onClose={() => setIsModalOpen(false)}
+                user_details_config={modal_config_data}
+                unattached_guild_users={[]}
+                has_rank_system={false}
+                available_ranks={[]}
+                is_request_mode={!!target_discord_id}
+                target_discord_id={target_discord_id}
+            />
         </AppHeaderLayout>
     );
 }

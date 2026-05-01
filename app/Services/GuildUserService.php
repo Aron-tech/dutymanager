@@ -138,7 +138,7 @@ class GuildUserService
                 throw new Exception('A felhasználó már be van regisztrálva.');
             }
 
-            $guild_user = JoinUserToGuildAction::run(
+            return JoinUserToGuildAction::run(
                 $user,
                 $guild,
                 $data['ic_name'],
@@ -146,10 +146,6 @@ class GuildUserService
                 $data['is_request'] ?? false,
                 $added_by
             );
-
-            ActivityLog::make($guild->id, auth()->id(), $guild_user->user_id, ActionTypeEnum::ADD_USER_TO_GUILD, $guild_user->toArray());
-
-            return $guild_user;
         });
     }
 

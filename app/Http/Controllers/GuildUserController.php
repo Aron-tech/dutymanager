@@ -46,11 +46,13 @@ class GuildUserController extends Controller
 
     public function store(StoreGuildUserRequest $request): RedirectResponse
     {
-        if (auth()->user()->cannot(PermissionEnum::ADD_GUILD_USERS)) {
+        $data = $request->validated();
+        $is_request = $data['is_request'] ?? false;
+
+        if (! $is_request && auth()->user()->cannot(PermissionEnum::ADD_GUILD_USERS) || $is_request && auth()->user()->cannot(PermissionEnum::MAKE_REQUEST)) {
             abort(403, __('app.error_no_permission'));
         }
 
-        $data = $request->validated();
         $guild = SelectedGuildService::get();
         $data['guild'] = $guild;
 
@@ -95,6 +97,7 @@ class GuildUserController extends Controller
 
         if ($success) {
             $guild_user->load(['user:id,name']);
+
             return back()->with('success', __('guild_user.success_accepted_user', ['user' => $guild_user->user->name]));
         } else {
             return back()->withErrors(['error' => __('guild_user.error_accept_user')]);

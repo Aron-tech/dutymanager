@@ -3,10 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Concerns\ValidatesDynamicUserDetailsTrait;
-use App\Enums\PermissionEnum;
 use App\Services\SelectedGuildService;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Foundation\Validation\ValidatesRequests;
 
 class StoreGuildUserRequest extends FormRequest
 {
@@ -16,8 +14,9 @@ class StoreGuildUserRequest extends FormRequest
     {
         $rules = [
             'user_id' => ['required', 'string', 'max:255'],
-            'name' => ['required', 'string', 'min:3', 'max:255'],
+            'name' => ['required_unless:is_request,true', 'string', 'min:3', 'max:255'],
             'ic_name' => ['required', 'string', 'min:3', 'max:255'],
+            'is_request' => ['boolean'],
             'details' => ['nullable', 'array'],
         ];
 

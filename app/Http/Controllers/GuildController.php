@@ -28,7 +28,7 @@ class GuildController extends Controller
      *
      * @throws Exception
      */
-    public function selector()
+    public function selector(): RedirectResponse|Response
     {
         if (SelectedGuildService::isSelected()) {
             SelectedGuildService::clear();
@@ -60,13 +60,45 @@ class GuildController extends Controller
 
     /**
      * @param Guild $guild
-     * @return RedirectResponse
+     * @return RedirectResponse|Response
+     * @throws Exception
      */
-    public function select(Guild $guild)
+    public function select(Guild $guild): RedirectResponse|Response
     {
         SelectedGuildService::set($guild);
 
-        return to_route('dashboard');
+        $user = auth()->user();
+        $access_level = $this->service->determineAccessLevel($guild, $user->id);
+
+        if ($access_level === 'accepted') {
+            return to_route('dashboard');
+        }
+
+        if ($access_level === 'pending') {
+            return back()->with('error', __('app.error_pending_approval'));
+        }
+
+        $access_token = session('discord_access_token') ?? $user->access_token;
+
+        try {
+            $guilds = DiscordFetchService::getCategorizedGuilds($access_token, $user);
+        } catch (Exception $e) {
+            if ($e->getCode() === 401) {
+                session()->forget('discord_access_token');
+
+                return redirect()->route('login.discord');
+            }
+            throw $e;
+        }
+
+        return Inertia::render('guilds/selector', [
+            'guilds' => $guilds,
+            'is_hidden_nav_items' => true,
+            'show_request_modal' => true,
+            'target_discord_id' => (string) $guild->id,
+            'modal_config_data' => $this->service->getRegistrationConfig($guild),
+            'original_url' => route('guilds.selector'),
+        ]);
     }
 
     /**

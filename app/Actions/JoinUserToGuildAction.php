@@ -24,7 +24,7 @@ class JoinUserToGuildAction
             'ic_name' => $ic_name,
             'details' => $details,
             'is_request' => $is_request,
-            'accepted_at' => $added_by ? now() : null,
+            'accepted_at' => $is_request ? null : now(),
             'added_by' => $added_by?->id,
         ]);
 

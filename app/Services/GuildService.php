@@ -224,4 +224,38 @@ class GuildService
             JoinUserToGuildAction::run($auth_user, $this->guild, '', [], false, $auth_user, false);
         });
     }
+
+    /**
+     * @param Guild $guild
+     * @param string $user_id
+     * @return string
+     */
+    public function determineAccessLevel(Guild $guild, string $user_id): string
+    {
+        if ($user_id === $guild->owner_id) {
+            return 'accepted';
+        }
+
+        /** @var GuildUser|null $guild_user */
+        $guild_user = $guild->guildUsers()->where('user_id', $user_id)->first();
+
+        if ($guild_user === null) {
+            return 'requires_request';
+        }
+
+        if ($guild_user->accepted_at !== null) {
+            return 'accepted';
+        }
+
+        return 'pending';
+    }
+
+    /**
+     * @param Guild $guild
+     * @return array
+     */
+    public function getRegistrationConfig(Guild $guild): array
+    {
+        return $guild->guildSettings?->user_details_config ?? [];
+    }
 }

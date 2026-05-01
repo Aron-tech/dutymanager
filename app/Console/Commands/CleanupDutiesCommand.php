@@ -23,7 +23,7 @@ class CleanupDutiesCommand extends Command
     public function handle(CleanupService $cleanup_service): int
     {
         $is_loud = $this->option('loud');
-        $invalid_limit = now()->subYear();
+        $invalid_limit = now()->subMonth();
 
         if ($is_loud) {
             $this->info('Automatic old duties deleting started.');
