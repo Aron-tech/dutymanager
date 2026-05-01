@@ -11,9 +11,9 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Command\Command as CommandAlias;
 use Throwable;
 
-#[Signature('app:cleanup-duties-command {--loud : Output progress information}')]
+#[Signature('app:cleanup-punishments-command {--loud : Output progress information}')]
 #[Description('Command description')]
-class CleanupDutiesCommand extends Command
+class CleanupPunishmentsCommand extends Command
 {
     /**
      * @param CleanupService $cleanup_service
@@ -26,19 +26,19 @@ class CleanupDutiesCommand extends Command
         $invalid_limit = now()->subYear();
 
         if ($is_loud) {
-            $this->info('Automatic old duties deleting started.');
+            $this->info('Automatic old punishments deleting started.');
         }
 
         try {
-            $deleted_count = $cleanup_service->purgeOldDuties($invalid_limit);
+            $deleted_count = $cleanup_service->purgeOldPunishments($invalid_limit);
 
             if ($is_loud) {
-                $this->info('Deleted '.$deleted_count.' old duties.');
+                $this->info('Deleted '.$deleted_count.' old punishment(s).');
             }
 
             return CommandAlias::SUCCESS;
         } catch (Throwable $e) {
-            $this->error('Failed to purge old duties: '.$e->getMessage());
+            $this->error('Failed to purge old punishments: '.$e->getMessage());
 
             return CommandAlias::FAILURE;
         }

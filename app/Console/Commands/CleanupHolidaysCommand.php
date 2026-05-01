@@ -11,13 +11,15 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Command\Command as CommandAlias;
 use Throwable;
 
-#[Signature('app:cleanup-duties-command {--loud : Output progress information}')]
-#[Description('Command description')]
-class CleanupDutiesCommand extends Command
+#[Signature('app:cleanup-holidays-command {--loud : Output progress information}')]
+#[Description('Purge old holidays securely.')]
+class CleanupHolidaysCommand extends Command
 {
     /**
      * @param CleanupService $cleanup_service
+     *
      * @return int
+     *
      * @throws Throwable
      */
     public function handle(CleanupService $cleanup_service): int
@@ -26,19 +28,19 @@ class CleanupDutiesCommand extends Command
         $invalid_limit = now()->subYear();
 
         if ($is_loud) {
-            $this->info('Automatic old duties deleting started.');
+            $this->info('Automatic old holidays deleting started.');
         }
 
         try {
-            $deleted_count = $cleanup_service->purgeOldDuties($invalid_limit);
+            $deleted_count = $cleanup_service->purgeOldHolidays($invalid_limit);
 
             if ($is_loud) {
-                $this->info('Deleted '.$deleted_count.' old duties.');
+                $this->info('Deleted '.$deleted_count.' old holiday(s).');
             }
 
             return CommandAlias::SUCCESS;
         } catch (Throwable $e) {
-            $this->error('Failed to purge old duties: '.$e->getMessage());
+            $this->error('Failed to purge old holidays: '.$e->getMessage());
 
             return CommandAlias::FAILURE;
         }
