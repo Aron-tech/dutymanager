@@ -4,14 +4,13 @@ import { useEffect, useState } from 'react';
 interface ErrorProps {
     status: number;
     message?: string;
+    fallbackUrl?: string;
 }
 
 const ERROR_CONFIG: Record<number, {
     title: string;
     subtitle: string;
     description: string;
-    canGoBack: boolean;
-    backLabel: string;
     glowColor: string;
     accentColor: string;
 }> = {
@@ -19,8 +18,6 @@ const ERROR_CONFIG: Record<number, {
         title: '403',
         subtitle: 'Hozzáférés megtagadva',
         description: 'Nincs jogosultságod megtekinteni ezt az oldalt. Ha úgy gondolod, hogy ez hiba, fordulj a szerver adminisztrátorához.',
-        canGoBack: true,
-        backLabel: 'Vissza az előző oldalra',
         glowColor: 'rgba(239,68,68,0.15)',
         accentColor: '#ef4444',
     },
@@ -28,8 +25,6 @@ const ERROR_CONFIG: Record<number, {
         title: '404',
         subtitle: 'Az oldal nem található',
         description: 'A keresett oldal nem létezik, vagy áthelyezték. Ellenőrizd a címet, vagy lépj vissza.',
-        canGoBack: true,
-        backLabel: 'Vissza az előző oldalra',
         glowColor: 'rgba(251,191,36,0.12)',
         accentColor: '#f59e0b',
     },
@@ -37,8 +32,6 @@ const ERROR_CONFIG: Record<number, {
         title: '419',
         subtitle: 'Munkamenet lejárt',
         description: 'Az oldal munkamenete lejárt. Frissítsd az oldalt és próbáld újra.',
-        canGoBack: false,
-        backLabel: 'Oldal frissítése',
         glowColor: 'rgba(99,102,241,0.15)',
         accentColor: '#6366f1',
     },
@@ -46,8 +39,6 @@ const ERROR_CONFIG: Record<number, {
         title: '429',
         subtitle: 'Túl sok kérés',
         description: 'Rövid idő alatt túl sok kérést küldtél. Várj egy percet, majd próbáld újra.',
-        canGoBack: false,
-        backLabel: 'Oldal frissítése',
         glowColor: 'rgba(249,115,22,0.15)',
         accentColor: '#f97316',
     },
@@ -55,8 +46,6 @@ const ERROR_CONFIG: Record<number, {
         title: '500',
         subtitle: 'Szerverhiba',
         description: 'A szerveren belső hiba keletkezett. A csapatunk értesült a problémáról, hamarosan megoldjuk.',
-        canGoBack: true,
-        backLabel: 'Vissza az előző oldalra',
         glowColor: 'rgba(239,68,68,0.15)',
         accentColor: '#ef4444',
     },
@@ -64,8 +53,6 @@ const ERROR_CONFIG: Record<number, {
         title: '503',
         subtitle: 'A szolgáltatás nem elérhető',
         description: 'Az oldal jelenleg karbantartás alatt áll. Hamarosan visszatér a teljes szolgáltatás.',
-        canGoBack: false,
-        backLabel: 'Oldal frissítése',
         glowColor: 'rgba(20,184,166,0.15)',
         accentColor: '#14b8a6',
     },
@@ -75,31 +62,38 @@ const FALLBACK_CONFIG = {
     title: 'Hiba',
     subtitle: 'Valami elromlott',
     description: 'Ismeretlen hiba történt. Kérjük, próbáld újra később.',
-    canGoBack: true,
-    backLabel: 'Vissza az előző oldalra',
     glowColor: 'rgba(239,68,68,0.15)',
     accentColor: '#ef4444',
 };
 
-export default function Error({ status, message }: ErrorProps) {
+export default function Error({ status, message, fallbackUrl }: ErrorProps) {
     const config = ERROR_CONFIG[status] ?? FALLBACK_CONFIG;
     const [mounted, setMounted] = useState(false);
-    const [canNavigateBack, setCanNavigateBack] = useState(false);
 
     useEffect(() => {
         setMounted(true);
-        setCanNavigateBack(window.history.length > 1);
     }, []);
 
-    const handleSecondaryAction = () => {
+    const handleAction = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        e.preventDefault();
+
         if (status === 419 || status === 429 || status === 503) {
             window.location.reload();
-        } else if (canNavigateBack) {
-            router.visit(document.referrer || '/', { replace: true });
+
+            return;
+        }
+
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            router.visit('/dashboard', { replace: true });
         }
     };
 
     const digits = config.title.split('');
+    const buttonLabel = (status === 419 || status === 429 || status === 503)
+        ? 'Oldal frissítése'
+        : 'Vissza az előző oldalra';
 
     return (
         <>
@@ -307,55 +301,6 @@ export default function Error({ status, message }: ErrorProps) {
                 .btn-primary:active {
                     transform: translateY(0);
                 }
-
-                .btn-secondary {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8px;
-                    background: transparent;
-                    color: #a1a1aa;
-                    font-family: 'Syne', sans-serif;
-                    font-size: 0.875rem;
-                    font-weight: 600;
-                    padding: 11px 24px;
-                    border-radius: 10px;
-                    border: 1px solid rgba(255,255,255,0.1);
-                    cursor: pointer;
-                    text-decoration: none;
-                    transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.15s;
-                    width: 100%;
-                    max-width: 320px;
-                    justify-content: center;
-                }
-
-                .btn-secondary:hover {
-                    color: #fafafa;
-                    border-color: rgba(255,255,255,0.22);
-                    background: rgba(255,255,255,0.04);
-                    transform: translateY(-1px);
-                }
-
-                .btn-secondary:active {
-                    transform: translateY(0);
-                }
-
-                .status-code-tag {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 6px;
-                    font-family: 'Space Mono', monospace;
-                    font-size: 0.75rem;
-                    color: var(--accent);
-                    opacity: 0.8;
-                    margin-bottom: 1rem;
-                    letter-spacing: 0.08em;
-                    text-transform: uppercase;
-                }
-
-                .status-code-tag::before, .status-code-tag::after {
-                    content: '—';
-                    opacity: 0.4;
-                }
             `}</style>
 
             <div
@@ -390,12 +335,25 @@ export default function Error({ status, message }: ErrorProps) {
                     )}
 
                     <div className="actions">
-                        <a href="/dashboard" className="btn-primary">
+                        <a
+                            href={fallbackUrl || "/"}
+                            onClick={handleAction}
+                            className="btn-primary"
+                        >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                                <polyline points="9 22 9 12 15 12 15 22"/>
+                                {status === 419 || status === 429 || status === 503 ? (
+                                    <>
+                                        <polyline points="23 4 23 10 17 10"></polyline>
+                                        <polyline points="1 20 1 14 7 14"></polyline>
+                                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                    </>
+                                ) : (
+                                    <>
+                                        <path d="m15 18-6-6 6-6"/>
+                                    </>
+                                )}
                             </svg>
-                            Vissza a főoldalra
+                            {buttonLabel}
                         </a>
                     </div>
                 </div>

@@ -54,11 +54,12 @@ class PunishmentController extends Controller
 
     public function store(StorePunishmentRequest $request): RedirectResponse
     {
-        if (auth()->user()->cannot(PermissionEnum::ADD_PUNISHMENTS)) {
-            abort(403, __('app.error.no_permission'));
+        $data = $request->validated();
+
+        if (! $this->service->hasPermission(PunishmentTypeEnum::from($data['type']))) {
+            abort(403, __('app.error_no_permission'));
         }
 
-        $data = $request->validated();
         try {
             $this->service->create($data);
 
@@ -72,8 +73,8 @@ class PunishmentController extends Controller
 
     public function delete(Punishment $punishment): RedirectResponse
     {
-        if (auth()->user()->cannot(PermissionEnum::DELETE_PUNISHMENTS)) {
-            abort(403, __('app.error.no_permission'));
+        if (! $this->service->hasPermission($punishment->type, 'delete')) {
+            abort(403, __('app.error_no_permission'));
         }
 
         try {
@@ -92,7 +93,7 @@ class PunishmentController extends Controller
     public function bulkDelete(BulkDeletePunishmentRequest $request): RedirectResponse
     {
         if (auth()->user()->cannot(PermissionEnum::DELETE_PUNISHMENTS)) {
-            abort(403, __('app.error.no_permission'));
+            abort(403, __('app.error_no_permission'));
         }
 
         $data = $request->validated();

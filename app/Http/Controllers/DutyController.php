@@ -52,76 +52,21 @@ class DutyController extends Controller
         ]);
     }
 
+    /**
+     * @param IndexDutyRequest $request
+     * @return Response
+     */
     public function active(IndexDutyRequest $request): Response
     {
-        if (auth()->user()->cannot(PermissionEnum::VIEW_DUTIES)) {
+        if ($request->user()->cannot(PermissionEnum::VIEW_DUTIES->value)) {
             abort(403, __('app.error.no_permission'));
         }
 
         $guild = SelectedGuildService::get();
         $filters = $request->validated();
 
-        $query = Duty::query()
-            ->select('duties.*')
-            ->join('guild_users', 'duties.guild_user_id', '=', 'guild_users.id')
-            ->join('users', 'guild_users.user_id', '=', 'users.id')
-            ->where('guild_users.guild_id', $guild->id)
-            ->whereNull('duties.finished_at')
-            ->with(['guildUser.user:id,name']);
-
-        if (! empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function ($q) use ($search) {
-                $q->where('users.name', 'like', "%{$search}%")
-                    ->orWhere('guild_users.user_id', 'like', "%{$search}%")
-                    ->orWhere('guild_users.ic_name', 'like', "%{$search}%");
-            });
-        }
-
-        $sort = $filters['sort'] ?? 'started_at';
-        $direction = strtolower($filters['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
-
-        switch ($sort) {
-            case 'discord_id':
-                $query->orderBy('guild_users.user_id', $direction);
-                break;
-            case 'discord_name':
-                $query->orderBy('users.name', $direction);
-                break;
-            case 'ic_name':
-                $query->orderBy('guild_users.ic_name', $direction);
-                break;
-            default:
-                $query->orderBy('duties.started_at', $direction);
-                break;
-        }
-
-        $active_duties = $query->paginate($filters['per_page'] ?? 15)->withQueryString();
-
-        $chart_data_array = [];
-        for ($i = 23; $i >= 0; $i--) {
-            $hourString = now()->subHours($i)->format('H:00');
-            $chart_data_array[$hourString] = [
-                'date' => $hourString,
-                'count' => 0,
-            ];
-        }
-
-        $db_data = DB::table('duties')
-            ->join('guild_users', 'duties.guild_user_id', '=', 'guild_users.id')
-            ->where('guild_users.guild_id', $guild->id)
-            ->where('duties.started_at', '>=', now()->subHours(24))
-            ->selectRaw('DATE_FORMAT(duties.started_at, "%H:00") as date, COUNT(*) as count')
-            ->groupBy('date')
-            ->get();
-
-        foreach ($db_data as $row) {
-            if (isset($chart_data_array[$row->date])) {
-                $chart_data_array[$row->date]['count'] = (int) $row->count;
-            }
-        }
-
-        $chart_data = array_values($chart_data_array);
+        $active_duties = $this->service->getPaginatedActiveDuties($guild, $filters);
+        $chart_data = $this->service->getHourlyChartData($guild);
 
         return Inertia::render('duties/active', [
             'active_duties' => $active_duties,

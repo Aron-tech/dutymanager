@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ActionTypeEnum;
+use App\Enums\PermissionEnum;
 use App\Enums\PunishmentTypeEnum;
 use App\Models\ActivityLog;
 use App\Models\Guild;
@@ -91,22 +92,27 @@ class PunishmentService
 
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function delete(Punishment $punishment): bool
     {
         $guild = SelectedGuildService::get();
-        $punishment_id_array = [$punishment->id];
+        $deleted_id = $punishment->id;
 
-        return DB::transaction(function () use ($punishment, $punishment_id_array, $guild) {
+        return DB::transaction(function () use ($punishment, $deleted_id, $guild) {
             $is_deleted = $punishment->delete();
 
-            ActivityLog::make($guild->id, auth()->id(), null, ActionTypeEnum::DELETE_PUNISHMENT_FROM_GUILD_USER, $punishment_id_array);
+            ActivityLog::make($guild->id, auth()->id(), null, ActionTypeEnum::DELETE_PUNISHMENT_FROM_GUILD_USER, $deleted_id);
 
             return $is_deleted;
         });
     }
 
     /**
-     * @return void
+     * @return mixed
+     *
+     * @throws \Throwable
      */
     public function bulkDelete(array $punishment_ids)
     {
@@ -119,5 +125,27 @@ class PunishmentService
 
             return $delete_count;
         });
+    }
+
+    /**
+     * @param  PunishmentTypeEnum  $type
+     * @param  string  $action  // 'add' or 'delete'
+     */
+    public function hasPermission(PunishmentTypeEnum $type, string $action = 'add'): bool
+    {
+        $auth_user = auth()->user();
+
+        if ($action === 'add' && $auth_user->can(PermissionEnum::ADD_PUNISHMENTS)) {
+            return true;
+        } elseif ($action === 'delete' && $auth_user->can(PermissionEnum::DELETE_PUNISHMENTS)) {
+            return true;
+        }
+
+        return match ($type) {
+            PunishmentTypeEnum::BLACKLIST => $action === 'add' ? $auth_user->can(PermissionEnum::ADD_BLACKLIST) : $auth_user->can(PermissionEnum::DELETE_BLACKLIST),
+            PunishmentTypeEnum::WARNING => $action === 'add' ? $auth_user->can(PermissionEnum::ADD_WARNING) : $auth_user->can(PermissionEnum::DELETE_WARNING),
+            PunishmentTypeEnum::VERBAL_WARNING => $action === 'add' ? $auth_user->can(PermissionEnum::ADD_VERBAL_WARNING) : $auth_user->can(PermissionEnum::DELETE_VERBAL_WARNING),
+            default => false,
+        };
     }
 }

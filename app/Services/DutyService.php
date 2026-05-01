@@ -12,6 +12,7 @@ use App\Models\Duty;
 use App\Models\Guild;
 use App\Models\GuildSettings;
 use App\Models\GuildUser;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -76,6 +77,80 @@ class DutyService
         }
 
         return $query->paginate($per_page)->withQueryString();
+    }
+
+    /**
+     * @param Guild $guild
+     * @param array $filters
+     * @return LengthAwarePaginator
+     */
+    public function getPaginatedActiveDuties(Guild $guild, array $filters): LengthAwarePaginator
+    {
+        $search = $filters['search'] ?? null;
+        $sort = $filters['sort'] ?? 'started_at';
+        $direction = strtolower($filters['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+        $per_page = (int) ($filters['per_page'] ?? 20);
+
+        $query = Duty::query()
+            ->select('duties.*')
+            ->join('guild_users', 'duties.guild_user_id', '=', 'guild_users.id')
+            ->join('users', 'guild_users.user_id', '=', 'users.id')
+            ->where('guild_users.guild_id', $guild->id)
+            ->whereNotNull('guild_users.accepted_at')
+            ->activeDuties()
+            ->with(['guildUser.user:id,name']);
+
+        if ($search !== null && $search !== '') {
+            $query->where(function (Builder $q) use ($search): void {
+                $q->where('users.name', 'like', "%{$search}%")
+                    ->orWhere('guild_users.user_id', 'like', "%{$search}%")
+                    ->orWhere('guild_users.ic_name', 'like', "%{$search}%");
+            });
+        }
+
+        match ($sort) {
+            'discord_id' => $query->orderBy('guild_users.user_id', $direction),
+            'discord_name' => $query->orderBy('users.name', $direction),
+            'ic_name' => $query->orderBy('guild_users.ic_name', $direction),
+            default => $query->orderBy('duties.started_at', $direction),
+        };
+
+        return $query->paginate($per_page)->withQueryString();
+    }
+
+    /**
+     * @param Guild $guild
+     * @return array
+     */
+    public function getHourlyChartData(Guild $guild): array
+    {
+        $chart_data_array = [];
+        $now = now();
+
+        for ($i = 23; $i >= 0; $i--) {
+            $hour_string = $now->copy()->subHours($i)->format('H:00');
+            $chart_data_array[$hour_string] = [
+                'date' => $hour_string,
+                'count' => 0,
+            ];
+        }
+
+        $db_data = DB::table('duties')
+            ->join('guild_users', 'duties.guild_user_id', '=', 'guild_users.id')
+            ->where('guild_users.guild_id', $guild->id)
+            ->where('duties.started_at', '>=', $now->copy()->subHours(24))
+            ->whereNotNull('guild_users.accepted_at') // Grafikon adatoknál is csak a jóváhagyott tagok
+            ->selectRaw('DATE_FORMAT(duties.started_at, "%H:00") as date, COUNT(*) as count')
+            ->groupBy('date')
+            ->get();
+
+        foreach ($db_data as $row) {
+            if (isset($chart_data_array[$row->date])) {
+                $chart_data_array[$row->date]['count'] = (int) $row->count;
+            }
+        }
+
+        return array_values($chart_data_array);
     }
 
     public function storeDuty(array $data): Duty

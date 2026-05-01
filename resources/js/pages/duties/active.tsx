@@ -23,7 +23,7 @@ const default_duties = {
     data: [],
     links: [],
     total: 0,
-    per_page: 15,
+    per_page: 20,
     last_page: 1,
 };
 
@@ -56,7 +56,7 @@ export default function ActiveDutiesView({
     const [search_query, setSearchQuery] = useState(safe_filters.search || '');
     const debounced_search = useDebounce(search_query, 400);
     const [per_page_amount, setPerPageAmount] = useState(
-        safe_filters.per_page || String(active_duties?.per_page || 15)
+        safe_filters.per_page || String(active_duties?.per_page || 20)
     );
     const [custom_per_page, setCustomPerPage] = useState('');
     const [sort_column, setSortColumn] = useState(safe_filters.sort || 'started_at');

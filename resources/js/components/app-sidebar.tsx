@@ -1,5 +1,16 @@
 import { Link } from '@inertiajs/react';
-import { Users, LayoutGrid, Gavel, History, Shirt, Car, ActivitySquare, CalendarOff } from 'lucide-react';
+import {
+    Users,
+    LayoutGrid,
+    Gavel,
+    History,
+    Shirt,
+    Car,
+    ActivitySquare,
+    CalendarOff,
+    Settings,
+    ShieldCheck
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -43,6 +54,11 @@ export function AppSidebar() {
             icon: Users,
         },
         {
+            title: 'Szolgálatban lévők',
+            href: route('duty.active'),
+            icon: ShieldCheck,
+        },
+        {
             title: 'Büntetések',
             href: route('punishment.index'),
             icon: Gavel,
@@ -61,7 +77,12 @@ export function AppSidebar() {
             title: 'Aktivitás Napló',
             href: route('activity-log.index'),
             icon: ActivitySquare,
-        }
+        },
+        {
+            title: 'Beállítások',
+            href: route('guild.settings'),
+            icon: Settings,
+        },
     ];
 
     return (

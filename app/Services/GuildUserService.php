@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Actions\JoinUserToGuildAction;
@@ -56,9 +58,7 @@ class GuildUserService
                 },
                 'activeHoliday',
             ])
-            ->withCount(['activePunishments' => function ($q) use ($guild) {
-                $q->where('guild_id', $guild->id);
-            }])
+            ->withCount(['activePunishments', 'activeHoliday'])
             ->withSum(['duties as current_period_duties_sum_value' => function ($q) {
                 $q->where('status', '<=', DutyStatusEnum::CURRENT_PERIOD);
             }], 'value')
@@ -96,8 +96,8 @@ class GuildUserService
             case 'joined_at':
                 $query->orderBy('created_at', $direction);
                 break;
-            case 'punishments':
-                $query->orderBy('active_punishments_count', $direction);
+            case 'statuses':
+                $query->orderBy('active_holiday_count', $direction)->orderBy('active_punishments_count', $direction);
                 break;
             default:
                 if (str_starts_with($sort, 'detail_')) {
