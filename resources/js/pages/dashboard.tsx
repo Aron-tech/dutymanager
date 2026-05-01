@@ -31,6 +31,7 @@ import AppLayout from '@/layouts/app-layout';
 import { formatDuty } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface ChartDataPoint {
     date: string;
@@ -64,6 +65,7 @@ export default function Dashboard({
     duty_chart_data,
     stats_days,
 }: DashboardProps) {
+    const { can, canAny } = usePermissions();
     const [refreshing_card, setRefreshingCard] = useState<string | null>(null);
     const [daysFilter, setDaysFilter] = useState<number>(stats_days);
     const [isTogglingDuty, setIsTogglingDuty] = useState<boolean>(false);
@@ -182,6 +184,7 @@ export default function Dashboard({
                             <Activity className="h-4 w-4 text-muted-foreground" />
                         }
                         action_element={
+                            can('toggle_duty') && (
                             <Button
                                 variant={
                                     has_active_duty ? 'destructive' : 'default'
@@ -201,6 +204,7 @@ export default function Dashboard({
                                     ? 'Szolgálat leadása'
                                     : 'Szolgálat felvétele'}
                             </Button>
+                            )
                         }
                     />
 

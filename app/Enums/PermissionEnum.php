@@ -34,7 +34,22 @@ enum PermissionEnum: string
     case DELETE_WARNING = 'delete_warning';
     case DELETE_VERBAL_WARNING = 'delete_verbal_warning';
 
+    // Item kezelése
+    case ADD_ITEMS = 'add_items';
+    case ADD_ITEM_VEHICLES = 'add_item_vehicles';
+    case ADD_ITEM_CLOTHES = 'add_item_clothes';
+    case EDIT_ITEMS = 'edit_items';
+    case EDIT_ITEM_VEHICLES = 'edit_item_vehicles';
+    case EDIT_ITEM_CLOTHES = 'edit_item_clothes';
+    case DELETE_ITEMS = 'delete_items';
+    case DELETE_ITEM_VEHICLES = 'delete_item_vehicles';
+    case DELETE_ITEM_CLOTHES = 'delete_item_clothes';
+
+
     // Megtekintési jogok
+    case VIEW_ITEMS = 'view_items';
+    case VIEW_ITEM_VEHICLES = 'view_item_vehicles';
+    case VIEW_ITEM_CLOTHES = 'view_item_clothes';
     case VIEW_GUILD_SETTINGS = 'view_guild_settings';
     case VIEW_GUILD_USERS = 'view_guild_users';
     case VIEW_DUTIES = 'view_duties';
@@ -51,44 +66,54 @@ enum PermissionEnum: string
     case CANCEL_HOLIDAY = 'cancel_holiday';
     case MAKE_REQUEST = 'make_request';
 
+    /**
+     * @return array
+     */
     public static function getOptions(): array
     {
         return array_column(self::cases(), 'value');
     }
 
+    /**
+     * @param string|null $lang
+     * @return string
+     */
     public function getLabel(?string $lang = null): string
     {
         return __('permission.'.$this->value, [], $lang);
     }
 
+    /**
+     * @param string $group
+     * @return array|PermissionEnum[]
+     */
     public function getGroupPermissions(string $group): array
     {
         $default_permissions = [
+            PermissionEnum::VIEW_ITEMS,
             PermissionEnum::TOGGLE_DUTY,
             PermissionEnum::CANCEL_HOLIDAY,
             PermissionEnum::GET_HOLIDAY,
             PermissionEnum::MAKE_REQUEST,
         ];
 
-        switch ($group) {
-            case PermissionEnum::USER_GROUP:
-                return $default_permissions;
-            case PermissionEnum::MODERATOR_GROUP:
-                return array_merge($default_permissions, [
-                    PermissionEnum::VIEW_GUILD_USERS,
-                    PermissionEnum::VIEW_DUTIES,
-                    PermissionEnum::VIEW_DUTIES_STATS,
-                    PermissionEnum::VIEW_PUNISHMENTS,
-                    PermissionEnum::ADD_DUTIES,
-                    PermissionEnum::ADD_VERBAL_WARNING,
-                    PermissionEnum::DELETE_VERBAL_WARNING,
-                    PermissionEnum::ADD_WARNING,
-                    PermissionEnum::DELETE_WARNING,
-                ]);
-            case PermissionEnum::ADMIN_GROUP:
-                return [
-                    PermissionEnum::ALL,
-                ];
-        }
+        return match ($group) {
+            PermissionEnum::USER_GROUP => $default_permissions,
+            PermissionEnum::MODERATOR_GROUP => array_merge($default_permissions, [
+                PermissionEnum::VIEW_GUILD_USERS,
+                PermissionEnum::VIEW_DUTIES,
+                PermissionEnum::VIEW_DUTIES_STATS,
+                PermissionEnum::VIEW_PUNISHMENTS,
+                PermissionEnum::ADD_DUTIES,
+                PermissionEnum::ADD_VERBAL_WARNING,
+                PermissionEnum::DELETE_VERBAL_WARNING,
+                PermissionEnum::ADD_WARNING,
+                PermissionEnum::DELETE_WARNING,
+            ]),
+            PermissionEnum::ADMIN_GROUP => [
+                PermissionEnum::ALL,
+            ],
+            default => [],
+        };
     }
 }

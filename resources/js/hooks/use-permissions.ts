@@ -4,16 +4,28 @@ export function usePermissions() {
     const { auth } = usePage().props;
 
     const can = (permission: string) => {
+
+        if (auth.user.global_role === 'developer') {
+            return true;
+        }
+
         if (!auth?.permissions) {
             return false;
         }
 
-        if (auth.permissions.includes('all')) return true;
+        if (auth.permissions.includes('all')) {
+            return true;
+        }
 
         return auth.permissions.includes(permission);
     };
 
     const canAny = (permissions: string[]) => {
+
+        if (auth.user.global_role === 'developer') {
+            return true;
+        }
+
         if (!auth?.permissions) {
             return false;
         }

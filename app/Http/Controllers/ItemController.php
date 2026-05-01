@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ItemTypeEnum;
+use App\Enums\PermissionEnum;
 use App\Http\Requests\IndexItemRequest;
 use App\Http\Requests\StoreItemRequest;
 use App\Models\Item;
@@ -20,7 +22,13 @@ class ItemController extends Controller
 
     public function index(IndexItemRequest $request): Response
     {
-        $type = $request->validated()['type'];
+        $type = ItemTypeEnum::from($request->validated()['type']);
+
+        if (auth()->user()->cannot(PermissionEnum::VIEW_ITEMS)) {
+            if (($type === ItemTypeEnum::VEHICLE && auth()->user()->cannot(PermissionEnum::VIEW_ITEM_VEHICLES)) || ($type === ItemTypeEnum::CLOTHING && auth()->user()->cannot(PermissionEnum::VIEW_ITEM_CLOTHES))) {
+                abort(403, __('app.error_no_permission'));
+            }
+        }
 
         $items = Item::with('image')->where('type', $type)->orderBy('position')->get();
 
