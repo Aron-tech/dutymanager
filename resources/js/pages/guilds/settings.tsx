@@ -1,15 +1,16 @@
-import { FormEventHandler, useState } from 'react';
 import { useForm, usePage, Head } from '@inertiajs/react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState } from 'react';
+import type { FormEventHandler} from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import AppLayout from '@/layouts/app-layout';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import GeneralSettings from '@/features/general-settings';
-import UserDetails from '@/features/user-details';
 import DutyManagerView from '@/features/duty-manager/view';
-import WarningSystemView from '@/features/warning-system/view';
+import GeneralSettings from '@/features/general-settings';
 import RankSystemView from '@/features/rank-system/view';
+import UserDetails from '@/features/user-details';
+import WarningSystemView from '@/features/warning-system/view';
+import AppLayout from '@/layouts/app-layout';
 
 interface PageProps {
     guild: { id: string; [key: string]: any };

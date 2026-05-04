@@ -5,7 +5,7 @@ namespace App\Enums;
 enum FeatureEnum: string
 {
     case DUTY = 'duty_manager';
-    case WARN = 'warn_system';
+    case WARN = 'warning_system';
     case RANK = 'rank_system';
 
     public static function getOptions(): array

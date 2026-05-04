@@ -16,6 +16,11 @@ class SelectedGuildMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
+        $user = auth()->user();
+        if (! $user) {
+            return redirect()->route('guilds.selector');
+        }
+
         if (! $request->session()->has(SelectedGuildService::SESSION_KEY)) {
             return redirect()->route('guilds.selector');
         }

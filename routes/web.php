@@ -10,6 +10,7 @@ use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PunishmentController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Middleware\RequireGuildSetupMiddleware;
 use App\Http\Middleware\SelectedGuildMiddleware;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
@@ -23,11 +24,15 @@ Route::inertia('/docs', 'docs', [])->name('docs');
 
 Route::get('/login/discord', [DiscordController::class, 'redirectToDiscord'])->name('login.discord');
 Route::get('/login/callback', [DiscordController::class, 'handleDiscordCallback']);
-Route::get('/guild/settings', [GuildSettingsController::class, 'index'])->name('guild.settings');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/guilds/selector', [GuildController::class, 'selector'])->name('guilds.selector');
     Route::post('/guilds/select/{guild}', [GuildController::class, 'select'])->name('guilds.select');
+
+    // Subscriptions
+    Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
+    Route::post('/subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store');
+    Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
 
     Route::middleware([SelectedGuildMiddleware::class, RequireGuildSetupMiddleware::class])->group(function () {
         Route::get('dashboard', [PageController::class, 'dashboard'])->name('dashboard');
@@ -36,6 +41,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/guilds/setup/feature/{feature_id}', [GuildController::class, 'saveFeatureSettings'])->name('guild.setup.feature.save')->middleware([HandlePrecognitiveRequests::class]);
         Route::post('/guilds/setup/finish', [GuildController::class, 'finish'])->name('guild.setup.finish');
         Route::put('/guild/settings', [GuildSettingsController::class, 'update'])->name('guild.settings.update');
+        Route::get('/guild/settings', [GuildSettingsController::class, 'index'])->name('guild.settings');
+
+        Route::get('/statistics', [PageController::class, 'statistics'])->name('statistics');
 
         Route::prefix('panel')->group(function () {
             Route::get('/', [GuildUserController::class, 'index'])->name('guild.users.index');

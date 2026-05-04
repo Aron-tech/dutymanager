@@ -72,6 +72,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'activeGuild' => $request->session()->get('selected_guild_id'),
+            'selectedGuild' => SelectedGuildService::get()?->only(['id', 'name', 'icon']),
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),

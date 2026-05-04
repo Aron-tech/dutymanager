@@ -28,6 +28,7 @@ class GuildService
                 [
                     'name' => $data['name'],
                     'owner_id' => $data['owner_id'],
+                    'icon' => $data['icon'] ?? null,
                     'lang_code' => $data['lang_code'],
                 ]
             );

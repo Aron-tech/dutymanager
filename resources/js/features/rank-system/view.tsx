@@ -1,8 +1,9 @@
 import { Gem } from 'lucide-react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import InputError from '@/components/input-error';
 import SearchableSingleSelect from '@/components/searchable-single-select';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Combobox,
     ComboboxChip,
@@ -24,21 +25,31 @@ import {
 import type { FeatureViewProps } from '@/types';
 
 export default function RankSystemView({
-    data,
-    context_data,
-    errors,
-    onChange,
-}: FeatureViewProps) {
-    const channels = context_data.channels || [];
+                                           data,
+                                           context_data,
+                                           errors,
+                                           onChange,
+                                       }: FeatureViewProps) {
+    const text_channels = context_data.discord_text_channels || [];
     const roles = context_data.discord_roles || [];
-    const hasPremium = context_data.has_premium || false;
+    const has_premium = context_data.has_premium || false;
 
-    const channelIds = channels.map((c: any) => c.id);
-    const roleIds = roles.map((r: any) => r.id);
+    const text_channel_options = useMemo(
+        () =>
+            text_channels.map((c: any) => ({
+                value: c.id,
+                label: `#${getChannelName(c.id, text_channels)}`,
+            })),
+        [text_channels],
+    );
 
-    const rankAnchor = useComboboxAnchor();
-    const orderedRanks = Array.isArray(data.ordered_ranks)
-        ? data.ordered_ranks
+    const role_ids = roles.map((r: any) => r.id);
+
+    const rank_anchor = useComboboxAnchor();
+
+    const rank_system_data = data || {};
+    const ordered_ranks_value = Array.isArray(rank_system_data.ordered_ranks)
+        ? rank_system_data.ordered_ranks
         : [];
 
     return (
@@ -51,25 +62,25 @@ export default function RankSystemView({
                 <Combobox
                     multiple
                     autoHighlight
-                    items={roleIds}
-                    value={orderedRanks}
+                    items={role_ids}
+                    value={ordered_ranks_value}
                     onValueChange={(val) =>
                         onChange('ordered_ranks', val as string[])
                     }
                 >
                     <ComboboxChips
-                        ref={rankAnchor}
-                        className={`w-full ${errors['settings.ordered_ranks'] ? 'border-destructive' : ''}`}
+                        ref={rank_anchor}
+                        className={`w-full ${errors['settings.rank_system.ordered_ranks'] ? 'border-destructive' : ''}`}
                     >
                         <ComboboxValue>
                             {(values: string[]) => {
-                                const safeValues = Array.isArray(values)
+                                const safe_values = Array.isArray(values)
                                     ? values
                                     : [];
 
                                 return (
                                     <React.Fragment>
-                                        {safeValues.map((val, index) => (
+                                        {safe_values.map((val, index) => (
                                             <ComboboxChip
                                                 key={val}
                                                 className="border-primary/20"
@@ -98,7 +109,7 @@ export default function RankSystemView({
                             }}
                         </ComboboxValue>
                     </ComboboxChips>
-                    <ComboboxContent anchor={rankAnchor}>
+                    <ComboboxContent anchor={rank_anchor}>
                         <ComboboxEmpty>Nincs találat.</ComboboxEmpty>
                         <ComboboxList>
                             {(item: string) => (
@@ -124,11 +135,30 @@ export default function RankSystemView({
                     Tipp: A rangokat abban a sorrendben kattintsd be, ahogy a
                     hierarchia felépül.
                 </p>
-                <InputError message={errors['settings.ordered_ranks']} />
+                <InputError message={errors['settings.rank_system.ordered_ranks']} />
+            </div>
+
+            <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                <Checkbox
+                    id="archive_duties_on_promotion"
+                    checked={rank_system_data.archive_duties_on_promotion ?? false}
+                    onCheckedChange={(checked) =>
+                        onChange('archive_duties_on_promotion', checked)
+                    }
+                />
+                <div className="space-y-1 leading-none">
+                    <Label htmlFor="archive_duties_on_promotion">
+                        Rang változás esetén az aktuális duty idők automatikusan archiváltak közé kerüljenek
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                        Ha be van kapcsolva, az előléptetés/lefokozás során a felhasználó aktív periódusban lévő duty ideje lezárul és archiválódik.
+                    </p>
+                </div>
+                <InputError message={errors['settings.rank_system.archive_duties_on_promotion']} />
             </div>
 
             <div className="relative space-y-2 overflow-hidden rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-                {!hasPremium && (
+                {!has_premium && (
                     <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/50 backdrop-blur-[1px]">
                         <Badge
                             variant="outline"
@@ -144,18 +174,29 @@ export default function RankSystemView({
                     szoba (Opcionális)
                 </Label>
 
-                {/* JAVÍTÁS: Sokkal rövidebb lett az új közös komponenssel! */}
                 <SearchableSingleSelect
-                    items={channelIds}
-                    value={data.announcement_channel_id}
+                    items={text_channel_options}
+                    value={rank_system_data.announcement_channel_id}
                     onChange={(val) => onChange('announcement_channel_id', val)}
-                    placeholder="Keresés csatornára..."
-                    renderItem={(id) => `#${getChannelName(id, channels)}`}
+                    placeholder="Keresés szöveges csatornára..."
+                    renderItem={(item) => item.label}
                 />
 
                 <InputError
-                    message={errors['settings.announcement_channel_id']}
+                    message={errors['settings.rank_system.announcement_channel_id']}
                 />
+            </div>
+
+            <div className="space-y-2">
+                <Label>Rang Rendszer Log Szoba</Label>
+                <SearchableSingleSelect
+                    items={text_channel_options}
+                    value={rank_system_data.log_channel_id}
+                    onChange={(val) => onChange('log_channel_id', val)}
+                    placeholder="Keresés szöveges csatornára..."
+                    renderItem={(item) => item.label}
+                />
+                <InputError message={errors['settings.rank_system.log_channel_id']} />
             </div>
         </div>
     );

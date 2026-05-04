@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ActionTypeEnum;
 use App\Enums\ItemTypeEnum;
 use App\Enums\PermissionEnum;
 use App\Http\Requests\IndexItemRequest;
 use App\Http\Requests\StoreItemRequest;
+use App\Models\ActivityLog;
 use App\Models\Item;
 use App\Services\ItemService;
 use App\Services\SelectedGuildService;
@@ -57,6 +59,8 @@ class ItemController extends Controller
             $item = DB::transaction(function () use ($request, $data, $guild) {
                 $item = $this->service->createItem($guild, $data, $request->file('image'));
 
+                ActivityLog::make($guild->id, auth()->id(), null, ActionTypeEnum::ADD_ITEM_TO_GUILD, $data);
+
                 return $item;
             });
 
@@ -96,8 +100,9 @@ class ItemController extends Controller
     public function delete(Item $item)
     {
         try {
-            $item_model = $item;
+            $item_model = clone $item;
             $item->delete();
+            ActivityLog::make($item->guild_id, auth()->id(), null, ActionTypeEnum::DELETE_ITEM_FROM_GUILD, $item_model->toArray());
 
             return back()->with('success', 'Sikeresen törölve a(z) '.$item_model?->name.'.');
         } catch (Throwable $e) {

@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['id', 'name', 'icon', 'owner_id', 'lang_code', 'is_installed'])]
+#[Fillable(['id', 'name', 'icon', 'owner_id', 'lang_code', 'is_installed', 'reset_data_at'])]
 #[Hidden(['lang_code'])]
 class Guild extends Model
 {
@@ -31,6 +31,7 @@ class Guild extends Model
     {
         return [
             'is_installed' => 'bool',
+            'reset_data_at' => 'datetime',
         ];
     }
 

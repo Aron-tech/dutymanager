@@ -10,6 +10,7 @@ use App\Services\DiscordFetchService;
 use App\Services\GuildSettingsService;
 use App\Services\SelectedGuildService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -76,7 +77,7 @@ class GuildSettingsController extends Controller
         ]);
     }
 
-    public function update(UpdateGuildSettingsRequest $request, Guild $guild): RedirectResponse
+    public function update(UpdateGuildSettingsRequest $request): RedirectResponse
     {
         if (auth()->user()->cannot(PermissionEnum::EDIT_SETTINGS)) {
             abort(403, 'app.error_no_permission');

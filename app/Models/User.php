@@ -2,26 +2,26 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\GlobalRoleEnum;
 use App\Enums\LanguageEnum;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Cashier\Billable;
 
 #[Fillable(['id', 'name', 'global_name', 'email', 'avatar_url', 'lang_code', 'access_token', 'refresh_token', 'access_expires_at'])]
 #[Hidden(['access_token', 'refresh_token', 'access_expires_at'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes;
+    use Billable, HasFactory, Notifiable, SoftDeletes;
 
     protected $primaryKey = 'id';
 
@@ -41,44 +41,30 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * @return HasMany
-     */
     public function guildUsers(): HasMany
     {
         return $this->hasMany(GuildUser::class);
     }
 
-    /**
-     * @param string $guild_id
-     * @return HasOne
-     */
     public function guildUser(string $guild_id): HasOne
     {
         return $this->hasOne(GuildUser::class)->where('guild_id', $guild_id);
     }
 
-    /**
-     * @return HasManyThrough
-     */
-    public function guilds(): HasManyThrough
+    public function guilds(): BelongsToMany
     {
-        return $this->hasManyThrough(Guild::class, GuildUser::class);
+        return $this->belongsToMany(Guild::class, 'guild_users', 'user_id', 'guild_id');
     }
 
-    /**
-     * @return HasMany
-     */
     public function subscriptions(): HasMany
     {
-        return $this->hasMany(Subscription::class);
+        return $this->hasMany(Subscription::class)->orderBy('created_at', 'desc');
     }
 
-    /**
-     * @return HasMany
-     */
     public function availableSubscriptions(): HasMany
     {
-        return $this->hasMany(Subscription::class)->whereNull('guild_id')->whereDate('current_period_end', '>', now());
+        return $this->hasMany(Subscription::class)->whereNull('guild_id')->where(function ($query) {
+            $query->whereNull('ends_at')->orWhere('ends_at', '>', now());
+        });
     }
 }

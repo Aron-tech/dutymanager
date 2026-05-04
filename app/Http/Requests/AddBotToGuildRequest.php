@@ -25,6 +25,8 @@ class AddBotToGuildRequest extends FormRequest
         return [
             'id' => 'required|string|unique:guilds|max:30',
             'name' => 'required|string|max:255',
+            'icon' => 'nullable|string|max:255',
+            'lang_code' => 'required|string|min:2|max:3',
             'owner_id' => 'required|string|exists:users,id|max:30',
         ];
     }

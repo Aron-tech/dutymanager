@@ -2,24 +2,10 @@
 
 namespace App\Providers;
 
-use App\Models\Duty;
-use App\Models\Guild;
-use App\Models\GuildUser;
-use App\Models\Image;
-use App\Models\Item;
-use App\Observers\DutyObserver;
-use App\Observers\GuildObserver;
-use App\Observers\GuildUserObserver;
-use App\Observers\ImageObserver;
-use App\Observers\ItemObserver;
-use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Validation\Rules\Password;
-use SocialiteProviders\Discord\Provider;
-use SocialiteProviders\Manager\SocialiteWasCalled;
+use Laravel\Cashier\Cashier;
+use App\Models\Subscription;
+use App\Models\User;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,40 +22,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->configureDefaults();
-
-        // observers
-        GuildUser::observe(GuildUserObserver::class);
-        Guild::observe(GuildObserver::class);
-        Image::observe(ImageObserver::class);
-        Item::observe(ItemObserver::class);
-        Duty::observe(DutyObserver::class);
-
-
-        Event::listen(function (SocialiteWasCalled $event) {
-            $event->extendSocialite('discord', Provider::class);
-        });
-    }
-
-    /**
-     * Configure default behaviors for production-ready applications.
-     */
-    protected function configureDefaults(): void
-    {
-        Date::use(CarbonImmutable::class);
-
-        DB::prohibitDestructiveCommands(
-            app()->isProduction(),
-        );
-
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
-        );
+        Cashier::useSubscriptionModel(Subscription::class);
+        Cashier::useCustomerModel(User::class);
     }
 }

@@ -14,6 +14,9 @@ enum ActionTypeEnum: string
     case UPLOAD_IMAGE_TO_USER_GUILD = 'upload_image_to_user_guild';
     case DELETE_IMAGE_FROM_USER_GUILD = 'delete_image_from_user_guild';
 
+    case ADD_ITEM_TO_GUILD = 'add_item_to_guild';
+    case DELETE_ITEM_FROM_GUILD = 'delete_item_from_guild';
+
     case JOIN_TO_GUILD = 'join_to_guild';
     case LEAVE_FROM_GUILD = 'leave_from_guild';
     case ADD_BOT_TO_GUILD = 'add_bot_to_guild';

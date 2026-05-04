@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ActionTypeEnum;
+use App\Enums\FeatureEnum;
 use App\Enums\PermissionEnum;
 use App\Http\Requests\IndexActivityLogRequest;
 use App\Services\ActivityLogService;

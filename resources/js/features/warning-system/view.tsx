@@ -1,6 +1,6 @@
-import { X } from 'lucide-react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import InputError from '@/components/input-error';
+import SearchableSingleSelect from '@/components/searchable-single-select';
 import {
     Combobox,
     ComboboxChip,
@@ -8,85 +8,76 @@ import {
     ComboboxChipsInput,
     ComboboxContent,
     ComboboxEmpty,
-    ComboboxInput,
     ComboboxItem,
     ComboboxList,
     ComboboxValue,
     useComboboxAnchor,
 } from '@/components/ui/combobox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    getChannelName,
+    getRoleColor,
+    getRoleName,
+} from '@/lib/discord-helpers';
 import type { FeatureViewProps } from '@/types';
 
 export default function WarningSystemView({
-    data,
-    context_data,
-    errors,
-    onChange,
-}: FeatureViewProps) {
-    const channels = context_data.channels || [];
+                                              data,
+                                              context_data,
+                                              errors,
+                                              onChange,
+                                          }: FeatureViewProps) {
+    const text_channels = context_data.discord_text_channels || [];
     const roles = context_data.discord_roles || [];
 
-    const channelIds = channels.map((c: any) => c.id);
-    const roleIds = roles.map((r: any) => r.id);
+    const text_channel_options = useMemo(
+        () =>
+            text_channels.map((c: any) => ({
+                value: c.id,
+                label: `#${getChannelName(c.id, text_channels)}`,
+            })),
+        [text_channels],
+    );
 
-    const getChannelName = (id: string) =>
-        channels.find((c: any) => c.id === id)?.name || id;
-    const getRoleName = (id: string) =>
-        roles.find((r: any) => r.id === id)?.name || id;
-    const getRoleColor = (id: string) => {
-        const role = roles.find((r: any) => r.id === id);
+    const role_ids = roles.map((r: any) => r.id);
+    const role_anchor = useComboboxAnchor();
 
-        return !role || !role.color
-            ? '#99aab5'
-            : typeof role.color === 'number'
-              ? `#${role.color.toString(16).padStart(6, '0')}`
-              : role.color;
-    };
-
-    const roleAnchor = useComboboxAnchor();
-    const warningRoles = Array.isArray(data.warning_roles)
+    const warning_roles_value = Array.isArray(data.warning_roles)
         ? data.warning_roles
         : [];
 
     return (
         <div className="animate-in space-y-6 duration-500 fade-in">
-            <div className="space-y-2">
-                <Label>Figyelmeztetési Rangok (Kik oszthatnak ki warn-t)</Label>
+            <div className="space-y-2 border-b pb-6">
+                <Label>Figyelmeztetési Rangok (Sorrendben)</Label>
                 <Combobox
                     multiple
                     autoHighlight
-                    items={roleIds}
-                    value={warningRoles}
-                    onValueChange={(val) =>
-                        onChange('warning_roles', val as string[])
-                    }
+                    items={role_ids}
+                    value={warning_roles_value}
+                    onValueChange={(val) => onChange('warning_roles', val as string[])}
                 >
                     <ComboboxChips
-                        ref={roleAnchor}
-                        className={`w-full ${errors['settings.warning_roles'] ? 'border-destructive' : ''}`}
+                        ref={role_anchor}
+                        className={`w-full ${errors['warning_roles'] ? 'border-destructive' : ''}`}
                     >
                         <ComboboxValue>
                             {(values: string[]) => {
-                                const safeValues = Array.isArray(values)
-                                    ? values
-                                    : [];
+                                const safe_values = Array.isArray(values) ? values : [];
 
                                 return (
                                     <React.Fragment>
-                                        {safeValues.map((val) => (
-                                            <ComboboxChip key={val}>
+                                        {safe_values.map((val, index) => (
+                                            <ComboboxChip key={val} className="border-primary/20">
+                                                <span className="mr-1.5 font-mono text-xs opacity-50">
+                                                    {index + 1}.
+                                                </span>
                                                 <div className="flex items-center gap-1.5">
                                                     <span
                                                         className="h-2 w-2 rounded-full"
-                                                        style={{
-                                                            backgroundColor:
-                                                                getRoleColor(
-                                                                    val,
-                                                                ),
-                                                        }}
+                                                        style={{ backgroundColor: getRoleColor(val, roles) }}
                                                     />
-                                                    {getRoleName(val)}
+                                                    {getRoleName(val, roles)}
                                                 </div>
                                             </ComboboxChip>
                                         ))}
@@ -96,7 +87,7 @@ export default function WarningSystemView({
                             }}
                         </ComboboxValue>
                     </ComboboxChips>
-                    <ComboboxContent anchor={roleAnchor}>
+                    <ComboboxContent anchor={role_anchor}>
                         <ComboboxEmpty>Nincs találat.</ComboboxEmpty>
                         <ComboboxList>
                             {(item: string) => (
@@ -104,76 +95,43 @@ export default function WarningSystemView({
                                     <div className="flex items-center gap-2">
                                         <span
                                             className="h-2 w-2 rounded-full"
-                                            style={{
-                                                backgroundColor:
-                                                    getRoleColor(item),
-                                            }}
+                                            style={{ backgroundColor: getRoleColor(item, roles) }}
                                         />
-                                        {getRoleName(item)}
+                                        {getRoleName(item, roles)}
                                     </div>
                                 </ComboboxItem>
                             )}
                         </ComboboxList>
                     </ComboboxContent>
                 </Combobox>
-                <InputError message={errors['settings.warning_roles']} />
+                <p className="mt-2 text-xs text-muted-foreground">
+                    A rangokat sorrendben add meg. Az 1. a legelső figyelmeztetéskor járó rang.
+                </p>
+                <InputError message={errors['warning_roles']} />
+            </div>
+
+            <div className="space-y-2">
+                <Label>Figyelmeztetési Felhívás Szoba</Label>
+                <SearchableSingleSelect
+                    items={text_channel_options}
+                    value={data.announcement_channel_id}
+                    onChange={(val) => onChange('announcement_channel_id', val)}
+                    placeholder="Keresés szöveges csatornára..."
+                    renderItem={(item) => item.label}
+                />
+                <InputError message={errors['announcement_channel_id']} />
             </div>
 
             <div className="space-y-2">
                 <Label>Figyelmeztetések Log Szoba</Label>
-                <Combobox
-                    items={channelIds}
-                    value={data.warning_channel_id}
-                    onValueChange={(v) => onChange('warning_channel_id', v)}
-                >
-                    {data.warning_channel_id ? (
-                        <div className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm">
-                            <span>
-                                #{getChannelName(data.warning_channel_id)}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onChange('warning_channel_id', '');
-                                }}
-                                className="text-muted-foreground hover:text-foreground"
-                            >
-                                <X className="h-4 w-4" />
-                            </button>
-                        </div>
-                    ) : (
-                        <ComboboxInput
-                            placeholder="Keresés csatornára..."
-                            showClear
-                        />
-                    )}
-                    <ComboboxContent>
-                        <ComboboxEmpty>Nincs találat.</ComboboxEmpty>
-                        <ComboboxList>
-                            {(item: string) => (
-                                <ComboboxItem key={item} value={item}>
-                                    #{getChannelName(item)}
-                                </ComboboxItem>
-                            )}
-                        </ComboboxList>
-                    </ComboboxContent>
-                </Combobox>
-                <InputError message={errors['settings.warning_channel_id']} />
-            </div>
-
-            <div className="space-y-2">
-                <Label>Automatikus lejárat napokban (Opcionális)</Label>
-                <Input
-                    type="number"
-                    min="1"
-                    placeholder="Pl. 30 (üresen hagyva sosem jár le)"
-                    value={data.auto_expire_days || ''}
-                    onChange={(e) =>
-                        onChange('auto_expire_days', e.target.value)
-                    }
+                <SearchableSingleSelect
+                    items={text_channel_options}
+                    value={data.log_channel_id}
+                    onChange={(val) => onChange('log_channel_id', val)}
+                    placeholder="Keresés szöveges csatornára..."
+                    renderItem={(item) => item.label}
                 />
-                <InputError message={errors['settings.auto_expire_days']} />
+                <InputError message={errors['log_channel_id']} />
             </div>
         </div>
     );

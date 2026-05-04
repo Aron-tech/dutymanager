@@ -1,4 +1,6 @@
 import DutyManagerView from '@/features/duty-manager/view';
+import RankSystemView from '@/features/rank-system/view';
+import WarningSystemView from '@/features/warning-system/view';
 import type { FeatureRegistryItem } from '@/types';
 
 export const feature_registry: Record<string, FeatureRegistryItem> = {
@@ -8,16 +10,16 @@ export const feature_registry: Record<string, FeatureRegistryItem> = {
         description: 'Frakciók és szolgálati idők naplózása.',
         view: DutyManagerView,
     },
-    warn_system: {
-        id: 'warn_system',
+    warning_system: {
+        id: 'warning_system',
         title: 'Figyelmeztetés funkció',
         description: '',
-        view: DutyManagerView,
+        view: WarningSystemView,
     },
     rank_system: {
         id: 'rank_system',
         title: 'Rang rendszer funkció',
         description: '',
-        view: DutyManagerView,
+        view: RankSystemView,
     },
 };

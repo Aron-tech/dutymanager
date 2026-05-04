@@ -50,6 +50,7 @@ export default function Selector({
         if (flash?.success) {
             toast.success(flash.success);
         }
+
         if (flash?.error) {
             toast.error(flash.error);
         }
@@ -77,12 +78,10 @@ export default function Selector({
         router.post(`/guilds/select/${discord_id}`);
     };
 
-    const handleAddBot = (discord_id: string) => {
-        const client_id = import.meta.env.VITE_DISCORD_CLIENT_ID;
-        const permissions = '8';
+    const handleAddBot = () => {
 
         window.location.assign(
-            `https://discord.com/oauth2/authorize?client_id=${client_id}&permissions=${permissions}&integration_type=0&scope=bot+applications.commands&guild_id=${discord_id}`,
+            `https://discord.com/oauth2/authorize?client_id=1485260478048505876`,
         );
     };
 

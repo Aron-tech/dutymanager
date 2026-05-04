@@ -4,7 +4,9 @@ namespace App\Http\Requests;
 
 use App\Rules\DutyManagerRules;
 use App\Rules\GeneralSettingsRules;
+use App\Rules\RankSystemRules;
 use App\Rules\UserDetailsRules;
+use App\Rules\WarningSystemRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateGuildSettingsRequest extends FormRequest
@@ -33,8 +35,8 @@ class UpdateGuildSettingsRequest extends FormRequest
         foreach ($enabled_features as $feature) {
             $feature_rules = match ($feature) {
                 'duty_manager' => DutyManagerRules::rules(),
-                // 'warning_system' => WarningSystemRules::rules(),
-                // 'rank_system' => RankSystemRules::rules(),
+                'warning_system' => WarningSystemRules::rules(),
+                'rank_system' => RankSystemRules::rules(),
                 default => [],
             };
 
@@ -56,8 +58,8 @@ class UpdateGuildSettingsRequest extends FormRequest
         foreach ($enabled_features as $feature) {
             $feature_messages = match ($feature) {
                 'duty_manager' => DutyManagerRules::messages(),
-                // 'warning_system' => WarningSystemRules::messages(),
-                // 'rank_system' => RankSystemRules::messages(),
+                'warning_system' => WarningSystemRules::messages(),
+                'rank_system' => RankSystemRules::messages(),
                 default => [],
             };
 
