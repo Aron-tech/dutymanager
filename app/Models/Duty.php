@@ -77,4 +77,13 @@ class Duty extends Model
     {
         return $query->whereNull('finished_at');
     }
+
+    /**
+     * @param Builder $query
+     * @return Builder
+     */
+    public function scopeFinishedDuties(Builder $query): Builder
+    {
+        return $query->whereNotNull('finished_at');
+    }
 }

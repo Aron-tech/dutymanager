@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Enums\ActionTypeEnum;
 use App\Enums\DutyActionEnum;
 use App\Enums\DutyStatusEnum;
+use App\Enums\FeatureEnum;
 use App\Enums\PermissionEnum;
+use App\Services\SelectedGuildService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
@@ -53,6 +55,30 @@ class GuildUser extends Model
         return "{$days} napja";
     }
 
+    /**
+     * @param GuildSettings|null $guild_settings
+     * @return array|null
+     */
+    public function getRankData(?GuildSettings $guild_settings = null): ?array
+    {
+        $guild_settings = $guild_settings ?: SelectedGuildService::get()?->guildSettings();
+        $rank_roles = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'rank_roles', []);
+        $rank_roles_count = count($rank_roles);
+        $highest_match = null;
+
+        for ($i = $rank_roles_count - 1; $i >= 0; $i--) {
+            if (in_array($rank_roles[$i], $this->cached_roles)) {
+                $highest_match = [
+                    'index' => $i,
+                    'role_id' => $rank_roles[$i],
+                ];
+                break;
+            }
+        }
+
+        return $highest_match;
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -93,9 +119,6 @@ class GuildUser extends Model
         return $this->hasMany(Punishment::class, 'guild_user_id', 'id')->withTrashed();
     }
 
-    /**
-     * @return HasMany
-     */
     public function activePunishments(): HasMany
     {
         return $this->hasMany(Punishment::class, 'guild_user_id', 'id')
@@ -116,19 +139,11 @@ class GuildUser extends Model
         return $this->hasOne(Holiday::class)->where('ended_at', '>', now());
     }
 
-    /**
-     * @param Builder $query
-     * @return Builder
-     */
     public function scopeAccepted(Builder $query): Builder
     {
         return $query->whereNotNull('accepted_at');
     }
 
-    /**
-     * @param Builder $query
-     * @return Builder
-     */
     public function scopeNotAccepted(Builder $query): Builder
     {
         return $query->whereNull('accepted_at');
@@ -168,9 +183,6 @@ class GuildUser extends Model
         }
     }
 
-    /**
-     * @return array
-     */
     public function getPermissionsAttribute(): array
     {
         $permissions = Cache::rememberForever("guild_{$this->guild_id}_user_{$this->user_id}_permissions", function () {
@@ -189,18 +201,11 @@ class GuildUser extends Model
         return $permissions;
     }
 
-    /**
-     * @return bool
-     */
     public function hasActiveHoliday(): bool
     {
         return $this->activeHoliday->exists();
     }
 
-    /**
-     * @param string $role_id
-     * @return bool
-     */
     public function hasRole(string $role_id): bool
     {
         return in_array($role_id, $this->cached_roles ?? []);

@@ -100,7 +100,7 @@ export default function UserDetailsView({
                             renderItem={(item) => item.label}
                         />
                         <InputError
-                            message={errors['settings.log_channel_id']}
+                            message={errors['log_channel_id']}
                         />
                     </div>
                 </div>
@@ -206,7 +206,7 @@ export default function UserDetailsView({
                     </div>
                 </div>
 
-                <InputError message={errors['settings.config']} />
+                <InputError message={errors['config']} />
 
                 <div className="mt-6 space-y-3">
                     {config_items.length === 0 ? (

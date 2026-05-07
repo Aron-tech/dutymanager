@@ -75,7 +75,7 @@ export default function DutyManagerView({
                         </div>
                     )}
                 />
-                <InputError message={errors['settings.duty_role_id']} />
+                <InputError message={errors['duty_role_id']} />
             </div>
 
             {/* --- DUTY PANEL SZÓBA --- */}
@@ -89,7 +89,7 @@ export default function DutyManagerView({
                     renderItem={(item) => item.label}
                 />
                 <InputError
-                    message={errors['settings.duty_panel_channel_id']}
+                    message={errors['duty_panel_channel_id']}
                 />
             </div>
 
@@ -116,7 +116,7 @@ export default function DutyManagerView({
                     renderItem={(item) => item.label}
                 />
                 <InputError
-                    message={errors['settings.duty_voice_channel_id']}
+                    message={errors['duty_voice_channel_id']}
                 />
             </div>
 
@@ -131,7 +131,7 @@ export default function DutyManagerView({
                     renderItem={(item) => item.label}
                 />
                 <InputError
-                    message={errors['settings.active_duty_channel_id']}
+                    message={errors['active_duty_channel_id']}
                 />
             </div>
 
@@ -145,7 +145,7 @@ export default function DutyManagerView({
                     placeholder="Keresés szöveges csatornára..."
                     renderItem={(item) => item.label}
                 />
-                <InputError message={errors['settings.duty_log_channel_id']} />
+                <InputError message={errors['duty_log_channel_id']} />
             </div>
         </div>
     );

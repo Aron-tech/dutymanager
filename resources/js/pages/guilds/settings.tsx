@@ -1,6 +1,7 @@
 import { useForm, usePage, Head } from '@inertiajs/react';
 import { useState } from 'react';
 import type { FormEventHandler} from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,7 +24,7 @@ export default function GuildSettings() {
     const { guild, initialSettings, initialEnabledFeatures, context_data } =
         usePage<PageProps>().props;
 
-    const { data, setData, put, processing, errors, isDirty } = useForm({
+    const { data, setData, put, processing, errors, isDirty, clearErrors } = useForm({
         enabled_features: initialEnabledFeatures || [],
         settings: initialSettings || {},
     });
@@ -40,6 +41,7 @@ export default function GuildSettings() {
     };
 
     const updateSetting = (feature: string, key: string, value: any) => {
+        clearErrors(`settings.${feature}.${key}`);
         setData('settings', {
             ...data.settings,
             [feature]: {
@@ -53,6 +55,32 @@ export default function GuildSettings() {
         e.preventDefault();
         put(route('guild.settings.update', guild.id), {
             preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Beállítások sikeresen elmentve!');
+            },
+            onError: (errors) => {
+                toast.error('Kérlek ellenőrizd az űrlapot!');
+
+                // Keresünk egy olyan tabot, ahol hiba van, hogy oda ugorjunk
+                for (const key of Object.keys(errors)) {
+                    if (key.startsWith('settings.user_details.')) {
+                        setActiveTab('user_details');
+                        break;
+                    } else if (key.startsWith('settings.duty_manager.')) {
+                        setActiveTab('duty_manager');
+                        break;
+                    } else if (key.startsWith('settings.warning_system.')) {
+                        setActiveTab('warning_system');
+                        break;
+                    } else if (key.startsWith('settings.rank_system.')) {
+                        setActiveTab('rank_system');
+                        break;
+                    } else {
+                        setActiveTab('general'); // Fallback to general
+                        break;
+                    }
+                }
+            }
         });
     };
 

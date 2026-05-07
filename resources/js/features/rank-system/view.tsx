@@ -48,8 +48,8 @@ export default function RankSystemView({
     const rank_anchor = useComboboxAnchor();
 
     const rank_system_data = data || {};
-    const ordered_ranks_value = Array.isArray(rank_system_data.ordered_ranks)
-        ? rank_system_data.ordered_ranks
+    const rank_roles_value = Array.isArray(rank_system_data.rank_roles)
+        ? rank_system_data.rank_roles
         : [];
 
     return (
@@ -63,14 +63,14 @@ export default function RankSystemView({
                     multiple
                     autoHighlight
                     items={role_ids}
-                    value={ordered_ranks_value}
+                    value={rank_roles_value}
                     onValueChange={(val) =>
-                        onChange('ordered_ranks', val as string[])
+                        onChange('rank_roles', val as string[])
                     }
                 >
                     <ComboboxChips
                         ref={rank_anchor}
-                        className={`w-full ${errors['settings.rank_system.ordered_ranks'] ? 'border-destructive' : ''}`}
+                        className={`w-full ${errors['rank_roles'] ? 'border-destructive' : ''}`}
                     >
                         <ComboboxValue>
                             {(values: string[]) => {
@@ -135,7 +135,7 @@ export default function RankSystemView({
                     Tipp: A rangokat abban a sorrendben kattintsd be, ahogy a
                     hierarchia felépül.
                 </p>
-                <InputError message={errors['settings.rank_system.ordered_ranks']} />
+                <InputError message={errors['rank_roles']} />
             </div>
 
             <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
@@ -154,7 +154,7 @@ export default function RankSystemView({
                         Ha be van kapcsolva, az előléptetés/lefokozás során a felhasználó aktív periódusban lévő duty ideje lezárul és archiválódik.
                     </p>
                 </div>
-                <InputError message={errors['settings.rank_system.archive_duties_on_promotion']} />
+                <InputError message={errors['archive_duties_on_promotion']} />
             </div>
 
             <div className="relative space-y-2 overflow-hidden rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
@@ -183,7 +183,7 @@ export default function RankSystemView({
                 />
 
                 <InputError
-                    message={errors['settings.rank_system.announcement_channel_id']}
+                    message={errors['announcement_channel_id']}
                 />
             </div>
 
@@ -196,7 +196,7 @@ export default function RankSystemView({
                     placeholder="Keresés szöveges csatornára..."
                     renderItem={(item) => item.label}
                 />
-                <InputError message={errors['settings.rank_system.log_channel_id']} />
+                <InputError message={errors['log_channel_id']} />
             </div>
         </div>
     );

@@ -195,7 +195,7 @@ acc[curr.role_id] = [];
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <InputError message={errors?.['settings.lang']} />
+                            <InputError message={errors?.['lang']} />
                         </div>
 
                         {/* 2. Alapértelmezett rang kiválasztása */}
@@ -234,7 +234,7 @@ acc[curr.role_id] = [];
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <InputError message={errors?.['settings.default_role']} />
+                            <InputError message={errors?.['default_role']} />
                         </div>
                     </div>
 
@@ -311,7 +311,7 @@ acc[curr.role_id] = [];
                         </TabsList>
 
                         <InputError
-                            message={errors?.['settings.mode']}
+                            message={errors?.['mode']}
                             className="mb-4"
                         />
 
@@ -341,7 +341,7 @@ acc[curr.role_id] = [];
                                     >
                                         <ComboboxChips
                                             ref={presetUserAnchor}
-                                            className={`w-full ${errors?.['settings.preset_roles.user'] ? 'border-destructive' : ''}`}
+                                            className={`w-full ${errors?.['preset_roles.user'] ? 'border-destructive' : ''}`}
                                         >
                                             <ComboboxValue>
                                                 {(values: string[]) => {
@@ -409,7 +409,7 @@ acc[curr.role_id] = [];
                                     </Combobox>
                                     <InputError
                                         message={
-                                            errors?.['settings.preset_roles.user']
+                                            errors?.['preset_roles.user']
                                         }
                                     />
                                 </div>
@@ -434,7 +434,7 @@ acc[curr.role_id] = [];
                                     >
                                         <ComboboxChips
                                             ref={presetStaffAnchor}
-                                            className={`w-full ${errors?.['settings.preset_roles.staff'] ? 'border-destructive' : ''}`}
+                                            className={`w-full ${errors?.['preset_roles.staff'] ? 'border-destructive' : ''}`}
                                         >
                                             <ComboboxValue>
                                                 {(values: string[]) => {
@@ -502,7 +502,7 @@ acc[curr.role_id] = [];
                                     </Combobox>
                                     <InputError
                                         message={
-                                            errors?.['settings.preset_roles.staff']
+                                            errors?.['preset_roles.staff']
                                         }
                                     />
                                 </div>
@@ -527,7 +527,7 @@ acc[curr.role_id] = [];
                                     >
                                         <ComboboxChips
                                             ref={presetOwnerAnchor}
-                                            className={`w-full ${errors?.['settings.preset_roles.owner'] ? 'border-destructive' : ''}`}
+                                            className={`w-full ${errors?.['preset_roles.owner'] ? 'border-destructive' : ''}`}
                                         >
                                             <ComboboxValue>
                                                 {(values: string[]) => {
@@ -595,7 +595,7 @@ acc[curr.role_id] = [];
                                     </Combobox>
                                     <InputError
                                         message={
-                                            errors?.['settings.preset_roles.owner']
+                                            errors?.['preset_roles.owner']
                                         }
                                     />
                                 </div>
@@ -759,7 +759,7 @@ acc[curr.role_id] = [];
                             </div>
 
                             <InputError
-                                message={errors?.['settings.role_permissions']}
+                                message={errors?.['role_permissions']}
                             />
 
                             <div className="mt-8 space-y-4">

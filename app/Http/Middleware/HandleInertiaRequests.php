@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\GlobalRoleEnum;
+use App\Enums\PermissionEnum;
 use App\Services\SelectedGuildService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -42,21 +43,17 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
 
         if ($user) {
-            if ($user->global_role == GlobalRoleEnum::DEVELOPER) {
-                $permissions = ['*'];
-            } else {
-                $guild = SelectedGuildService::get();
-                if ($guild) {
-                    if ($guild->owner_id == $user->id) {
-                        $permissions = ['*'];
-                    } else {
-                        $guild_user = $guild->acceptedGuildUsers()->where('user_id', $user->id)->first();
-                        if ($guild_user) {
-                            if ($guild_user->global_role == GlobalRoleEnum::ADMIN) {
-                                $permissions = ['*'];
-                            } else {
-                                $permissions = $guild_user->getPermissionsAttribute();
-                            }
+            $guild = SelectedGuildService::get();
+            if ($guild) {
+                if ($guild->owner_id === $user->id) {
+                    $permissions = [PermissionEnum::ALL->value];
+                } else {
+                    $guild_user = $guild->acceptedGuildUsers()->where('user_id', $user->id)->first();
+                    if ($guild_user) {
+                        if ($guild_user->global_role == GlobalRoleEnum::ADMIN) {
+                            $permissions = [PermissionEnum::ALL->value];
+                        } else {
+                            $permissions = $guild_user->getPermissionsAttribute();
                         }
                     }
                 }
@@ -72,7 +69,6 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'activeGuild' => $request->session()->get('selected_guild_id'),
-            'selectedGuild' => SelectedGuildService::get()?->only(['id', 'name', 'icon']),
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),

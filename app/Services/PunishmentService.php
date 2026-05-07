@@ -83,7 +83,7 @@ class PunishmentService
             $expires_at = (int) $data['expire_days'] > 0 ? now()->addDays($data['expire_days']) : null;
             $created_by = auth()->user();
 
-            $punishment = Punishment::make($guild_user, null, null, $type_enum, $data['level'], $data['reason'], $expires_at, $created_by);
+            $punishment = Punishment::make($guild_user, null, $guild, $type_enum, $data['level'], $data['reason'], $expires_at, $created_by);
 
             ActivityLog::make($guild->id, $created_by->id, $guild_user->user_id, ActionTypeEnum::ADD_PUNISHMENT_TO_GUILD_USER, $punishment->toArray());
 

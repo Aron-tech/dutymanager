@@ -4,6 +4,7 @@ namespace App\Services\Api;
 
 use App\Concerns\ServiceTrait;
 use App\Enums\ActionTypeEnum;
+use App\Enums\FeatureEnum;
 use App\Enums\PermissionEnum;
 use App\Models\ActivityLog;
 use App\Models\Guild;
@@ -55,15 +56,24 @@ class GuildService
         return $guild->guildSettings->getFeatureSettings(PermissionEnum::from($data['feature']), $data['settings_name']);
     }
 
+    /**
+     * @param Guild $guild
+     * @return array
+     */
     public function listRoleWhitelist(Guild $guild): array
     {
+        $guild_settings = $guild->guildSettings;
+
+        $rank_role_ids = [];
         $guild_role_ids = [];
         foreach ($guild->guildRoles as $role) {
             $guild_role_ids[] = $role->role_id;
         }
 
-        $all_role_ids = array_merge($guild_role_ids);
+        if ($guild_settings->isEnabledFeature(FeatureEnum::RANK)) {
+            $rank_role_ids = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'rank_roles', []);
+        }
 
-        return $all_role_ids;
+        return array_merge($guild_role_ids, $rank_role_ids);
     }
 }

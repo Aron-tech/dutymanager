@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { useForm } from 'laravel-precognition-react-inertia';
 import React, { useEffect, useMemo } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { feature_registry } from '@/features/config/features';
 import FinishView from '@/features/finish-view';
@@ -131,13 +132,29 @@ export default function Setup({
 
     const handleNext = () => {
         if (currentView === 'modules') {
-            submitModules({ preserveScroll: true });
+            submitModules({
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Modulok sikeresen mentve!');
+                },
+                onError: () => {
+                    toast.error('Hiba történt a modulok mentésekor!');
+                }
+            });
 
             return;
         }
 
         submitFeature({
             preserveScroll: true,
+            onSuccess: () => {
+                if (!isLastFeature) {
+                    toast.success('Beállítások sikeresen mentve!');
+                }
+            },
+            onError: () => {
+                toast.error('Kérlek ellenőrizd az űrlapot!');
+            }
         });
     };
 
@@ -148,7 +165,20 @@ export default function Setup({
         }
     };
 
+    const getFeatureErrors = (errors: Record<string, string>) => {
+        return Object.keys(errors).reduce((acc, curr) => {
+            if (curr.startsWith('settings.')) {
+                acc[curr.replace('settings.', '')] = errors[curr];
+            } else {
+                acc[curr] = errors[curr];
+            }
+
+            return acc;
+        }, {} as Record<string, string>);
+    };
+
     const renderStepContent = () => {
+        const featureErrors = getFeatureErrors(errors as Record<string, string>);
         switch (currentView) {
             case 'finish':
                 return <FinishView guild={guild} onBack={handleBack} />;
@@ -173,7 +203,7 @@ export default function Setup({
                         <GeneralSettings
                             data={featureData.settings || {}}
                             context_data={context_data as any}
-                            errors={errors as Record<string, string>}
+                            errors={featureErrors}
                             onChange={(field: string, value: any) => {
                                 clearErrors(`settings.${field}`);
                                 clearErrors('settings');
@@ -217,7 +247,7 @@ export default function Setup({
                         <UserDetailsView
                             data={featureData.settings || {}}
                             context_data={context_data}
-                            errors={errors as Record<string, string>}
+                            errors={featureErrors}
                             onChange={(field: string, value: any) => {
                                 clearErrors(`settings.${field}`);
                                 setFeatureData('settings', {
@@ -251,7 +281,7 @@ export default function Setup({
                         <ActiveFeatureComponent
                             data={featureData.settings || {}}
                             context_data={context_data}
-                            errors={errors as Record<string, string>}
+                            errors={featureErrors}
                             onChange={(field: string, value: any) => {
                                 clearErrors(`settings.${field}`);
                                 clearErrors('settings');

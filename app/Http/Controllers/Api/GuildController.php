@@ -60,7 +60,7 @@ class GuildController extends Controller
     public function getRolesWhitelist(GuildRequest $request)
     {
         $data = $request->validated();
-        $guild = Guild::where('id', $data['guild_id'])->with('guildRoles')->installed()->first();
+        $guild = Guild::where('id', $data['guild_id'])->with(['guildRoles', 'guildSettings'])->installed()->first();
         if (! $guild) {
             return response()->json(['roles' => []]);
         }
