@@ -21,6 +21,11 @@ enum ActionTypeEnum: string
     case LEAVE_FROM_GUILD = 'leave_from_guild';
     case ADD_BOT_TO_GUILD = 'add_bot_to_guild';
 
+    case RANK_UP_GUILD_USER = 'rank_up_guild_user';
+    case RANK_UP_WITH_RESET_GUILD_USER = 'rank_up_with_reset_guild_user';
+    case RANK_DOWN_GUILD_USER = 'rank_down_guild_user';
+    case RANK_DOWN_WITH_RESET_GUILD_USER = 'rank_down_with_guild_user';
+
     case ADD_DUTY_TO_GUILD_USER = 'add_duty_to_guild_user';
     case UPDATE_DUTY_TO_GUILD_USER = 'update_duty_to_guild_user';
     case CANCELED_DUTY_FROM_GUILD_USER = 'canceled_duty_from_guild_user';

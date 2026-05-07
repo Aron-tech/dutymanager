@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ChangeGuildUserRankAction;
 use App\Enums\DutyActionEnum;
 use App\Enums\DutyStatusEnum;
 use App\Enums\FeatureEnum;
@@ -11,6 +12,7 @@ use App\Http\Requests\BulkDeleteGuildUserRequest;
 use App\Http\Requests\IndexGuildUserRequest;
 use App\Http\Requests\StoreGuildUserRequest;
 use App\Http\Requests\UpdateGuildUserRequest;
+use App\Http\Requests\UpdateRankGuildUserRequest;
 use App\Http\Requests\UploadImageRequest;
 use App\Models\GuildUser;
 use App\Models\Image;
@@ -273,6 +275,36 @@ class GuildUserController extends Controller
             Log::error($e);
 
             return response()->json(['success' => false, 'message' => __('app.error_action')]);
+        }
+    }
+
+    /**
+     * @param UpdateRankGuildUserRequest $request
+     * @return JsonResponse
+     */
+    public function updateRank(UpdateRankGuildUserRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+        $guild = SelectedGuildService::get();
+
+        if (($data['action'] === 'promote' && auth()->user()->cannot(PermissionEnum::PROMOTION_GUILD_USER)) || ($data['action'] === 'demote' && auth()->user()->cannot(PermissionEnum::DEMOTE_GUILD_USER))) {
+            abort(403, __('app.error_no_permission'));
+        }
+
+        $guild_users = $guild->acceptedGuildUsers()->whereIn('user_id', $data['user_ids'])->get();
+        $success_count = 0;
+        foreach ($guild_users as $guild_user) {
+            if (ChangeGuildUserRankAction::run($guild_user, $guild->guildSettings, $data['action'], $data['level'])) {
+                $success_count++;
+            }
+        }
+
+        if ($success_count === count($guild_users)) {
+            return response()->json(['success' => true, 'message' => '']);
+        } elseif ($success_count > 0) {
+            return response()->json(['success' => true, 'message' => '']);
+        } else {
+            return response()->json(['success' => false, 'message' => '']);
         }
     }
 }

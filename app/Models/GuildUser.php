@@ -70,7 +70,7 @@ class GuildUser extends Model
             if (in_array($rank_roles[$i], $this->cached_roles)) {
                 $highest_match = [
                     'index' => $i,
-                    'role_id' => $rank_roles[$i],
+                    'rank_id' => $rank_roles[$i],
                 ];
                 break;
             }

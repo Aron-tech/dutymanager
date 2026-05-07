@@ -19,6 +19,10 @@ enum PermissionEnum: string
     case EDIT_GUILD_USERS = 'edit_guild_users';
     case DELETE_GUILD_USERS = 'delete_guild_users';
 
+    // Rang kezelés
+    case PROMOTION_GUILD_USER = 'promotion_guild_user';
+    case DEMOTE_GUILD_USER = 'demote_guild_user';
+
     // Szolgálat kezelése
     case ADD_DUTIES = 'add_duties';
     case EDIT_DUTIES = 'edit_duties';
