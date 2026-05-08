@@ -27,6 +27,8 @@ class IndexPunishmentRequest extends FormRequest
             'per_page' => 'nullable|int|min:1|max:100',
             'sort' => 'nullable|string|max:64',
             'direction' => 'nullable|in:asc,desc',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
         ];
     }
 }

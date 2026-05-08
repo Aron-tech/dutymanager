@@ -53,13 +53,15 @@ interface PageProps {
         per_page?: string;
         sort?: string;
         direction?: string;
+        date_from?: string;
+        date_to?: string;
     };
 }
 
 export default function HolidaysIndexView({
-                                                 holidays = defaultHolidays,
-                                                 filters = {},
-                                             }: PageProps) {
+                                              holidays = defaultHolidays,
+                                              filters = {},
+                                          }: PageProps) {
     const { props } = usePage();
     const flash = props.flash as { success: string | null; error: string | null; };
 
@@ -78,6 +80,8 @@ export default function HolidaysIndexView({
     const [custom_per_page, setCustomPerPage] = useState('');
     const [sort_column, setSortColumn] = useState(safe_filters.sort || 'started_at');
     const [sort_direction, setSortDirection] = useState(safe_filters.direction || 'desc');
+    const [date_from, setDateFrom] = useState(safe_filters.date_from || '');
+    const [date_to, setDateTo] = useState(safe_filters.date_to || '');
 
     const [selected_rows, setSelectedRows] = useState<(string | number)[]>([]);
 
@@ -104,16 +108,16 @@ export default function HolidaysIndexView({
     const is_mounted = useRef(false);
 
     const fetchFilteredData = useCallback(
-        (search: string, limit: string, sort: string, dir: string) => {
+        (search: string, limit: string, sort: string, dir: string, from?: string, to?: string) => {
             const queryParams: any = {
                 per_page: limit,
                 sort,
                 direction: dir,
             };
 
-            if (search) {
-                queryParams.search = search;
-            }
+            if (search) queryParams.search = search;
+            if (from) queryParams.date_from = from;
+            if (to) queryParams.date_to = to;
 
             router.get(route('holiday.index'), queryParams, {
                 preserveState: true,
@@ -130,14 +134,14 @@ export default function HolidaysIndexView({
             return;
         }
 
-        fetchFilteredData(debounced_search, per_page_amount, sort_column, sort_direction);
-    }, [debounced_search]);
+        fetchFilteredData(debounced_search, per_page_amount, sort_column, sort_direction, date_from, date_to);
+    }, [debounced_search, date_from, date_to]);
 
     const handlePerPageChange = (val: string) => {
         if (val !== 'custom') {
             setPerPageAmount(val);
             setCustomPerPage('');
-            fetchFilteredData(debounced_search, val, sort_column, sort_direction);
+            fetchFilteredData(debounced_search, val, sort_column, sort_direction, date_from, date_to);
         } else {
             setPerPageAmount('custom');
         }
@@ -145,7 +149,7 @@ export default function HolidaysIndexView({
 
     const handleCustomPerPageSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && custom_per_page) {
-            fetchFilteredData(debounced_search, custom_per_page, sort_column, sort_direction);
+            fetchFilteredData(debounced_search, custom_per_page, sort_column, sort_direction, date_from, date_to);
         }
     };
 
@@ -153,7 +157,7 @@ export default function HolidaysIndexView({
         const new_dir = sort_column === col_id && sort_direction === 'asc' ? 'desc' : 'asc';
         setSortColumn(col_id);
         setSortDirection(new_dir);
-        fetchFilteredData(debounced_search, per_page_amount, col_id, new_dir);
+        fetchFilteredData(debounced_search, per_page_amount, col_id, new_dir, date_from, date_to);
     };
 
     const toggleColumnVisibility = (col_id: string) => {
@@ -285,7 +289,6 @@ export default function HolidaysIndexView({
                 <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-8">
                     <div className="flex flex-col lg:flex-row lg:items-center gap-4 flex-1">
 
-                        {/* Tömeges műveletek */}
                         {selected_rows.length > 0 && (
                             <div className="flex shrink-0 items-center gap-2 bg-muted/50 p-1.5 rounded-md border">
                                 <span className="text-sm font-medium px-2">{selected_rows.length} elem kijelölve</span>
@@ -301,7 +304,6 @@ export default function HolidaysIndexView({
                             </div>
                         )}
 
-                        {/* Kereső / Toolbar */}
                         <div className="w-full flex-1">
                             <DataTableToolbar
                                 search_query={search_query}
@@ -314,6 +316,11 @@ export default function HolidaysIndexView({
                                 custom_per_page={custom_per_page}
                                 onCustomPerPageChange={setCustomPerPage}
                                 onCustomPerPageSubmit={handleCustomPerPageSubmit}
+                                show_date_filter={true}
+                                date_from={date_from}
+                                onDateFromChange={setDateFrom}
+                                date_to={date_to}
+                                onDateToChange={setDateTo}
                             />
                         </div>
                     </div>
@@ -361,7 +368,6 @@ export default function HolidaysIndexView({
                 )}
             </div>
 
-            {/* Visszavonás Dialog */}
             <ConfirmDeleteDialog
                 isOpen={delete_state.is_open}
                 onClose={() => setDeleteState((prev) => ({ ...prev, is_open: false }))}

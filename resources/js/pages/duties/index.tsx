@@ -55,6 +55,8 @@ interface PageProps {
         sort?: string;
         direction?: string;
         status?: string;
+        date_from?: string;
+        date_to?: string;
     };
     guild_users?: { id: number; label: string; full_user: GuildUser }[];
 }
@@ -88,6 +90,8 @@ export default function DutiesIndexView({
     const [status_filter, setStatusFilter] = useState(safe_filters.status || 'all');
     const [sort_column, setSortColumn] = useState(safe_filters.sort || 'started_at');
     const [sort_direction, setSortDirection] = useState(safe_filters.direction || 'desc');
+    const [date_from, setDateFrom] = useState(safe_filters.date_from || '');
+    const [date_to, setDateTo] = useState(safe_filters.date_to || '');
 
     const [selected_rows, setSelectedRows] = useState<(string | number)[]>([]);
 
@@ -117,7 +121,7 @@ export default function DutiesIndexView({
     const is_mounted = useRef(false);
 
     const fetchFilteredData = useCallback(
-        (search: string, limit: string, sort: string, dir: string, status: string) => {
+        (search: string, limit: string, sort: string, dir: string, status: string, from?: string, to?: string) => {
             const queryParams: any = {
                 per_page: limit,
                 sort,
@@ -125,9 +129,9 @@ export default function DutiesIndexView({
                 status
             };
 
-            if (search) {
-                queryParams.search = search;
-            }
+            if (search) queryParams.search = search;
+            if (from) queryParams.date_from = from;
+            if (to) queryParams.date_to = to;
 
             router.get(route('duty.index'), queryParams, {
                 preserveState: true,
@@ -141,18 +145,17 @@ export default function DutiesIndexView({
     useEffect(() => {
         if (!is_mounted.current) {
             is_mounted.current = true;
-
             return;
         }
 
-        fetchFilteredData(debounced_search, per_page_amount, sort_column, sort_direction, status_filter);
-    }, [debounced_search, status_filter]);
+        fetchFilteredData(debounced_search, per_page_amount, sort_column, sort_direction, status_filter, date_from, date_to);
+    }, [debounced_search, status_filter, date_from, date_to]);
 
     const handlePerPageChange = (val: string) => {
         if (val !== 'custom') {
             setPerPageAmount(val);
             setCustomPerPage('');
-            fetchFilteredData(debounced_search, val, sort_column, sort_direction, status_filter);
+            fetchFilteredData(debounced_search, val, sort_column, sort_direction, status_filter, date_from, date_to);
         } else {
             setPerPageAmount('custom');
         }
@@ -160,7 +163,7 @@ export default function DutiesIndexView({
 
     const handleCustomPerPageSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && custom_per_page) {
-            fetchFilteredData(debounced_search, custom_per_page, sort_column, sort_direction, status_filter);
+            fetchFilteredData(debounced_search, custom_per_page, sort_column, sort_direction, status_filter, date_from, date_to);
         }
     };
 
@@ -168,7 +171,7 @@ export default function DutiesIndexView({
         const new_dir = sort_column === col_id && sort_direction === 'asc' ? 'desc' : 'asc';
         setSortColumn(col_id);
         setSortDirection(new_dir);
-        fetchFilteredData(debounced_search, per_page_amount, col_id, new_dir, status_filter);
+        fetchFilteredData(debounced_search, per_page_amount, col_id, new_dir, status_filter, date_from, date_to);
     };
 
     const toggleColumnVisibility = (col_id: string) => {
@@ -353,7 +356,6 @@ export default function DutiesIndexView({
 
                 <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-8">
                     <div className="flex flex-col lg:flex-row lg:items-center gap-4 flex-1">
-                        {/* Tömeges műveletek megjelenítése a kereső ELŐTT */}
                         {selected_rows.length > 0 && (
                             <div className="flex shrink-0 items-center gap-2 bg-muted/50 p-1.5 rounded-md border">
                                 <span className="text-sm font-medium px-2">{selected_rows.length} elem kijelölve</span>
@@ -385,7 +387,6 @@ export default function DutiesIndexView({
                             </div>
                         )}
 
-                        {/* Kereső / Toolbar - Kijavítva, hogy kitöltse a helyet és ne törjön 2 sorba */}
                         <div className="w-full flex-1">
                             <DataTableToolbar
                                 search_query={search_query}
@@ -398,11 +399,15 @@ export default function DutiesIndexView({
                                 custom_per_page={custom_per_page}
                                 onCustomPerPageChange={setCustomPerPage}
                                 onCustomPerPageSubmit={handleCustomPerPageSubmit}
+                                show_date_filter={true}
+                                date_from={date_from}
+                                onDateFromChange={setDateFrom}
+                                date_to={date_to}
+                                onDateToChange={setDateTo}
                             />
                         </div>
                     </div>
 
-                    {/* Státusz szűrők */}
                     <div className="flex shrink-0 items-center gap-2 bg-muted/30 p-1 rounded-lg border w-fit">
                         <Button
                             variant={status_filter === 'all' ? 'secondary' : 'ghost'}
@@ -458,9 +463,9 @@ export default function DutiesIndexView({
                                     link.url &&
                                     router.get(
                                         link.url,
-                                        {}, // Üres objektum, mivel a link.url már tartalmazza a page és per_page adatokat!
+                                        {},
                                         {
-                                            preserveState: true, // Ez akadályozza meg a komponens és a táblázat villogását/újratöltődését
+                                            preserveState: true,
                                             preserveScroll: true
                                         }
                                     )

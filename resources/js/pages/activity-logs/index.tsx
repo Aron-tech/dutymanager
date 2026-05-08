@@ -41,6 +41,8 @@ interface PageProps {
         per_page?: string;
         sort?: string;
         direction?: string;
+        date_from?: string;
+        date_to?: string;
     };
     available_actions?: Record<string, string>;
 }
@@ -68,6 +70,8 @@ export default function ActivityLogsIndexView({
     const [custom_per_page, setCustomPerPage] = useState('');
     const [sort_column, setSortColumn] = useState(safe_filters.sort || 'created_at');
     const [sort_direction, setSortDirection] = useState(safe_filters.direction || 'desc');
+    const [date_from, setDateFrom] = useState(safe_filters.date_from || '');
+    const [date_to, setDateTo] = useState(safe_filters.date_to || '');
 
     const column_definitions = useMemo(() => [
         { id: 'action', label: 'Művelet', required: true },
@@ -85,16 +89,16 @@ export default function ActivityLogsIndexView({
     const is_mounted = useRef(false);
 
     const fetchFilteredData = useCallback(
-        (search: string, limit: string, sort: string, dir: string) => {
+        (search: string, limit: string, sort: string, dir: string, from?: string, to?: string) => {
             const query_params: any = {
                 per_page: limit,
                 sort,
                 direction: dir,
             };
 
-            if (search) {
-                query_params.search = search;
-            }
+            if (search) query_params.search = search;
+            if (from) query_params.date_from = from;
+            if (to) query_params.date_to = to;
 
             router.get(route('activity-log.index'), query_params, {
                 preserveState: true,
@@ -111,14 +115,14 @@ export default function ActivityLogsIndexView({
             return;
         }
 
-        fetchFilteredData(debounced_search, per_page_amount, sort_column, sort_direction);
-    }, [debounced_search]);
+        fetchFilteredData(debounced_search, per_page_amount, sort_column, sort_direction, date_from, date_to);
+    }, [debounced_search, date_from, date_to]);
 
     const handlePerPageChange = (val: string) => {
         if (val !== 'custom') {
             setPerPageAmount(val);
             setCustomPerPage('');
-            fetchFilteredData(debounced_search, val, sort_column, sort_direction);
+            fetchFilteredData(debounced_search, val, sort_column, sort_direction, date_from, date_to);
         } else {
             setPerPageAmount('custom');
         }
@@ -126,7 +130,7 @@ export default function ActivityLogsIndexView({
 
     const handleCustomPerPageSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && custom_per_page) {
-            fetchFilteredData(debounced_search, custom_per_page, sort_column, sort_direction);
+            fetchFilteredData(debounced_search, custom_per_page, sort_column, sort_direction, date_from, date_to);
         }
     };
 
@@ -134,7 +138,7 @@ export default function ActivityLogsIndexView({
         const new_dir = sort_column === col_id && sort_direction === 'asc' ? 'desc' : 'asc';
         setSortColumn(col_id);
         setSortDirection(new_dir);
-        fetchFilteredData(debounced_search, per_page_amount, col_id, new_dir);
+        fetchFilteredData(debounced_search, per_page_amount, col_id, new_dir, date_from, date_to);
     };
 
     const toggleColumnVisibility = (col_id: string) => {
@@ -220,6 +224,11 @@ export default function ActivityLogsIndexView({
                                 custom_per_page={custom_per_page}
                                 onCustomPerPageChange={setCustomPerPage}
                                 onCustomPerPageSubmit={handleCustomPerPageSubmit}
+                                show_date_filter={true}
+                                date_from={date_from}
+                                onDateFromChange={setDateFrom}
+                                date_to={date_to}
+                                onDateToChange={setDateTo}
                             />
                         </div>
                     </div>

@@ -14,6 +14,8 @@ class ActivityLogService
         $per_page = $filters['per_page'] ?? 20;
         $sort = $filters['sort'] ?? 'created_at';
         $direction = strtolower($filters['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+        $date_from = $filters['date_from'] ?? null;
+        $date_to = $filters['date_to'] ?? null;
 
         $query = ActivityLog::query()
             ->select('activity_logs.*')
@@ -40,6 +42,13 @@ class ActivityLogService
                     ->orWhere('targets.user_id', 'like', "%{$search_query}%")
                     ->orWhere('targets.ic_name', 'like', "%{$search_query}%");
             });
+        }
+
+        if ($date_from) {
+            $query->whereDate('activity_logs.created_at', '>=', $date_from);
+        }
+        if ($date_to) {
+            $query->whereDate('activity_logs.created_at', '<=', $date_to);
         }
 
         switch ($sort) {

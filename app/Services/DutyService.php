@@ -36,6 +36,8 @@ class DutyService
         $sort = $filters['sort'] ?? 'started_at';
         $direction = strtolower($filters['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
         $status_filter = $filters['status'] ?? 'all';
+        $date_from = $filters['date_from'] ?? null;
+        $date_to = $filters['date_to'] ?? null;
 
         $query = Duty::query()
             ->whereHas('guildUser', function ($q) use ($guild) {
@@ -58,6 +60,13 @@ class DutyService
                             });
                     });
             });
+        }
+
+        if ($date_from) {
+            $query->whereDate('started_at', '>=', $date_from);
+        }
+        if ($date_to) {
+            $query->whereDate('started_at', '<=', $date_to);
         }
 
         switch ($sort) {

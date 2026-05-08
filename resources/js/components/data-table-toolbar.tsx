@@ -36,6 +36,11 @@ interface DataTableToolbarProps {
     custom_per_page: string;
     onCustomPerPageChange: (value: string) => void;
     onCustomPerPageSubmit: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+    show_date_filter?: boolean;
+    date_from?: string;
+    onDateFromChange?: (value: string) => void;
+    date_to?: string;
+    onDateToChange?: (value: string) => void;
 }
 
 export function DataTableToolbar({
@@ -49,18 +54,43 @@ export function DataTableToolbar({
                                      custom_per_page,
                                      onCustomPerPageChange,
                                      onCustomPerPageSubmit,
+                                     show_date_filter = false,
+                                     date_from = '',
+                                     onDateFromChange,
+                                     date_to = '',
+                                     onDateToChange,
                                  }: DataTableToolbarProps) {
     return (
         <div className="flex flex-wrap items-center justify-end gap-3">
             <div className="relative w-full sm:w-64">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                    placeholder="Keresés IC név alapján..."
+                    placeholder="Keresés..."
                     className="pl-9"
                     value={search_query}
                     onChange={(e) => onSearchChange(e.target.value)}
                 />
             </div>
+
+            {show_date_filter && (
+                <div className="flex items-center gap-2">
+                    <Input
+                        type="date"
+                        value={date_from}
+                        onChange={(e) => onDateFromChange?.(e.target.value)}
+                        className="w-[140px]"
+                        title="Kezdő dátum"
+                    />
+                    <span className="text-muted-foreground">-</span>
+                    <Input
+                        type="date"
+                        value={date_to}
+                        onChange={(e) => onDateToChange?.(e.target.value)}
+                        className="w-[140px]"
+                        title="Vég dátum"
+                    />
+                </div>
+            )}
 
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -76,7 +106,7 @@ export function DataTableToolbar({
                             key={col.id}
                             checked={visible_columns.includes(col.id)}
                             onCheckedChange={() => onToggleColumn(col.id)}
-                            disabled={col.id === 'ic_name'}
+                            disabled={col.id === 'ic_name' || col.id === 'action' || col.id === 'type' || col.id === 'reason' || col.id === 'created_at' || col.id === 'started_at'}
                         >
                             {col.label}{' '}
                             {col?.is_dynamic && !col.required && '(Opcionális)'}

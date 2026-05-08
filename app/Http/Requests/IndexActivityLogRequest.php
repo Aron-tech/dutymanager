@@ -19,6 +19,8 @@ class IndexActivityLogRequest extends FormRequest
             'per_page' => 'nullable|numeric',
             'sort' => 'nullable|string',
             'direction' => 'nullable|string|in:asc,desc',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
         ];
     }
 }
