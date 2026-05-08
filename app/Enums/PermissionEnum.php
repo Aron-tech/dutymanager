@@ -115,6 +115,7 @@ enum PermissionEnum: string
                 PermissionEnum::ADD_WARNING,
                 PermissionEnum::DELETE_WARNING,
                 PermissionEnum::VIEW_STATISTICS,
+                PermissionEnum::VIEW_LOGS,
             ]),
             PermissionEnum::ADMIN_GROUP => [
                 PermissionEnum::ALL,

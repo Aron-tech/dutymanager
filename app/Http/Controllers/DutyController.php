@@ -86,7 +86,7 @@ class DutyController extends Controller
         try {
             $this->service->storeDuty($data);
 
-            return back()->with('success', 'Szolgálati idő sikeresen hozzáadva.')->withInput();
+            return back()->with('success', __('duty.success_duty_add'))->withInput();
         } catch (Throwable $e) {
             Log::error($e->getMessage());
 
@@ -104,7 +104,7 @@ class DutyController extends Controller
         try {
             $duty->update($data);
 
-            return back()->with('success', 'Szolgáltatási idő sikeresen módosítve.')->withInput();
+            return back()->with('success', __('duty.success_duty_update'))->withInput();
         } catch (Throwable $e) {
             Log::error($e->getMessage());
 
@@ -123,7 +123,7 @@ class DutyController extends Controller
             $status_enum = DutyStatusEnum::from($data['status']);
             $this->service->updateDutiesStatus($data['duty_ids'], $status_enum);
 
-            return back()->with('success', 'Sikeresen módosítva a szogálati idő(k) státusza.');
+            return back()->with('success', __('duty.success_duty_update_status'));
         } catch (Throwable $e) {
             Log::error($e->getMessage());
 
@@ -141,7 +141,7 @@ class DutyController extends Controller
         try {
             $this->service->deleteDuty($duty);
 
-            return back()->with('success', 'Szolgálati idő sikeresen törölve.');
+            return back()->with('success', __('duty.success_duty_delete'));
         } catch (Throwable $e) {
             Log::error($e->getMessage());
 
@@ -149,7 +149,7 @@ class DutyController extends Controller
         }
     }
 
-    public function bulkDelete(BulkDeleteDutyRequest $request)
+    public function bulkDelete(BulkDeleteDutyRequest $request): RedirectResponse
     {
         $data = $request->validated();
 
@@ -162,11 +162,11 @@ class DutyController extends Controller
         try {
             $this->service->deleteDuties($data['duty_ids'], $status);
 
-            return back()->with('succes', 'Szolgálati idők sikeresen törölve.');
+            return back()->with('success', __('duty.duties_delete_started'));
         } catch (Throwable $e) {
             Log::error($e->getMessage());
 
-            return back()->withErrors(['form_error' => $e->getMessage()])->withInput();
+            return back()->withErrors(['form_error' => __('app.error_action')])->withInput();
         }
     }
 }

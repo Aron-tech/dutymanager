@@ -5,4 +5,10 @@ return [
     'success_duty_off' => 'Sikeresen kiléptél a szolgálatból!',
     'success_duty_cancel' => 'Sikeresen kiléptél a szolgálatból mentés nélkül!',
     'success_duty_forced_cancel' => 'Sikeresen kiléptetted mentés nélkül :user felhasználót a szolgálatból!',
+    'success_duty_add' => 'Sikeresen hozzáadtad a szolgálati időt!',
+    'success_duty_update' => 'Sikeresen módosítottad a szolgálati időt!',
+    'success_duty_update_status' => 'Sikeresen módosítottad a szogálati idő(k) státuszát!',
+    'duties_delete_started' => 'A szolgálati idők törlése a háttérben elindult.',
+    'success_duties_delete' => 'Sikeresen töröltél :count szolgálati időt!',
+    'success_duty_delete' => 'Sikeresen törölted a szolgálati időt!',
 ];

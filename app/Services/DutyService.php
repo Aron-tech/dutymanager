@@ -6,14 +6,15 @@ use App\Actions\DeleteActiveDutyAction;
 use App\Concerns\ServiceTrait;
 use App\Enums\ActionTypeEnum;
 use App\Enums\DutyStatusEnum;
-use App\Enums\FeatureEnum;
+use App\Events\SendUserMessageEvent;
 use App\Models\ActivityLog;
 use App\Models\Duty;
 use App\Models\Guild;
-use App\Models\GuildSettings;
 use App\Models\GuildUser;
+use Illuminate\Bus\Batch;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -79,11 +80,6 @@ class DutyService
         return $query->paginate($per_page)->withQueryString();
     }
 
-    /**
-     * @param Guild $guild
-     * @param array $filters
-     * @return LengthAwarePaginator
-     */
     public function getPaginatedActiveDuties(Guild $guild, array $filters): LengthAwarePaginator
     {
         $search = $filters['search'] ?? null;
@@ -118,10 +114,6 @@ class DutyService
         return $query->paginate($per_page)->withQueryString();
     }
 
-    /**
-     * @param Guild $guild
-     * @return array
-     */
     public function getHourlyChartData(Guild $guild): array
     {
         $chart_data_array = [];
@@ -191,27 +183,36 @@ class DutyService
     /**
      * @throws Throwable
      */
-    public function deleteDuties(array $duty_ids, DutyStatusEnum $status = DutyStatusEnum::ALL_PERIOD): void
+    public function deleteDuties(array $duty_ids, DutyStatusEnum $status = DutyStatusEnum::ALL_PERIOD): Batch
     {
-        DB::transaction(function () use ($duty_ids, $status) {
+        $guild = SelectedGuildService::get();
+        $causer_id = auth()->id();
 
-            $deleted = [];
-            $guild = SelectedGuildService::get();
-            $auth_id = auth()->id();
+        $duties = Duty::whereIn('id', $duty_ids)
+            ->where('status', '<=', $status)
+            ->get();
 
-            Duty::whereIn('id', $duty_ids)
-                ->where('status', '<=', $status)
-                ->chunkById(100, function ($duties) use ($auth_id, &$deleted) {
-
-                    foreach ($duties as $duty) {
-                        if (! DeleteActiveDutyAction::run($duty, $auth_id)) {
-                            $deleted[] = $duty->replicate()->toArray();
-                        }
-                        $duty->delete();
-                    }
-                });
-
-            ActivityLog::make($guild->id, auth()->id(), null, ActionTypeEnum::DELETE_DUTY_FROM_GUILD_USER, $deleted);
+        $jobs = $duties->map(function ($duty) use ($causer_id) {
+            return new DeleteDutyJob($duty, $causer_id);
         });
+
+        return Bus::batch($jobs)
+            ->name('Duties deleting from Guild: '.$guild->id)
+            ->allowFailures()
+            ->then(function (Batch $batch) use ($causer_id) {
+                broadcast(new SendUserMessageEvent(
+                    $causer_id,
+                    "A szolgálati idők törlése sikeresen befejeződött ({$batch->totalJobs} elem).",
+                    'success'
+                ));
+            })
+            ->catch(function (Batch $batch, Throwable $e) use ($causer_id) {
+                broadcast(new SendUserMessageEvent(
+                    $causer_id,
+                    'Hiba történt a szolgálati idők törlése során.',
+                    'danger'
+                ));
+            })
+            ->dispatch();
     }
 }
