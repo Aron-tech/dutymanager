@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\ChangeGuildUserRankAction;
 use App\Enums\DutyActionEnum;
 use App\Enums\DutyStatusEnum;
 use App\Enums\FeatureEnum;
@@ -14,7 +13,6 @@ use App\Http\Requests\StoreGuildUserRequest;
 use App\Http\Requests\UpdateGuildUserRequest;
 use App\Http\Requests\UpdateRankGuildUserRequest;
 use App\Http\Requests\UploadImageRequest;
-use App\Jobs\UpdateGuildUserRankJob;
 use App\Models\GuildUser;
 use App\Models\Image;
 use App\Services\DiscordFetchService;
@@ -22,7 +20,6 @@ use App\Services\GuildUserService;
 use App\Services\SelectedGuildService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -280,44 +277,22 @@ class GuildUserController extends Controller
         }
     }
 
-    public function updateBulkRank(UpdateRankGuildUserRequest $request): RedirectResponse
+    public function updateBulkRank(UpdateRankGuildUserRequest $request, GuildUserService $guildUserService): RedirectResponse
     {
         $data = $request->validated();
-        $guild = SelectedGuildService::get();
         $auth_user = auth()->user();
+        $guild = SelectedGuildService::get();
+
+        if (! $guild->guildSettings->isEnabledFeature(FeatureEnum::RANK)) {
+            abort(422, __('app.feature_not_enabled'));
+        }
 
         if (($data['action'] === 'promote' && $auth_user->cannot(PermissionEnum::PROMOTION_GUILD_USER)) || ($data['action'] === 'demote' && $auth_user->cannot(PermissionEnum::DEMOTE_GUILD_USER))) {
             abort(403, __('app.error_no_permission'));
         }
 
-        $guild_users = $guild->acceptedGuildUsers()->whereIn('id', $data['guild_user_ids'])->get();
-        $guild_settings = $guild->guildSettings;
-        $count = $guild_users->count();
+        $response = $guildUserService->processBulkRankUpdate($guild, $auth_user, $data);
 
-        if ($count > 1) {
-            $jobs = [];
-            foreach ($guild_users as $user) {
-                $jobs[] = new UpdateGuildUserRankJob($user, $guild_settings, $data['action'], $data['level'] ?? 1, $auth_user->id);
-            }
-
-            Bus::batch($jobs)->name('Bulk Rank Update: id => '.$guild->id.', name => '.$guild?->name)->dispatch();
-
-            return back()->with('success', 'A rangok módosítása a háttérben elindult.');
-        }
-
-        $success_count = 0;
-        foreach ($guild_users as $guild_user) {
-            if (ChangeGuildUserRankAction::run($guild_user, $guild_settings, $data['action'], $data['level'] ?? 1, $authUserId)) {
-                $success_count++;
-            }
-        }
-
-        if ($success_count === $count) {
-            return back()->with('success', 'Ranks updated successfully.');
-        } elseif ($success_count > 0) {
-            return back()->with('success', 'Some ranks updated successfully.');
-        } else {
-            return back()->with('error', __('app.error_action'));
-        }
+        return back()->with($response['status'], $response['message']);
     }
 }

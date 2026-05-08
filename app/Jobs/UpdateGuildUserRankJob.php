@@ -19,7 +19,7 @@ class UpdateGuildUserRankJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(public GuildUser $guildUser, public GuildSettings $guildSettings, public string $action, public int $level, public int $causer_id) {}
+    public function __construct(public GuildUser $guildUser, public GuildSettings $guildSettings, public string $action, public int $level, public string $causer_id) {}
 
     /**
      * Execute the job.

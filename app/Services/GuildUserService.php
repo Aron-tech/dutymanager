@@ -10,15 +10,21 @@ use App\Concerns\FileHandlerTrait;
 use App\Enums\ActionTypeEnum;
 use App\Enums\DutyStatusEnum;
 use App\Enums\FeatureEnum;
+use App\Events\SendUserMessageEvent;
+use App\Jobs\UpdateGuildUserRankJob;
 use App\Models\ActivityLog;
 use App\Models\Guild;
+use App\Models\GuildSettings;
 use App\Models\GuildUser;
 use App\Models\Image;
 use App\Models\User;
 use Exception;
+use Illuminate\Bus\Batch;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\AbstractPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -288,5 +294,61 @@ class GuildUserService
         ActivityLog::make($guild_user->guild_id, auth()->id(), $guild_user->user_id, ActionTypeEnum::DELETE_IMAGE_FROM_USER_GUILD, $image->toArray());
 
         return $is_deleted;
+    }
+
+    public function processBulkRankUpdate(Guild $guild, User $auth_user, array $data): array
+    {
+        $guild_users = $guild->acceptedGuildUsers()->whereIn('id', $data['guild_user_ids'])->get();
+        $count = $guild_users->count();
+
+        if ($count === 0) {
+            return ['status' => 'error', 'message' => __('app.error_action')];
+        }
+
+        $guild_settings = $guild->guildSettings;
+
+        if ($count > 1) {
+            return $this->dispatchBulkJobs($guild_users, $guild, $guild_settings, $auth_user, $data);
+        }
+
+        return $this->executeSyncUpdate($guild_users, $guild_settings, $auth_user, $data, $count);
+    }
+
+    private function dispatchBulkJobs(Collection $guild_users, Guild $guild, GuildSettings $guild_settings, User $auth_user, array $data): array
+    {
+        $jobs = [];
+        foreach ($guild_users as $user) {
+            $jobs[] = new UpdateGuildUserRankJob($user, $guild_settings, $data['action'], $data['level'] ?? 1, $auth_user->id);
+        }
+
+        Bus::batch($jobs)
+            ->name('Bulk Rank Update: id => '.$guild->id.', name => '.$guild?->name)
+            ->then(function (Batch $batch) use ($auth_user, $data) {
+                broadcast(new SendUserMessageEvent($auth_user->id, ($data['action'] === 'promote') ? __('guild_user.success_promote_users', ['count' => $batch->totalJobs]) : __('guild_user.success_demote', ['count' => $batch->totalJobs]), 'success'));
+            })
+            ->catch(function (Batch $batch, Throwable $e) use ($auth_user) {
+                broadcast(new SendUserMessageEvent($auth_user->id, __('app.error_action'), 'danger'));
+            })
+            ->dispatch();
+
+        return ['status' => 'success', 'message' => ($data['action'] === 'promote') ? __('guild_user.promote_in_queue_started') : __('guild_user.demote_in_queue_started')];
+    }
+
+    private function executeSyncUpdate(Collection $guild_users, GuildSettings $guild_settings, User $auth_user, array $data, int $count): array
+    {
+        $success_count = 0;
+        foreach ($guild_users as $guild_user) {
+            if (ChangeGuildUserRankAction::run($guild_user, $guild_settings, $data['action'], $data['level'] ?? 1, $auth_user->id)) {
+                $success_count++;
+            }
+        }
+
+        if ($success_count === $count) {
+            return ['status' => 'success', 'message' => 'Ranks updated successfully.'];
+        } elseif ($success_count > 0) {
+            return ['status' => 'success', 'message' => 'Some ranks updated successfully.'];
+        }
+
+        return ['status' => 'error', 'message' => __('app.error_action')];
     }
 }

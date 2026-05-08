@@ -47,21 +47,17 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (HttpExceptionInterface $exception, Request $request) {
-            if ($exception->getStatusCode() !== 403) {
-                return null;
-            }
-
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
                     'data' => null,
                     'message' => $exception->getMessage() ?: 'Nincs jogosultságod a művelethez.',
-                ], 403);
+                ], $exception->getStatusCode());
             }
 
             return Inertia::render('errors/error', [
-                'status' => 403,
+                'status' => $exception->getStatusCode(),
                 'message' => $exception->getMessage() ?: 'Nincs jogosultságod a művelethez.',
-            ])->toResponse($request)->setStatusCode(403);
+            ])->toResponse($request)->setStatusCode($exception->getStatusCode());
         });
     })->create();

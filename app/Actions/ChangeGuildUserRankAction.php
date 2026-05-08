@@ -29,7 +29,7 @@ class ChangeGuildUserRankAction
      * @throws InvalidArgumentException
      * @throws RuntimeException
      */
-    public function handle(GuildUser $guild_user, ?GuildSettings $guild_settings, string $action = 'promote', int $level = 1, ?int $causer_id = null): bool
+    public function handle(GuildUser $guild_user, ?GuildSettings $guild_settings, string $action = 'promote', int $level = 1, ?string $causer_id = null): bool
     {
         try {
             $guild_settings = $guild_settings ?: SelectedGuildService::get()?->guildSettings ?: $guild_user->guild?->guildSettings;

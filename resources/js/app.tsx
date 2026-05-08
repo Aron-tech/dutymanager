@@ -1,5 +1,6 @@
 // resources/js/app.tsx
 
+import './bootstrap';
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { StrictMode } from 'react';
@@ -7,14 +8,10 @@ import { createRoot } from 'react-dom/client';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import '../css/app.css';
 import { initializeTheme } from '@/hooks/use-appearance';
-// 1. Importáld a route függvényt
+// eslint-disable-next-line import/order
 import { route } from 'ziggy-js';
+// eslint-disable-next-line import/order
 import { Toaster } from 'sonner';
-import { configureEcho } from '@laravel/echo-react';
-
-configureEcho({
-    broadcaster: 'reverb',
-});
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
