@@ -1,5 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { Plus, ShieldAlert, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
@@ -63,8 +63,13 @@ export default function PunishmentsIndexView({
     const flash = props.flash as { success: string | null; error: string | null; };
 
     useEffect(() => {
-        if (flash?.success) toast.success(flash.success);
-        if (flash?.error) toast.error(flash.error);
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
     }, [flash]);
 
     const safe_filters = Array.isArray(filters) ? {} : filters || {};
@@ -133,6 +138,7 @@ export default function PunishmentsIndexView({
     useEffect(() => {
         if (!is_mounted.current) {
             is_mounted.current = true;
+
             return;
         }
 
@@ -245,9 +251,11 @@ export default function PunishmentsIndexView({
                         if (row.deleted_at) {
                             return <Badge variant="secondary" className="text-muted-foreground">Visszavonva</Badge>;
                         }
+
                         if (row.expires_at && new Date(row.expires_at) < new Date()) {
                             return <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">Lejárt</Badge>;
                         }
+
                         return <Badge variant="default" className="bg-destructive hover:bg-destructive/90">Aktív</Badge>;
                     };
                 }
@@ -291,6 +299,7 @@ export default function PunishmentsIndexView({
     const handleUserSelect = (val: string) => {
         setSelectedGuildUserId(val);
         const selected = (guild_users || []).find((gu) => String(gu.id) === val);
+
         if (selected) {
             setModalUser(selected.full_user);
         }

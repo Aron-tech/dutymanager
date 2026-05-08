@@ -44,12 +44,16 @@ class GuildSettings extends Model
 
     public function getFeatureSettings(FeatureEnum $feature, ?string $settings_name, mixed $fallback = null): mixed
     {
-        if (isset($this->feature_settings[$feature->value])) {
-            if (is_null($settings_name)) {
-                return $this->feature_settings[$feature->value];
-            } else {
-                return $this->feature_settings[$feature->value][$settings_name];
-            }
+        if (! isset($this->feature_settings[$feature->value])) {
+            return $fallback;
+        }
+
+        if (is_null($settings_name)) {
+            return $this->feature_settings[$feature->value];
+        }
+
+        if (is_array($this->feature_settings[$feature->value]) && array_key_exists($settings_name, $this->feature_settings[$feature->value])) {
+            return $this->feature_settings[$feature->value][$settings_name];
         }
 
         return $fallback;

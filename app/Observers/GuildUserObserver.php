@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\GuildUser;
+use App\Services\DiscordFetchService;
 
 class GuildUserObserver
 {
@@ -12,6 +13,11 @@ class GuildUserObserver
         $guildUser->punishments()->update(['guild_user_id' => null]);
         $guildUser->holidays()->update(['guild_user_id' => null]);
         $guildUser->images()->delete();
+        if (! empty($guildUser->cached_roles)) {
+            foreach ($guildUser->cached_roles as $role_id) {
+                DiscordFetchService::removeRoleFromMember($guildUser->guild_id, $guildUser->user_id, $role_id);
+            }
+        }
     }
 
     /**

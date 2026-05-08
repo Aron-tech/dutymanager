@@ -24,7 +24,7 @@ class UpdateRankGuildUserRequest extends FormRequest
     {
         return [
             'guild_user_ids' => ['required', 'array'],
-            'guild_user_ids.*' => ['required', 'string', 'exists:guild_users,id'],
+            'guild_user_ids.*' => ['required', 'integer', 'exists:guild_users,id'],
             'action' => ['required', 'string', 'in:promote,demote'],
             'level' => ['nullable', 'integer', 'min:1', 'max:10'],
         ];

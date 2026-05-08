@@ -48,6 +48,7 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('panel')->group(function () {
             Route::get('/', [GuildUserController::class, 'index'])->name('guild.users.index');
             Route::post('/', [GuildUserController::class, 'store'])->name('guild.users.store');
+            Route::post('/bulk-rank', [GuildUserController::class, 'updateBulkRank'])->name('guild.users.bulk.rank');
             Route::put('/{guild_user}', [GuildUserController::class, 'update'])->name('guild.users.update');
             Route::put('/{guild_user}/accept', [GuildUserController::class, 'accept'])->name('guild.users.accept');
             Route::get('/{guild_user}/image', [GuildUserController::class, 'getImagesData'])->name('guild.users.image');

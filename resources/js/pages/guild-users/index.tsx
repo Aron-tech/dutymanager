@@ -1,5 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { Plus, Check, Trash2 } from 'lucide-react';
+import { Plus, Check, Trash2, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import React, {
     useState,
     useMemo,
@@ -31,6 +31,7 @@ import EditDutyModal from '@/pages/guild-users/_edit-duty-modal';
 import EditHolidayModal from '@/pages/guild-users/_edit-holiday-modal';
 import EditPunishmentModal from '@/pages/guild-users/_edit-punishment-modal';
 import type { GuildUser, UserManagerProps } from '@/types';
+import BulkRankModal from './_bulk-rank-modal';
 import CreateEditUserModal from './_create-edit-modal';
 import UserImageGallery from './_image-gallery-modal';
 import PunishmentsCell from './_punishments-cell';
@@ -73,6 +74,8 @@ export default function UserManagerView({
     const [punishment_user, setPunishmentUser] = useState<GuildUser | null>(null);
     const [holiday_user, setHolidayUser] = useState<GuildUser | null>(null);
     const [gallery_user, setGalleryUser] = useState<GuildUser | null>(null);
+    const [is_bulk_rank_modal_open, setIsBulkRankModalOpen] = useState(false);
+    const [rank_modal_ids, setRankModalIds] = useState<(string | number)[]>([]);
 
     const [delete_state, setDeleteState] = useState<{
         is_open: boolean;
@@ -105,10 +108,13 @@ export default function UserManagerView({
         const duty_cols = [
             { id: 'current_duty', label: 'Aktuális Duty', required: true },
             { id: 'all_duty', label: 'Összes Duty', required: true },
-            { id: 'joined_at', label: 'Csatlakozott', required: true },
         ];
 
-        return [...base_cols, ...config_cols, ...duty_cols];
+        const extra_base_cols = [
+            { id: 'rank_changed_ago', label: 'Utolsó rangváltoztatás', required: true },
+        ];
+
+        return [...base_cols, ...config_cols, ...duty_cols, ...extra_base_cols];
     }, [safe_user_details]);
 
     const default_visible = column_definitions.filter((col) => col.required).map((col) => col.id);
@@ -169,8 +175,8 @@ export default function UserManagerView({
 
     const confirmDelete = () => {
         if (delete_state.ids.length === 0) {
-return;
-}
+            return;
+        }
 
         setDeleteState((prev) => ({ ...prev, is_processing: true }));
 
@@ -191,8 +197,8 @@ return;
 
     const confirmAccept = () => {
         if (!accept_state.id) {
-return;
-}
+            return;
+        }
 
         setAcceptState((prev) => ({ ...prev, is_processing: true }));
 
@@ -200,6 +206,25 @@ return;
             preserveScroll: true,
             onFinish: () => setAcceptState({ is_open: false, id: null, is_processing: false }),
         });
+    };
+
+    const handleBulkRankAction = (action: 'promote' | 'demote') => {
+        if (selected_rows.length === 0) return;
+
+        router.post(
+            route('guild.users.bulk.rank'),
+            {
+                guild_user_ids: selected_rows,
+                action: action,
+                level: 1,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setSelectedRows([]);
+                },
+            }
+        );
     };
 
     const table_columns = useMemo<ColumnDef<GuildUser>[]>(() => {
@@ -262,9 +287,8 @@ return;
             return (
                 <UserTableActions
                     user={row}
-                    onEdit={(u) => {
- setEditUser(u); setIsModalOpen(true);
-}}
+                    onEdit={(u) => { setEditUser(u); setIsModalOpen(true); }}
+                    onEditRank={(u) => { setRankModalIds([u.id]); setIsBulkRankModalOpen(true); }}
                     onShowDuties={(u) => setDutyUser(u)}
                     onShowPunishments={(u) => setPunishmentUser(u)}
                     onShowHolidays={(u) => setHolidayUser(u)}
@@ -297,9 +321,7 @@ return;
                         <Button
                             className="w-full shadow-sm"
                             variant="default"
-                            onClick={() => {
- setEditUser(null); setIsModalOpen(true);
-}}
+                            onClick={() => { setEditUser(null); setIsModalOpen(true); }}
                         >
                             <Plus className="mr-2 h-4 w-4" /> Új felhasználó
                         </Button>
@@ -311,7 +333,24 @@ return;
                         {selected_rows.length > 0 && status_filter === 'accepted' && (
                             <div className="flex shrink-0 items-center gap-2 bg-muted/50 p-1.5 rounded-md border">
                                 <span className="text-sm font-medium px-2">{selected_rows.length} elem kijelölve</span>
-                                <Button variant="secondary" size="sm" className="h-8 shadow-sm bg-background">Tömeges szerkesztés</Button>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="h-8 text-green-600 hover:text-green-700 "
+                                    onClick={() => handleBulkRankAction('promote')}
+                                >
+                                    <ArrowUpCircle className="mr-2 h-4 w-4" />
+                                    Felfokozás
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="h-8 text-red-600 hover:text-red-700"
+                                    onClick={() => handleBulkRankAction('demote')}
+                                >
+                                    <ArrowDownCircle className="mr-2 h-4 w-4" />
+                                    Lefokozás
+                                </Button>
                                 <Button
                                     variant="destructive"
                                     size="sm"
@@ -391,14 +430,18 @@ return;
 
             <CreateEditUserModal
                 is_open={is_modal_open}
-                onClose={() => {
-                 setIsModalOpen(false); setEditUser(null);
-                }}
+                onClose={() => { setIsModalOpen(false); setEditUser(null); }}
                 edit_user={edit_user}
                 user_details_config={safe_user_details}
                 unattached_guild_users={unattached_guild_users}
                 has_rank_system={has_rank_system}
                 available_ranks={available_ranks}
+            />
+
+            <BulkRankModal
+                is_open={is_bulk_rank_modal_open}
+                onClose={() => { setIsBulkRankModalOpen(false); setRankModalIds([]); }}
+                selected_ids={rank_modal_ids}
             />
 
             <EditDutyModal is_open={!!duty_user} onClose={() => setDutyUser(null)} user={duty_user} />

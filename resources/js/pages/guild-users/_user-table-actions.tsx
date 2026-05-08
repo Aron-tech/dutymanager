@@ -6,6 +6,7 @@ import {
     Trash2,
     Shield,
     CalendarOff,
+    ArrowUpCircle, // Új ikon beimportálva
 } from 'lucide-react';
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,7 @@ import type { GuildUser } from '@/types';
 interface UserTableActionsProps {
     user: GuildUser;
     onEdit: (user: GuildUser) => void;
+    onEditRank: (user: GuildUser) => void; // Új prop
     onShowDuties: (user: GuildUser) => void;
     onShowHolidays: (user: GuildUser) => void;
     onShowGallery: (user: GuildUser) => void;
@@ -30,14 +32,15 @@ interface UserTableActionsProps {
 }
 
 export default function UserTableActions({
-    user,
-    onEdit,
-    onShowDuties,
-    onShowHolidays,
-    onShowPunishments,
-    onShowGallery,
-    onDelete,
-}: UserTableActionsProps) {
+                                             user,
+                                             onEdit,
+                                             onEditRank, // Új prop
+                                             onShowDuties,
+                                             onShowHolidays,
+                                             onShowPunishments,
+                                             onShowGallery,
+                                             onDelete,
+                                         }: UserTableActionsProps) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -48,6 +51,11 @@ export default function UserTableActions({
             <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => onEdit(user)}>
                     <Edit className="mr-2 h-4 w-4" /> Szerkesztés
+                </DropdownMenuItem>
+
+                {/* Új gomb a modal megnyitásához */}
+                <DropdownMenuItem onClick={() => onEditRank(user)}>
+                    <ArrowUpCircle className="mr-2 h-4 w-4" /> Rang szerkesztése
                 </DropdownMenuItem>
 
                 <DropdownMenuItem onClick={() => onShowDuties(user)}>

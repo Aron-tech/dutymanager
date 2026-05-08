@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Cache;
 #[Hidden(['cached_roles'])]
 class GuildUser extends Model
 {
-    protected $appends = ['joined_ago'];
+    protected $appends = ['rank_changed_ago', 'joined_ago'];
 
     /**
      * @return string[]
@@ -55,16 +55,33 @@ class GuildUser extends Model
         return "{$days} napja";
     }
 
-    /**
-     * @param GuildSettings|null $guild_settings
-     * @return array|null
-     */
+    public function getRankChangedAgoAttribute(): string
+    {
+        if (empty($this->rank_changed_at)) {
+            return 'N/A';
+        }
+
+        $days = (int) $this->rank_changed_at->diffInDays(now());
+        if ($days === 0) {
+            return 'Ma';
+        }
+        if ($days === 1) {
+            return '1 napja';
+        }
+
+        return "{$days} napja";
+    }
+
     public function getRankData(?GuildSettings $guild_settings = null): ?array
     {
         $guild_settings = $guild_settings ?: SelectedGuildService::get()?->guildSettings();
         $rank_roles = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'rank_roles', []);
         $rank_roles_count = count($rank_roles);
         $highest_match = null;
+
+        if (empty($this->cached_roles)) {
+            return null;
+        }
 
         for ($i = $rank_roles_count - 1; $i >= 0; $i--) {
             if (in_array($rank_roles[$i], $this->cached_roles)) {

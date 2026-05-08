@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Actions\ChangeGuildUserRankAction;
 use App\Actions\JoinUserToGuildAction;
 use App\Concerns\FileHandlerTrait;
 use App\Enums\ActionTypeEnum;
 use App\Enums\DutyStatusEnum;
+use App\Enums\FeatureEnum;
 use App\Models\ActivityLog;
 use App\Models\Guild;
 use App\Models\GuildUser;
@@ -32,11 +34,14 @@ class GuildUserService
         $user_details_config = $guild_settings?->user_details_config ?? [];
         $unattached_guild_users = DiscordFetchService::getGuildMembers($guild->id, true, 2);
 
+        $rank_roles = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'rank_roles', []);
+
         return [
             'guild_users' => $paginated_users,
             'user_details_config' => $user_details_config,
             'unattached_guild_users' => $unattached_guild_users,
             'filters' => $data,
+            'rank_roles' => $rank_roles,
         ];
     }
 
@@ -92,6 +97,9 @@ class GuildUserService
                 break;
             case 'all_duty':
                 $query->orderBy('all_period_duties_sum_value', $direction);
+                break;
+            case 'rank_changed_ago':
+                $query->orderBy('rank_changed_at', $direction);
                 break;
             case 'joined_at':
                 $query->orderBy('created_at', $direction);
@@ -155,12 +163,40 @@ class GuildUserService
     public function updateGuildUser(GuildUser $guild_user, array $data): GuildUser
     {
         return DB::transaction(function () use ($guild_user, $data) {
+            if (isset($data['rank_id'])) {
+                $this->updateRank($guild_user, $data['rank_id']);
+                unset($data['rank_id']);
+            }
+
             $guild_user->update($data);
 
             ActivityLog::make($guild_user->guild_id, auth()->id(), $guild_user->user_id, ActionTypeEnum::UPDATE_USER_TO_GUILD, $guild_user->toArray());
 
             return $guild_user;
         });
+    }
+
+    private function updateRank(GuildUser $guild_user, string $new_rank_id): void
+    {
+        $guild_settings = $guild_user->guild->guildSettings;
+        $current_rank_data = $guild_user->getRankData($guild_settings);
+
+        if ($current_rank_data['rank_id'] === $new_rank_id) {
+            return;
+        }
+
+        $rank_roles = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'rank_roles', []);
+        $current_index = $current_rank_data['index'] ?? -1;
+        $new_index = array_search($new_rank_id, $rank_roles);
+
+        if ($new_index === false) {
+            return;
+        }
+
+        $action = $new_index > $current_index ? 'promote' : 'demote';
+        $level = abs($new_index - $current_index);
+
+        ChangeGuildUserRankAction::run($guild_user, $guild_settings, $action, $level);
     }
 
     public function acceptUser(GuildUser $guild_user, ?User $auth_user = null): bool
@@ -215,8 +251,6 @@ class GuildUserService
             foreach ($guild_users as $guild_user) {
                 $guild_user->delete();
             }
-
-            ActivityLog::make($guild->id, auth()->id(), null, ActionTypeEnum::DELETE_USER_FROM_GUILD, $guild_users->toArray());
         });
     }
 
