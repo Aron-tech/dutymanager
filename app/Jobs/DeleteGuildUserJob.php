@@ -17,10 +17,7 @@ class DeleteGuildUserJob implements ShouldQueue
 {
     use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(
-        public GuildUser $guild_user,
-        public int $causer_id
-    ) {}
+    public function __construct(public GuildUser $guild_user, public string $causer_id) {}
 
     public function handle(): bool
     {

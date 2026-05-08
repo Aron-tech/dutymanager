@@ -3,6 +3,8 @@
 return [
     'success_add_new_user' => 'Sikeresen hozzáadtad :user felhasználót!',
     'success_accepted_user' => 'Sikeresen jóváhagytad :user felhasználót!',
+    'delete_users_in_queue_started' => 'A felhasználók törlése a háttérben elkezdődött.',
+    'success_deleted_users' => 'Sikeresen töröltél :user felhasználót!',
     'promote_in_queue_started' => 'Előléptetések végrehajtása a háttérben elkezdődött.',
     'demote_in_queue_started' => 'Lefokozás végrehajtása a háttérben elkezdődött',
     'success_promote_user' => 'Sikeresen előléptettél :user felhasználót',

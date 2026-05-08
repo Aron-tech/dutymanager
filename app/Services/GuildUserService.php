@@ -11,6 +11,7 @@ use App\Enums\ActionTypeEnum;
 use App\Enums\DutyStatusEnum;
 use App\Enums\FeatureEnum;
 use App\Events\SendUserMessageEvent;
+use App\Jobs\DeleteGuildUserJob;
 use App\Jobs\UpdateGuildUserRankJob;
 use App\Models\ActivityLog;
 use App\Models\Guild;
@@ -247,17 +248,25 @@ class GuildUserService
     /**
      * @throws Throwable
      */
-    public function deleteUsersFromGuild(Guild $guild, array $ids): void
+    public function deleteUsersFromGuild(Guild $guild, array $ids): Batch
     {
-        DB::transaction(function () use ($guild, $ids) {
-            $guild_users = GuildUser::where('guild_id', $guild->id)
-                ->whereIn('id', $ids)
-                ->get();
+        $guild_users = GuildUser::where('guild_id', $guild->id)->whereIn('id', $ids)->get();
+        $causer_id = auth()->id();
 
-            foreach ($guild_users as $guild_user) {
-                $guild_user->delete();
-            }
+        $jobs = $guild_users->map(function ($guild_user) use ($causer_id) {
+            return new DeleteGuildUserJob($guild_user, $causer_id);
         });
+
+        return Bus::batch($jobs)
+            ->name('GuildUsers deleting from Guild: '.$guild->id)
+            ->allowFailures()
+            ->then(function (Batch $batch) use ($causer_id) {
+                broadcast(new SendUserMessageEvent($causer_id, __('guild_user.success_deleted_user', ['user' => $batch->totalJobs]), 'success'));
+            })
+            ->catch(function (Batch $batch, Throwable $e) use ($causer_id) {
+                broadcast(new SendUserMessageEvent($causer_id, __('app.error_action'), 'danger'));
+            })
+            ->dispatch();
     }
 
     /**

@@ -136,10 +136,9 @@ class GuildUserController extends Controller
         try {
             $this->service->deleteUsersFromGuild($guild, $validated['ids']);
 
-            return back()->with('success', 'A kijelölt felhasználók törölve lettek.');
+            return back()->with('success', __('guild_user.delete_users_in_queue_started'));
         } catch (Throwable $e) {
-            Log::error($e);
-
+            \Log::error($e);
             return back()->withErrors(['error' => __('app.error_action')]);
         }
     }
