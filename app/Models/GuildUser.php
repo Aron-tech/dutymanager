@@ -96,6 +96,11 @@ class GuildUser extends Model
         return $highest_match;
     }
 
+    public static function deletePermissionCache(string $guild_id, string $user_id): void
+    {
+        Cache::forget("guild_{$guild_id}_user_{$user_id}_permissions");
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

@@ -132,7 +132,7 @@ class GuildUserService
                 return $this->makeResponse(false, null, __('app.error_action'), 400);
             }
 
-            Cache::forget("guild_{$guild->id}_user_{$data['user_id']}_permissions");
+            GuildUser::deletePermissionCache($guild->id, $data['user_id']);
 
             DB::commit();
 
