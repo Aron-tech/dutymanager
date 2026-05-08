@@ -12,7 +12,9 @@ use App\Http\Requests\ToggleDutyRequest;
 use App\Http\Requests\UpdateRolesGuildUserRequest;
 use App\Models\Guild;
 use App\Services\Api\GuildUserService;
+use App\Services\SelectedGuildService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class GuildUserController extends Controller
@@ -30,12 +32,16 @@ class GuildUserController extends Controller
         return $this->service->addUserToGuild($data);
     }
 
-    public function delete(DeleteGuildUserRequest $request)
+    public function delete(DeleteGuildUserRequest $request): JsonResponse
     {
         if (auth()->user()->cannot(PermissionEnum::DELETE_GUILD_USERS)) {
             return response()->json($this->makeResponse(false, null, __('app.error_no_permission'), 403));
         }
 
+        $data = $request->validated();
+        $guild = SelectedGuildService::get() ?? Guild::installed()->find($data['guild_id']);
+
+        return response()->json($this->service->deleteUserFromGuild($guild, $data['user_id']));
     }
 
     public function toggleDuty(ToggleDutyRequest $request): JsonResponse

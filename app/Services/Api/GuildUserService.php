@@ -3,6 +3,7 @@
 namespace App\Services\Api;
 
 use App\Actions\DeleteActiveDutyAction;
+use App\Actions\DeleteGuildUserAction;
 use App\Actions\JoinUserToGuildAction;
 use App\Concerns\ServiceTrait;
 use App\DTO\ServiceResponseDTO;
@@ -13,7 +14,7 @@ use App\Models\GuildUser;
 use App\Models\User;
 use App\Services\DiscordFetchService;
 use App\Services\SelectedGuildService;
-use Illuminate\Support\Facades\Cache;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -114,9 +115,6 @@ class GuildUserService
     }
 
     /**
-     * @param Guild $guild
-     * @param array $data
-     * @return ServiceResponseDTO
      * @throws Throwable
      */
     public function updateRoles(Guild $guild, array $data): ServiceResponseDTO
@@ -148,6 +146,35 @@ class GuildUserService
             ]);
 
             return $this->makeResponse(false, null, __('app.error_action'), 400);
+        }
+    }
+
+    public function deleteUserFromGuild(Guild $guild, string $user_id): ServiceResponseDTO
+    {
+        try {
+            $guild_user = $guild->acceptedGuildUsers()->where('user_id', $user_id)->first();
+
+            if (! $guild_user) {
+                Log::error('Not found guild user for deletion', ['guild_id' => $guild->id, 'user_id' => $user_id]);
+                throw new Exception('Not found guild user for deletion');
+            }
+
+            $success = DeleteGuildUserAction::run($guild_user, auth()->id());
+
+            if (! $success) {
+                throw new Exception('Guild user deletion failed');
+            }
+
+            return $this->makeResponse(true, null, __('guild_user.success_deleted_user', ['user' => $guild_user->user->name]));
+
+        } catch (Throwable $e) {
+            Log::error('Guild user deletion failed', [
+                'error' => $e->getMessage(),
+                'guild_id' => $guild->id,
+                'user_id' => $user_id,
+            ]);
+
+            return $this->makeResponse(false, null, __('app.error_action'), 500);
         }
     }
 }
