@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Actions\DeleteGuildUserAction;
 use App\Enums\ActionTypeEnum;
 use App\Models\ActivityLog;
 use App\Models\GuildUser;
@@ -25,10 +26,6 @@ class DeleteGuildUserJob implements ShouldQueue
             return false;
         }
 
-        return DB::transaction(function () {
-            ActivityLog::make($this->guild_user->guild_id, $this->causer_id, $this->guild_user->user_id, ActionTypeEnum::DELETE_USER_FROM_GUILD, $this->guild_user->toArray());
-
-            return $this->guild_user->delete();
-        });
+        return DeleteGuildUserAction::run($this->guild_user, $this->causer_id);
     }
 }
