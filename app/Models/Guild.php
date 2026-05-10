@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['id', 'name', 'icon', 'owner_id', 'lang_code', 'is_installed', 'reset_data_at'])]
+#[Fillable(['id', 'name', 'icon', 'owner_id', 'lang_code', 'is_installed'])]
 #[Hidden(['lang_code'])]
 class Guild extends Model
 {
@@ -31,7 +31,6 @@ class Guild extends Model
     {
         return [
             'is_installed' => 'bool',
-            'reset_data_at' => 'datetime',
         ];
     }
 
@@ -89,6 +88,26 @@ class Guild extends Model
     public function guildRoles(): HasMany
     {
         return $this->hasMany(GuildRole::class);
+    }
+
+    /**
+     * @return HasOne
+     */
+    public function activeSubscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class)
+            ->where(function ($query): void {
+                $query->whereNull('ends_at')
+                    ->orWhere('ends_at', '>', now());
+            });
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasActiveSubscription(): bool
+    {
+        return $this->activeSubscription()->exists();
     }
 
     /**

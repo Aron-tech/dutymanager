@@ -7,16 +7,80 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import AppLayout from '@/layouts/app-layout';
 import { toast } from 'sonner';
 
-export default function SubscriptionPage({ subscriptions, savings, userSubscriptions, availableGuilds }) {
-    const { flash } = usePage().props;
-
-    const { data, setData, post, processing, errors } = useForm({
-        plan: 'monthly',
+function UserSubscriptionCard({ sub, availableGuilds }: { sub: any, availableGuilds: any[] }) {
+    const { data, setData, put, processing } = useForm({
         guild_id: '',
     });
 
-    const { data: guildData, setData: setGuildData, put, processing: guildProcessing, errors: guildErrors } = useForm({
-        guild_id: '',
+    function handleGuildChange(e: React.FormEvent) {
+        e.preventDefault();
+        put(route('subscriptions.update', { subscription: sub.id }), {
+            preserveScroll: true,
+            onSuccess: () => toast.success('Szerver sikeresen módosítva!'),
+            onError: (errors) => {
+                if (errors.guild_id) {toast.error(errors.guild_id);}
+            }
+        });
+    }
+
+    return (
+        <Card className="border-sidebar-border/70 bg-sidebar/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="space-y-2 w-full">
+                        <div className="flex items-center justify-between">
+                            <span className="font-semibold text-lg flex items-center gap-2">
+                                <span className="capitalize">{sub.type === 'monthly' ? 'Havi' : 'Éves'}</span> csomag
+                            </span>
+                            <Badge variant={sub.stripe_status === 'active' ? 'default' : 'secondary'} className="capitalize">
+                                {sub.stripe_status}
+                            </Badge>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2 bg-background/50 p-2 rounded-md">
+                            <Server className="h-4 w-4" />
+                            <span>
+                                Hozzárendelt szerver:
+                                <span className="font-medium text-foreground ml-1">
+                                    {sub.guild ? sub.guild.name : 'Nincs hozzárendelve'}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+
+                    {availableGuilds.length > 0 && (
+                        <form onSubmit={handleGuildChange} className="flex flex-col gap-2 w-full sm:w-auto mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-border">
+                            <select
+                                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                onChange={(e) => setData('guild_id', e.target.value)}
+                                value={data.guild_id}
+                            >
+                                <option value="" disabled>Válassz szervert</option>
+                                {availableGuilds.map(guild => (
+                                    <option key={guild.id} value={guild.id}>{guild.name}</option>
+                                ))}
+                            </select>
+                            <Button
+                                type="submit"
+                                size="sm"
+                                disabled={processing || !data.guild_id}
+                                className="w-full"
+                            >
+                                Szerver módosítása
+                            </Button>
+                        </form>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+export default function SubscriptionPage({ subscriptions, savings, userSubscriptions, availableGuilds }: any) {
+    const { flash } = usePage().props as any;
+
+    const { setData, post, processing } = useForm({
+        plan: 'monthly',
     });
 
     useEffect(() => {
@@ -28,7 +92,7 @@ export default function SubscriptionPage({ subscriptions, savings, userSubscript
         }
     }, [flash]);
 
-    function handleSubscription(e, plan) {
+    function handleSubscription(e: React.MouseEvent, plan: string) {
         e.preventDefault();
         setData('plan', plan);
         setTimeout(() => {
@@ -36,21 +100,10 @@ export default function SubscriptionPage({ subscriptions, savings, userSubscript
                 preserveScroll: true,
                 onError: (errors) => {
                     if (errors.plan) toast.error(errors.plan);
-                    if (errors.error) toast.error(errors.error); // Catch generic errors sent via withErrors
+                    if (errors.error) toast.error(errors.error);
                 }
             });
         }, 50);
-    }
-
-    function handleGuildChange(e, subscriptionId) {
-        e.preventDefault();
-        put(route('subscriptions.update', { subscription: subscriptionId }), {
-            preserveScroll: true,
-            onSuccess: () => toast.success('Szerver sikeresen módosítva!'),
-            onError: (errors) => {
-                if (errors.guild_id) toast.error(errors.guild_id);
-            }
-        });
     }
 
     return (
@@ -70,7 +123,7 @@ export default function SubscriptionPage({ subscriptions, savings, userSubscript
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
-                    {Object.entries(subscriptions).map(([plan, details]) => (
+                    {Object.entries(subscriptions).map(([plan, details]: any) => (
                         <Card
                             key={plan}
                             className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg ${plan === 'yearly' ? 'border-primary shadow-md scale-[1.02] md:scale-105 z-10' : 'border-border'}`}
@@ -108,7 +161,7 @@ export default function SubscriptionPage({ subscriptions, savings, userSubscript
                                 <div className="space-y-4 pt-4 border-t border-border">
                                     <p className="font-semibold text-sm text-foreground/80 uppercase tracking-wider">Mit tartalmaz?</p>
                                     <ul className="space-y-3">
-                                        {details.features.map((feature, index) => (
+                                        {details.features.map((feature: string, index: number) => (
                                             <li key={index} className="flex items-start gap-3 text-sm text-muted-foreground">
                                                 <CheckCircle className="text-primary h-5 w-5 shrink-0 mt-0.5" />
                                                 <span className="leading-tight">{feature}</span>
@@ -140,57 +193,8 @@ export default function SubscriptionPage({ subscriptions, savings, userSubscript
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {userSubscriptions.map(sub => (
-                                <Card key={sub.id} className="border-sidebar-border/70 bg-sidebar/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
-                                    <CardContent className="p-6">
-                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                            <div className="space-y-2 w-full">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="font-semibold text-lg flex items-center gap-2">
-                                                        <span className="capitalize">{sub.type === 'monthly' ? 'Havi' : 'Éves'}</span> csomag
-                                                    </span>
-                                                    <Badge variant={sub.stripe_status === 'active' ? 'default' : 'secondary'} className="capitalize">
-                                                        {sub.stripe_status}
-                                                    </Badge>
-                                                </div>
-
-                                                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2 bg-background/50 p-2 rounded-md">
-                                                    <Server className="h-4 w-4" />
-                                                    <span>
-                                                        Hozzárendelt szerver:
-                                                        <span className="font-medium text-foreground ml-1">
-                                                            {sub.guild ? sub.guild.name : 'Nincs hozzárendelve'}
-                                                        </span>
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {availableGuilds.length > 0 && (
-                                                <form onSubmit={(e) => handleGuildChange(e, sub.id)} className="flex flex-col gap-2 w-full sm:w-auto mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-border">
-                                                    <select
-                                                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                                        onChange={(e) => setGuildData('guild_id', e.target.value)}
-                                                        defaultValue=""
-                                                    >
-                                                        <option value="" disabled>Válassz szervert</option>
-                                                        {availableGuilds.map(guild => (
-                                                            <option key={guild.id} value={guild.id}>{guild.name}</option>
-                                                        ))}
-                                                    </select>
-                                                    <Button
-                                                        type="submit"
-                                                        size="sm"
-                                                        disabled={guildProcessing || !guildData.guild_id}
-                                                        className="w-full"
-                                                    >
-                                                        Szerver módosítása
-                                                    </Button>
-                                                    {/* Hibajelzés itt is megjelenik, de a toast is mutatja */}
-                                                </form>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                            {userSubscriptions.map((sub: any) => (
+                                <UserSubscriptionCard key={sub.id} sub={sub} availableGuilds={availableGuilds} />
                             ))}
                         </div>
                     </div>

@@ -14,7 +14,6 @@ final class HolidaySystemRules
         return [
             "{$prefix}.holiday_role_id" => ['required', 'string'],
             "{$prefix}.announcement_channel_id" => ['nullable', 'string'],
-            "{$prefix}.announcement_message" => ['required_with:'.$prefix.'.announcement_channel_id', 'string'],
         ];
     }
 
@@ -25,7 +24,6 @@ final class HolidaySystemRules
     {
         return [
             "{$prefix}.holiday_role_id.required" => 'A szabadság rang kiválasztása kötelező.',
-            "{$prefix}.announcement_message.required_with" => 'A felhívás üzenet kitöltése kötelező, ha van felhívás szoba kiválasztva.',
         ];
     }
 }

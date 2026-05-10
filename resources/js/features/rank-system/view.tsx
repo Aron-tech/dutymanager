@@ -185,23 +185,6 @@ export default function RankSystemView({
                 />
 
                 <InputError message={errors['announcement_channel_id']} />
-
-                {rank_system_data.announcement_channel_id && (
-                    <div className="space-y-2 pt-4 animate-in fade-in duration-300">
-                        <Label className="text-amber-600">Felhívás Üzenet Szövege</Label>
-                        <Textarea
-                            value={rank_system_data.announcement_message ?? default_message}
-                            onChange={(e) => onChange('announcement_message', e.target.value)}
-                            placeholder={default_message}
-                            rows={3}
-                            className="border-amber-500/30 focus-visible:ring-amber-500"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Használható változók: <code className="bg-amber-500/10 px-1 py-0.5 rounded">{'{user}'}</code>, <code className="bg-amber-500/10 px-1 py-0.5 rounded">{'{rank}'}</code>
-                        </p>
-                        <InputError message={errors['announcement_message']} />
-                    </div>
-                )}
             </div>
         </div>
     );

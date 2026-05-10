@@ -15,7 +15,6 @@ final class RankSystemRules
             "{$prefix}.rank_roles" => ['required', 'array', 'min:2'],
             "{$prefix}.rank_roles.*" => ['required', 'string'],
             "{$prefix}.announcement_channel_id" => ['nullable', 'string'],
-            "{$prefix}.announcement_message" => ['required_with:'.$prefix.'.announcement_channel_id', 'string'],
             "{$prefix}.archive_duties_on_promotion" => ['nullable', 'boolean'],
         ];
     }
@@ -28,7 +27,6 @@ final class RankSystemRules
         return [
             "{$prefix}.rank_roles.required" => 'A ranglétra megadása kötelező.',
             "{$prefix}.rank_roles.min" => 'A ranglétrának legalább 2 rangból kell állnia.',
-            "{$prefix}.announcement_message.required_with" => 'A felhívás üzenet kitöltése kötelező, ha van felhívás szoba kiválasztva.',
         ];
     }
 }

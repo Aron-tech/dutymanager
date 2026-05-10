@@ -124,22 +124,6 @@ export default function WarningSystemView({
                 />
                 <InputError message={errors['announcement_channel_id']} />
             </div>
-
-            {data.announcement_channel_id && (
-                <div className="space-y-2 animate-in fade-in duration-300">
-                    <Label>Felhívás Üzenet Szövege</Label>
-                    <Textarea
-                        value={data.announcement_message ?? default_message}
-                        onChange={(e) => onChange('announcement_message', e.target.value)}
-                        placeholder={default_message}
-                        rows={3}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                        Használható változók: <code className="bg-muted px-1 py-0.5 rounded">{'{user}'}</code>, <code className="bg-muted px-1 py-0.5 rounded">{'{level}'}</code>, <code className="bg-muted px-1 py-0.5 rounded">{'{reason}'}</code>
-                    </p>
-                    <InputError message={errors['announcement_message']} />
-                </div>
-            )}
         </div>
     );
 }

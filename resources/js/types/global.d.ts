@@ -11,6 +11,7 @@ declare module '@inertiajs/core' {
             auth: Auth;
             activeGuild: string;
             sidebarOpen: boolean;
+            guildHasActiveSubscription: boolean;
             [key: string]: unknown;
         };
     }
