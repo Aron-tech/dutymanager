@@ -75,8 +75,10 @@ class GuildUserController extends Controller
         }
 
         $data = $request->validated();
+        $guild = SelectedGuildService::get();
+
         try {
-            $this->service->updateGuildUser($guild_user, $data);
+            $this->service->updateGuildUser($guild_user, $guild, $data);
 
             return back()->with('success', 'Felhasználó adatai sikeresen módosítva')->withInput();
         } catch (Throwable $e) {

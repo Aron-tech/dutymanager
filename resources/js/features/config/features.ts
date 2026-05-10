@@ -1,4 +1,5 @@
 import DutyManagerView from '@/features/duty-manager/view';
+import HolidaySystemView from '@/features/holiday-system/view';
 import RankSystemView from '@/features/rank-system/view';
 import WarningSystemView from '@/features/warning-system/view';
 import type { FeatureRegistryItem } from '@/types';
@@ -22,4 +23,10 @@ export const feature_registry: Record<string, FeatureRegistryItem> = {
         description: '',
         view: RankSystemView,
     },
+    holiday_system: {
+        id: 'holiday_system',
+        title: 'Szabadság rendszer funkció',
+        description: '',
+        view: HolidaySystemView,
+    }
 };

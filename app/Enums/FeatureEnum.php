@@ -23,6 +23,7 @@ enum FeatureEnum: string
             self::DUTY => 'Szolgálat Kezelő',
             self::WARN => 'Figyelmeztetés rendszer',
             self::RANK => 'Rang rendszer',
+            self::HOLIDAY => 'Szabadság rendszer',
         };
     }
 
@@ -35,6 +36,7 @@ enum FeatureEnum: string
             self::DUTY => 'Frakciók és szolgálati idők naplózása.',
             self::WARN => 'Figyelmeztetés rendszer',
             self::RANK => 'Rang rendszer',
+            self::HOLIDAY => 'Szabadság rendszer',
         };
     }
 }

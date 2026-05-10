@@ -11,6 +11,7 @@ import GeneralSettings from '@/features/general-settings';
 import RankSystemView from '@/features/rank-system/view';
 import UserDetails from '@/features/user-details';
 import WarningSystemView from '@/features/warning-system/view';
+import HolidaySystemView from '@/features/holiday-system/view';
 import AppLayout from '@/layouts/app-layout';
 
 interface PageProps {
@@ -75,6 +76,9 @@ export default function GuildSettings() {
                     } else if (key.startsWith('settings.rank_system.')) {
                         setActiveTab('rank_system');
                         break;
+                    } else if (key.startsWith('settings.holiday_system.')) {
+                        setActiveTab('holiday_system');
+                        break;
                     } else {
                         setActiveTab('general'); // Fallback to general
                         break;
@@ -121,14 +125,13 @@ export default function GuildSettings() {
                     </div>
 
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
-                        <TabsList className="grid w-full grid-cols-5">
+                        <TabsList className="grid w-full grid-cols-6">
                             <TabsTrigger value="general">Általános</TabsTrigger>
                             <TabsTrigger value="user_details">Felhasználók</TabsTrigger>
                             <TabsTrigger value="duty_manager">Duty Manager</TabsTrigger>
-                            <TabsTrigger value="warning_system">
-                                Warning System
-                            </TabsTrigger>
+                            <TabsTrigger value="warning_system">Warning System</TabsTrigger>
                             <TabsTrigger value="rank_system">Rank System</TabsTrigger>
+                            <TabsTrigger value="holiday_system">Holiday System</TabsTrigger>
                         </TabsList>
 
                         <TabsContent
@@ -244,6 +247,38 @@ export default function GuildSettings() {
                                 <RankSystemView {...getFeatureProps('rank_system')} />
                             </div>
                         </TabsContent>
+
+                        <TabsContent
+                            value="holiday_system"
+                            className="mt-6 space-y-4 rounded-lg border bg-card p-6 shadow-sm"
+                        >
+                            <div className="mb-4 flex items-center justify-between border-b pb-4">
+                                <div>
+                                    <h3 className="text-lg font-medium">Holiday System</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        Szabadságrendszer modul engedélyezése.
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={data.enabled_features.includes(
+                                        'holiday_system',
+                                    )}
+                                    onCheckedChange={(c) =>
+                                        toggleFeature('holiday_system', c)
+                                    }
+                                />
+                            </div>
+                            <div
+                                className={
+                                    !data.enabled_features.includes('holiday_system')
+                                        ? 'pointer-events-none opacity-50'
+                                        : 'transition-opacity'
+                                }
+                            >
+                                <HolidaySystemView {...getFeatureProps('holiday_system')} />
+                            </div>
+                        </TabsContent>
+
                     </Tabs>
                 </form>
             </div>

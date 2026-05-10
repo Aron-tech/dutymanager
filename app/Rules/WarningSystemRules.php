@@ -14,8 +14,8 @@ final class WarningSystemRules
         return [
             "{$prefix}.warning_roles" => ['required', 'array', 'min:1'],
             "{$prefix}.warning_roles.*" => ['required', 'string'],
-            "{$prefix}.announcement_channel_id" => ['required', 'string'],
-            "{$prefix}.log_channel_id" => ['required', 'string'],
+            "{$prefix}.announcement_channel_id" => ['nullable', 'string'],
+            "{$prefix}.announcement_message" => ['required_with:'.$prefix.'.announcement_channel_id', 'string'],
         ];
     }
 
@@ -27,8 +27,7 @@ final class WarningSystemRules
         return [
             "{$prefix}.warning_roles.required" => 'Legalább egy figyelmeztetési rang megadása kötelező.',
             "{$prefix}.warning_roles.min" => 'Legalább egy figyelmeztetési rangot ki kell választani.',
-            "{$prefix}.announcement_channel_id.required" => 'A felhívás szoba kiválasztása kötelező.',
-            "{$prefix}.log_channel_id.required" => 'A log szoba kiválasztása kötelező.',
+            "{$prefix}.announcement_message.required_with" => 'A felhívás üzenet kitöltése kötelező, ha van felhívás szoba kiválasztva.',
         ];
     }
 }

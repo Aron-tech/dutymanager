@@ -335,12 +335,38 @@ class DiscordFetchService
         return isset($response['success']) && $response['success'] === true;
     }
 
-    public static function sendMessage(string $channel_id, string $content, array $embeds = []): ?string
+    /**
+     * Üzenet küldése egy adott Discord csatornába (Embed támogatással).
+     *
+     * @param  string  $channel_id  A csatorna azonosítója
+     * @param  string|null  $content  Sima szöveges tartalom
+     * @param  array  $embeds  Embed objektumok tömbje
+     * @param  array  $components  Komponensek (gombok, select menük) tömbje
+     * @return string|null A sikeresen elküldött üzenet azonosítója, vagy null hiba esetén
+     */
+    public static function sendMessage(string $channel_id, ?string $content = null, array $embeds = [], array $components = []): ?string
     {
-        $response = self::callBotApi('POST', "/channels/{$channel_id}/messages", [
-            'content' => $content,
-            'embeds' => $embeds,
-        ]);
+        $payload = [];
+
+        if ($content !== null) {
+            $payload['content'] = $content;
+        }
+
+        if (! empty($embeds)) {
+            $payload['embeds'] = $embeds;
+        }
+
+        if (! empty($components)) {
+            $payload['components'] = $components;
+        }
+
+        if (empty($payload)) {
+            Log::warning('DiscordFetchService::sendMessage - Üres payloadot próbáltál küldeni a(z) '.$channel_id.' csatornába.');
+
+            return null;
+        }
+
+        $response = self::callBotApi('POST', "/channels/{$channel_id}/messages", $payload);
 
         return $response['messageId'] ?? null;
     }

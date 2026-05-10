@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Rules\DutyManagerRules;
 use App\Rules\GeneralSettingsRules;
+use App\Rules\HolidaySystemRules;
 use App\Rules\RankSystemRules;
 use App\Rules\UserDetailsRules;
 use App\Rules\WarningSystemRules;
@@ -37,6 +38,7 @@ class UpdateGuildSettingsRequest extends FormRequest
                 'duty_manager' => DutyManagerRules::rules(),
                 'warning_system' => WarningSystemRules::rules(),
                 'rank_system' => RankSystemRules::rules(),
+                'holiday_system' => HolidaySystemRules::rules(),
                 default => [],
             };
 
@@ -60,6 +62,7 @@ class UpdateGuildSettingsRequest extends FormRequest
                 'duty_manager' => DutyManagerRules::messages(),
                 'warning_system' => WarningSystemRules::messages(),
                 'rank_system' => RankSystemRules::messages(),
+                'holiday_system' => HolidaySystemRules::messages(),
                 default => [],
             };
 

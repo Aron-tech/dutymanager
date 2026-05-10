@@ -14,6 +14,7 @@ import {
     useComboboxAnchor,
 } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
     getChannelName,
     getRoleColor,
@@ -45,6 +46,8 @@ export default function WarningSystemView({
     const warning_roles_value = Array.isArray(data.warning_roles)
         ? data.warning_roles
         : [];
+
+    const default_message = '**{user}** új figyelmeztetést kapott! (Szint: **{level}**) \nIndok: {reason}';
 
     return (
         <div className="animate-in space-y-6 duration-500 fade-in">
@@ -111,7 +114,7 @@ export default function WarningSystemView({
             </div>
 
             <div className="space-y-2">
-                <Label>Figyelmeztetési Felhívás Szoba</Label>
+                <Label>Figyelmeztetési Felhívás Szoba (Opcionális)</Label>
                 <SearchableSingleSelect
                     items={text_channel_options}
                     value={data.announcement_channel_id}
@@ -122,17 +125,21 @@ export default function WarningSystemView({
                 <InputError message={errors['announcement_channel_id']} />
             </div>
 
-            <div className="space-y-2">
-                <Label>Figyelmeztetések Log Szoba</Label>
-                <SearchableSingleSelect
-                    items={text_channel_options}
-                    value={data.log_channel_id}
-                    onChange={(val) => onChange('log_channel_id', val)}
-                    placeholder="Keresés szöveges csatornára..."
-                    renderItem={(item) => item.label}
-                />
-                <InputError message={errors['log_channel_id']} />
-            </div>
+            {data.announcement_channel_id && (
+                <div className="space-y-2 animate-in fade-in duration-300">
+                    <Label>Felhívás Üzenet Szövege</Label>
+                    <Textarea
+                        value={data.announcement_message ?? default_message}
+                        onChange={(e) => onChange('announcement_message', e.target.value)}
+                        placeholder={default_message}
+                        rows={3}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        Használható változók: <code className="bg-muted px-1 py-0.5 rounded">{'{user}'}</code>, <code className="bg-muted px-1 py-0.5 rounded">{'{level}'}</code>, <code className="bg-muted px-1 py-0.5 rounded">{'{reason}'}</code>
+                    </p>
+                    <InputError message={errors['announcement_message']} />
+                </div>
+            )}
         </div>
     );
 }

@@ -15,7 +15,6 @@ use App\Jobs\DeleteGuildUserJob;
 use App\Jobs\UpdateGuildUserRankJob;
 use App\Models\ActivityLog;
 use App\Models\Guild;
-use App\Models\GuildSettings;
 use App\Models\GuildUser;
 use App\Models\Image;
 use App\Models\User;
@@ -167,25 +166,25 @@ class GuildUserService
     /**
      * @throws Throwable
      */
-    public function updateGuildUser(GuildUser $guild_user, array $data): GuildUser
+    public function updateGuildUser(GuildUser $guild_user, Guild $guild, array $data): GuildUser
     {
-        return DB::transaction(function () use ($guild_user, $data) {
+        return DB::transaction(function () use ($guild_user, $guild, $data) {
             if (isset($data['rank_id'])) {
-                $this->updateRank($guild_user, $data['rank_id']);
+                $this->updateRank($guild_user, $guild, $data['rank_id']);
                 unset($data['rank_id']);
             }
 
             $guild_user->update($data);
 
-            ActivityLog::make($guild_user->guild_id, auth()->id(), $guild_user->user_id, ActionTypeEnum::UPDATE_USER_TO_GUILD, $guild_user->toArray());
+            ActivityLog::make($guild->id, auth()->id(), $guild_user->user_id, ActionTypeEnum::UPDATE_USER_TO_GUILD, $guild_user->toArray());
 
             return $guild_user;
         });
     }
 
-    private function updateRank(GuildUser $guild_user, string $new_rank_id): void
+    private function updateRank(GuildUser $guild_user, Guild $guild, string $new_rank_id): void
     {
-        $guild_settings = $guild_user->guild->guildSettings;
+        $guild_settings = $guild->guildSettings;
         $current_rank_data = $guild_user->getRankData($guild_settings);
 
         if ($current_rank_data['rank_id'] === $new_rank_id) {
@@ -314,20 +313,18 @@ class GuildUserService
             return ['status' => 'error', 'message' => __('app.error_action')];
         }
 
-        $guild_settings = $guild->guildSettings;
-
         if ($count > 1) {
-            return $this->dispatchBulkJobs($guild_users, $guild, $guild_settings, $auth_user, $data);
+            return $this->dispatchBulkJobs($guild_users, $guild, $auth_user, $data);
         }
 
-        return $this->executeSyncUpdate($guild_users, $guild_settings, $auth_user, $data, $count);
+        return $this->executeSyncUpdate($guild_users, $guild, $auth_user, $data, $count);
     }
 
-    private function dispatchBulkJobs(Collection $guild_users, Guild $guild, GuildSettings $guild_settings, User $auth_user, array $data): array
+    private function dispatchBulkJobs(Collection $guild_users, Guild $guild, User $auth_user, array $data): array
     {
         $jobs = [];
         foreach ($guild_users as $user) {
-            $jobs[] = new UpdateGuildUserRankJob($user, $guild_settings, $data['action'], $data['level'] ?? 1, $auth_user->id);
+            $jobs[] = new UpdateGuildUserRankJob($user, $guild, $data['action'], $data['level'] ?? 1, $auth_user->id);
         }
 
         Bus::batch($jobs)
@@ -343,11 +340,11 @@ class GuildUserService
         return ['status' => 'success', 'message' => ($data['action'] === 'promote') ? __('guild_user.promote_in_queue_started') : __('guild_user.demote_in_queue_started')];
     }
 
-    private function executeSyncUpdate(Collection $guild_users, GuildSettings $guild_settings, User $auth_user, array $data, int $count): array
+    private function executeSyncUpdate(Collection $guild_users, Guild $guild, User $auth_user, array $data, int $count): array
     {
         $success_count = 0;
         foreach ($guild_users as $guild_user) {
-            if (ChangeGuildUserRankAction::run($guild_user, $guild_settings, $data['action'], $data['level'] ?? 1, $auth_user->id)) {
+            if (ChangeGuildUserRankAction::run($guild_user, $guild, $data['action'], $data['level'] ?? 1, $auth_user->id)) {
                 $success_count++;
             }
         }

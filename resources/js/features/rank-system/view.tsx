@@ -17,6 +17,7 @@ import {
     useComboboxAnchor,
 } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
     getChannelName,
     getRoleColor,
@@ -44,13 +45,14 @@ export default function RankSystemView({
     );
 
     const role_ids = roles.map((r: any) => r.id);
-
     const rank_anchor = useComboboxAnchor();
 
     const rank_system_data = data || {};
     const rank_roles_value = Array.isArray(rank_system_data.rank_roles)
         ? rank_system_data.rank_roles
         : [];
+
+    const default_message = '**{user}** új rangot kapott: **{rank}**';
 
     return (
         <div className="animate-in space-y-6 duration-500 fade-in">
@@ -182,21 +184,24 @@ export default function RankSystemView({
                     renderItem={(item) => item.label}
                 />
 
-                <InputError
-                    message={errors['announcement_channel_id']}
-                />
-            </div>
+                <InputError message={errors['announcement_channel_id']} />
 
-            <div className="space-y-2">
-                <Label>Rang Rendszer Log Szoba</Label>
-                <SearchableSingleSelect
-                    items={text_channel_options}
-                    value={rank_system_data.log_channel_id}
-                    onChange={(val) => onChange('log_channel_id', val)}
-                    placeholder="Keresés szöveges csatornára..."
-                    renderItem={(item) => item.label}
-                />
-                <InputError message={errors['log_channel_id']} />
+                {rank_system_data.announcement_channel_id && (
+                    <div className="space-y-2 pt-4 animate-in fade-in duration-300">
+                        <Label className="text-amber-600">Felhívás Üzenet Szövege</Label>
+                        <Textarea
+                            value={rank_system_data.announcement_message ?? default_message}
+                            onChange={(e) => onChange('announcement_message', e.target.value)}
+                            placeholder={default_message}
+                            rows={3}
+                            className="border-amber-500/30 focus-visible:ring-amber-500"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Használható változók: <code className="bg-amber-500/10 px-1 py-0.5 rounded">{'{user}'}</code>, <code className="bg-amber-500/10 px-1 py-0.5 rounded">{'{rank}'}</code>
+                        </p>
+                        <InputError message={errors['announcement_message']} />
+                    </div>
+                )}
             </div>
         </div>
     );

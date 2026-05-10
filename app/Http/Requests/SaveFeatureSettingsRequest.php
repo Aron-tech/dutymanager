@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Rules\DutyManagerRules;
 use App\Rules\GeneralSettingsRules;
+use App\Rules\HolidaySystemRules;
 use App\Rules\RankSystemRules;
 use App\Rules\UserDetailsRules;
 use App\Rules\WarningSystemRules;
@@ -35,6 +36,8 @@ class SaveFeatureSettingsRequest extends FormRequest
             $rules = array_merge($rules, RankSystemRules::rules('settings'));
         } elseif ($featureId === 'user_details') {
             $rules = array_merge($rules, UserDetailsRules::rules('settings'));
+        } elseif ($featureId === 'holiday_system') {
+            $rules = array_merge($rules, HolidaySystemRules::rules('settings'));
         }
 
         return $rules;
@@ -58,6 +61,8 @@ class SaveFeatureSettingsRequest extends FormRequest
             $messages = array_merge($messages, RankSystemRules::messages('settings'));
         } elseif ($featureId === 'user_details') {
             $messages = array_merge($messages, UserDetailsRules::messages('settings'));
+        } elseif ($featureId === 'holiday_system') {
+            $messages = array_merge($messages, HolidaySystemRules::messages('settings'));
         }
 
         return $messages;

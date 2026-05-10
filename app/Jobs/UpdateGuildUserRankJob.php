@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Actions\ChangeGuildUserRankAction;
+use App\Models\Guild;
 use App\Models\GuildSettings;
 use App\Models\GuildUser;
 use Illuminate\Bus\Batchable;
@@ -19,7 +20,7 @@ class UpdateGuildUserRankJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(public GuildUser $guildUser, public GuildSettings $guildSettings, public string $action, public int $level, public string $causer_id) {}
+    public function __construct(public GuildUser $guildUser, public Guild $guild, public string $action, public int $level, public string $causer_id) {}
 
     /**
      * Execute the job.
@@ -30,6 +31,6 @@ class UpdateGuildUserRankJob implements ShouldQueue
             return;
         }
 
-        ChangeGuildUserRankAction::run($this->guildUser, $this->guildSettings, $this->action, $this->level, $this->causer_id);
+        ChangeGuildUserRankAction::run($this->guildUser, $this->guild, $this->action, $this->level, $this->causer_id);
     }
 }

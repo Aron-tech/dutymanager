@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ActionTypeEnum;
 use App\Enums\FeatureEnum;
+use App\Services\DiscordEmbedFactory;
 use App\Services\DiscordFetchService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
@@ -38,9 +39,25 @@ class Holiday extends Model
             'ended_at' => $ended_at,
         ]);
 
-        $holiday_role_id = $guild_user->guild()->guildSettings->getFeatureSettings(FeatureEnum::HOLIDAY, 'holiday_role', null);
-        if (! empty($holiday_role_id)) {
-            DiscordFetchService::addRoleToMember($guild_user->guild_id, $guild_user->user_id, $holiday_role_id);
+        $guild = $guild_user->guild()->installed()->with('guildSettings')->first();
+        $holiday_config = $guild->guildSettings->getFeatureSettings(FeatureEnum::HOLIDAY, 'holiday_config', []);
+        if (! empty($holiday_config)) {
+            $role_id = $holiday_config['holiday_role_id'] ?? null;
+            $channel_id = $holiday_config['announcement_channel_id'] ?? null;
+            if (! empty($role_id)) {
+                DiscordFetchService::addRoleToMember($guild_user->guild_id, $guild_user->user_id, $role_id);
+            }
+            if (! empty($channel_id)) {
+                $embed = DiscordEmbedFactory::create('holiday', [
+                    'user_id' => $guild_user->user_id,
+                    'ended_at' => $ended_at->format('Y. m. d. H:i'),
+                    'reason' => $reason,
+                    'guild_name' => $guild->name,
+                    'guild_icon_url' => $guild->icon ? "https://cdn.discordapp.com/icons/{$guild->id}/{$guild->icon}.png" : null,
+                ]);
+
+                DiscordFetchService::sendMessage($channel_id, null, [$embed]);
+            }
         }
 
         ActivityLog::make($guild_user->guild_id, $guild_user->user_id, null, ActionTypeEnum::GET_HOLIDAY, $holiday->toArray());

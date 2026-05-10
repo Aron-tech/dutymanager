@@ -23,4 +23,24 @@ return [
             ],
         ],
     ],
+    'message_template' => [
+        'warn_template' => [
+            'title' => 'Új Szabadság',
+            'description' => '**Gipsz Jakab** szabadságra ment.',
+            'color' => hexdec('ffaa00'),
+            'fields' => [
+                [
+                    'name' => 'Tervezett visszatérés',
+                    'value' => '2026. 05. 20.',
+                    'inline' => true,
+                ],
+                [
+                    'name' => 'Indok',
+                    'value' => 'Nyaralás',
+                    'inline' => true,
+                ],
+            ],
+            'timestamp' => now()->toIso8601String(),
+        ],
+    ],
 ];

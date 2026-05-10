@@ -104,7 +104,7 @@ class HolidayService
     {
         $guild = SelectedGuildService::get();
         $holiday_id_array = [$holiday->id];
-        $holiday_role_id = $guild->guildSettings->getFeatureSettings(FeatureEnum::HOLIDAY, 'holiday_role', null);
+        $holiday_role_id = $guild->guildSettings->getFeatureSettings(FeatureEnum::HOLIDAY, 'holiday_role_id', null);
 
         return DB::transaction(function () use ($holiday, $holiday_id_array, $guild, $holiday_role_id) {
             $is_deleted = $holiday->delete();
@@ -126,7 +126,7 @@ class HolidayService
     {
         $guild = SelectedGuildService::get();
         $holidays = Holiday::whereIn('id', $holiday_ids)->with('guildUser')->get();
-        $holiday_role_id = $guild->guildSettings->getFeatureSettings(FeatureEnum::HOLIDAY, 'holiday_role', null);
+        $holiday_role_id = $guild->guildSettings->getFeatureSettings(FeatureEnum::HOLIDAY, 'holiday_role_id', null);
 
         return DB::transaction(function () use ($holidays, $guild, $holiday_role_id) {
 

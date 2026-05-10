@@ -4,30 +4,27 @@ declare(strict_types=1);
 
 namespace App\Rules;
 
-final class RankSystemRules
+final class HolidaySystemRules
 {
     /**
      * @return array<string, array<int, string>>
      */
-    public static function rules(string $prefix = 'settings.rank_system'): array
+    public static function rules(string $prefix = 'settings.holiday_system'): array
     {
         return [
-            "{$prefix}.rank_roles" => ['required', 'array', 'min:2'],
-            "{$prefix}.rank_roles.*" => ['required', 'string'],
+            "{$prefix}.holiday_role_id" => ['required', 'string'],
             "{$prefix}.announcement_channel_id" => ['nullable', 'string'],
             "{$prefix}.announcement_message" => ['required_with:'.$prefix.'.announcement_channel_id', 'string'],
-            "{$prefix}.archive_duties_on_promotion" => ['nullable', 'boolean'],
         ];
     }
 
     /**
      * @return array<string, string>
      */
-    public static function messages(string $prefix = 'settings.rank_system'): array
+    public static function messages(string $prefix = 'settings.holiday_system'): array
     {
         return [
-            "{$prefix}.rank_roles.required" => 'A ranglétra megadása kötelező.',
-            "{$prefix}.rank_roles.min" => 'A ranglétrának legalább 2 rangból kell állnia.',
+            "{$prefix}.holiday_role_id.required" => 'A szabadság rang kiválasztása kötelező.',
             "{$prefix}.announcement_message.required_with" => 'A felhívás üzenet kitöltése kötelező, ha van felhívás szoba kiválasztva.',
         ];
     }
