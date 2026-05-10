@@ -7,6 +7,7 @@ enum FeatureEnum: string
     case DUTY = 'duty_manager';
     case WARN = 'warning_system';
     case RANK = 'rank_system';
+    case HOLIDAY = 'holiday_system';
 
     public static function getOptions(): array
     {

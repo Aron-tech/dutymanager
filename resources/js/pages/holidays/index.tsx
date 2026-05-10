@@ -9,6 +9,18 @@ import { DataTableToolbar } from '@/components/data-table-toolbar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+    Combobox,
+    ComboboxChip,
+    ComboboxChips,
+    ComboboxChipsInput,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxItem,
+    ComboboxList,
+    ComboboxValue,
+    useComboboxAnchor,
+} from '@/components/ui/combobox';
+import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
@@ -18,6 +30,13 @@ import { useDebounce } from '@/hooks/use-debounce';
 import AppLayout from '@/layouts/app-layout';
 import { formatDate } from '@/lib/utils';
 import type { GuildUser } from '@/types';
+
+const STATUS_OPTIONS = [
+    { label: 'Összes', value: 'all' },
+    { label: 'Aktív', value: 'active' },
+    { label: 'Lejárt', value: 'expired' },
+    { label: 'Visszavonva', value: 'revoked' },
+];
 
 interface Holiday {
     id: number;
@@ -55,6 +74,7 @@ interface PageProps {
         direction?: string;
         date_from?: string;
         date_to?: string;
+        statuses?: string[];
     };
 }
 
@@ -66,8 +86,13 @@ export default function HolidaysIndexView({
     const flash = props.flash as { success: string | null; error: string | null; };
 
     useEffect(() => {
-        if (flash?.success) toast.success(flash.success);
-        if (flash?.error) toast.error(flash.error);
+        if (flash?.success) {
+toast.success(flash.success);
+}
+
+        if (flash?.error) {
+toast.error(flash.error);
+}
     }, [flash]);
 
     const safe_filters = Array.isArray(filters) ? {} : filters || {};
@@ -80,8 +105,11 @@ export default function HolidaysIndexView({
     const [custom_per_page, setCustomPerPage] = useState('');
     const [sort_column, setSortColumn] = useState(safe_filters.sort || 'started_at');
     const [sort_direction, setSortDirection] = useState(safe_filters.direction || 'desc');
-    const [date_from, setDateFrom] = useState(safe_filters.date_from || '');
-    const [date_to, setDateTo] = useState(safe_filters.date_to || '');
+    const [date_from, setDate_from] = useState(safe_filters.date_from || '');
+    const [date_to, setDate_to] = useState(safe_filters.date_to || '');
+
+    const [status_filters, setStatusFilters] = useState<string[]>(safe_filters.statuses || ['active']);
+    const status_anchor = useComboboxAnchor();
 
     const [selected_rows, setSelectedRows] = useState<(string | number)[]>([]);
 
@@ -108,16 +136,28 @@ export default function HolidaysIndexView({
     const is_mounted = useRef(false);
 
     const fetchFilteredData = useCallback(
-        (search: string, limit: string, sort: string, dir: string, from?: string, to?: string) => {
+        (search: string, limit: string, sort: string, dir: string, from?: string, to?: string, statuses?: string[]) => {
             const queryParams: any = {
                 per_page: limit,
                 sort,
                 direction: dir,
             };
 
-            if (search) queryParams.search = search;
-            if (from) queryParams.date_from = from;
-            if (to) queryParams.date_to = to;
+            if (search) {
+queryParams.search = search;
+}
+
+            if (from) {
+queryParams.date_from = from;
+}
+
+            if (to) {
+queryParams.date_to = to;
+}
+
+            if (statuses && statuses.length > 0) {
+queryParams.statuses = statuses;
+}
 
             router.get(route('holiday.index'), queryParams, {
                 preserveState: true,
@@ -131,17 +171,18 @@ export default function HolidaysIndexView({
     useEffect(() => {
         if (!is_mounted.current) {
             is_mounted.current = true;
+
             return;
         }
 
-        fetchFilteredData(debounced_search, per_page_amount, sort_column, sort_direction, date_from, date_to);
-    }, [debounced_search, date_from, date_to]);
+        fetchFilteredData(debounced_search, per_page_amount, sort_column, sort_direction, date_from, date_to, status_filters);
+    }, [debounced_search, date_from, date_to, status_filters]);
 
     const handlePerPageChange = (val: string) => {
         if (val !== 'custom') {
             setPerPageAmount(val);
             setCustomPerPage('');
-            fetchFilteredData(debounced_search, val, sort_column, sort_direction, date_from, date_to);
+            fetchFilteredData(debounced_search, val, sort_column, sort_direction, date_from, date_to, status_filters);
         } else {
             setPerPageAmount('custom');
         }
@@ -149,7 +190,7 @@ export default function HolidaysIndexView({
 
     const handleCustomPerPageSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && custom_per_page) {
-            fetchFilteredData(debounced_search, custom_per_page, sort_column, sort_direction, date_from, date_to);
+            fetchFilteredData(debounced_search, custom_per_page, sort_column, sort_direction, date_from, date_to, status_filters);
         }
     };
 
@@ -157,7 +198,7 @@ export default function HolidaysIndexView({
         const new_dir = sort_column === col_id && sort_direction === 'asc' ? 'desc' : 'asc';
         setSortColumn(col_id);
         setSortDirection(new_dir);
-        fetchFilteredData(debounced_search, per_page_amount, col_id, new_dir, date_from, date_to);
+        fetchFilteredData(debounced_search, per_page_amount, col_id, new_dir, date_from, date_to, status_filters);
     };
 
     const toggleColumnVisibility = (col_id: string) => {
@@ -229,12 +270,11 @@ export default function HolidaysIndexView({
                         if (row.deleted_at) {
                             return <Badge variant="secondary" className="text-muted-foreground">Visszavonva</Badge>;
                         }
+
                         if (row.ended_at && new Date(row.ended_at) < new Date()) {
                             return <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">Lejárt</Badge>;
                         }
-                        if (row.started_at && new Date(row.started_at) > new Date()) {
-                            return <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-600 hover:bg-yellow-500/30">Hamarosan</Badge>;
-                        }
+
                         return <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">Aktív</Badge>;
                     };
                 }
@@ -286,11 +326,11 @@ export default function HolidaysIndexView({
                     <p className="text-sm text-muted-foreground mt-1">Tagok szabadságainak áttekintése és kezelése. Összesen: {holidays?.total || 0} bejegyzés.</p>
                 </div>
 
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-8">
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-4 flex-1">
+                <div className="flex flex-col xl:flex-row justify-between gap-4 mt-8">
+                    <div className="flex flex-col lg:flex-row gap-4 flex-1 w-full">
 
                         {selected_rows.length > 0 && (
-                            <div className="flex shrink-0 items-center gap-2 bg-muted/50 p-1.5 rounded-md border">
+                            <div className="flex shrink-0 items-center gap-2 bg-muted/50 p-1.5 rounded-md border h-10">
                                 <span className="text-sm font-medium px-2">{selected_rows.length} elem kijelölve</span>
 
                                 <Button
@@ -304,24 +344,63 @@ export default function HolidaysIndexView({
                             </div>
                         )}
 
-                        <div className="w-full flex-1">
-                            <DataTableToolbar
-                                search_query={search_query}
-                                onSearchChange={setSearchQuery}
-                                columns={column_definitions}
-                                visible_columns={visible_columns}
-                                onToggleColumn={toggleColumnVisibility}
-                                per_page_amount={per_page_amount}
-                                onPerPageChange={handlePerPageChange}
-                                custom_per_page={custom_per_page}
-                                onCustomPerPageChange={setCustomPerPage}
-                                onCustomPerPageSubmit={handleCustomPerPageSubmit}
-                                show_date_filter={true}
-                                date_from={date_from}
-                                onDateFromChange={setDateFrom}
-                                date_to={date_to}
-                                onDateToChange={setDateTo}
-                            />
+                        <div className="w-full flex-1 flex flex-col md:flex-row gap-4 items-start">
+                            <div className="flex-1 w-full">
+                                <DataTableToolbar
+                                    search_query={search_query}
+                                    onSearchChange={setSearchQuery}
+                                    columns={column_definitions}
+                                    visible_columns={visible_columns}
+                                    onToggleColumn={toggleColumnVisibility}
+                                    per_page_amount={per_page_amount}
+                                    onPerPageChange={handlePerPageChange}
+                                    custom_per_page={custom_per_page}
+                                    onCustomPerPageChange={setCustomPerPage}
+                                    onCustomPerPageSubmit={handleCustomPerPageSubmit}
+                                    show_date_filter={true}
+                                    date_from={date_from}
+                                    onDateFromChange={setDate_from}
+                                    date_to={date_to}
+                                    onDateToChange={setDate_to}
+                                />
+                            </div>
+
+                            <div className="w-full md:w-[350px] shrink-0">
+                                <Combobox
+                                    multiple
+                                    items={STATUS_OPTIONS.map(o => o.value)}
+                                    value={status_filters}
+                                    onValueChange={(val) => setStatusFilters(val as string[])}
+                                >
+                                    <ComboboxChips
+                                        ref={status_anchor}
+                                        className="w-full min-h-10"
+                                    >
+                                        <ComboboxValue>
+                                            {(values: string[]) => (
+                                                <React.Fragment>
+                                                    {values.map((val) => (
+                                                        <ComboboxChip key={val}>
+                                                            {STATUS_OPTIONS.find(o => o.value === val)?.label}
+                                                        </ComboboxChip>
+                                                    ))}
+                                                    <ComboboxChipsInput placeholder="Státusz szűrő..." />
+                                                </React.Fragment>
+                                            )}
+                                        </ComboboxValue>
+                                    </ComboboxChips>
+                                    <ComboboxContent anchor={status_anchor}>
+                                        <ComboboxEmpty>Nincs ilyen státusz.</ComboboxEmpty>
+                                        <ComboboxList>
+                                            {(item: string) => (
+                                                <ComboboxItem key={item} value={item}>
+                                                    {STATUS_OPTIONS.find(o => o.value === item)?.label}
+                                                </ComboboxItem>
+                                            )}
+                                        </ComboboxList>
+                                    </ComboboxContent>
+                                </Combobox>
+                            </div>
                         </div>
                     </div>
                 </div>

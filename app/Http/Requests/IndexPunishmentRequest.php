@@ -29,6 +29,8 @@ class IndexPunishmentRequest extends FormRequest
             'direction' => 'nullable|in:asc,desc',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date|after_or_equal:date_from',
+            'statuses' => 'nullable|array',
+            'statuses.*' => 'string|in:all,active,permanent,expired,revoked',
         ];
     }
 }

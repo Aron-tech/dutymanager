@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ActionTypeEnum;
+use App\Enums\FeatureEnum;
 use App\Models\ActivityLog;
 use App\Models\Guild;
 use App\Models\Holiday;
@@ -19,6 +20,7 @@ class HolidayService
         $direction = strtolower($filters['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
         $date_from = $filters['date_from'] ?? null;
         $date_to = $filters['date_to'] ?? null;
+        $status_filters = $filters['statuses'] ?? [];
 
         $query = Holiday::query()
             ->withTrashed()
@@ -42,6 +44,30 @@ class HolidayService
         }
         if ($date_to) {
             $query->whereDate('holidays.started_at', '<=', $date_to);
+        }
+
+        if (!empty($status_filters) && !in_array('all', $status_filters)) {
+            $query->where(function ($q) use ($status_filters) {
+                if (in_array('revoked', $status_filters)) {
+                    $q->orWhereNotNull('holidays.deleted_at');
+                }
+                if (in_array('expired', $status_filters)) {
+                    $q->orWhere(function ($sub_query) {
+                        $sub_query->whereNull('holidays.deleted_at')
+                            ->whereNotNull('holidays.ended_at')
+                            ->where('holidays.ended_at', '<', now());
+                    });
+                }
+                if (in_array('active', $status_filters)) {
+                    $q->orWhere(function ($sub_query) {
+                        $sub_query->whereNull('holidays.deleted_at')
+                            ->where(function ($date_sub_query) {
+                                $date_sub_query->whereNull('holidays.ended_at')
+                                    ->orWhere('holidays.ended_at', '>=', now());
+                            });
+                    });
+                }
+            });
         }
 
         switch ($sort) {
@@ -78,9 +104,14 @@ class HolidayService
     {
         $guild = SelectedGuildService::get();
         $holiday_id_array = [$holiday->id];
+        $holiday_role_id = $guild->guildSettings->getFeatureSettings(FeatureEnum::HOLIDAY, 'holiday_role', null);
 
-        return DB::transaction(function () use ($holiday, $holiday_id_array, $guild) {
+        return DB::transaction(function () use ($holiday, $holiday_id_array, $guild, $holiday_role_id) {
             $is_deleted = $holiday->delete();
+
+            if (! empty($holiday_role_id)) {
+                DiscordFetchService::removeRoleFromMember($guild->id, $holiday->user_id, $holiday_role_id);
+            }
 
             ActivityLog::make($guild->id, auth()->id(), $holiday->user_id, ActionTypeEnum::CANCEL_HOLIDAY, $holiday_id_array);
 
@@ -88,14 +119,29 @@ class HolidayService
         });
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function bulkDelete(array $holiday_ids): int
     {
         $guild = SelectedGuildService::get();
+        $holidays = Holiday::whereIn('id', $holiday_ids)->with('guildUser')->get();
+        $holiday_role_id = $guild->guildSettings->getFeatureSettings(FeatureEnum::HOLIDAY, 'holiday_role', null);
 
-        return DB::transaction(function () use ($holiday_ids, $guild) {
-            $delete_count = Holiday::whereIn('id', $holiday_ids)->delete();
+        return DB::transaction(function () use ($holidays, $guild, $holiday_role_id) {
 
-            ActivityLog::make($guild->id, auth()->id(), null, ActionTypeEnum::CANCEL_HOLIDAY, $holiday_ids);
+            $delete_count = 0;
+
+            foreach ($holidays as $holiday) {
+                $archive_holiday = clone $holiday;
+                if ($holiday->delete()) {
+                    if (! empty($holiday_role_id)) {
+                        DiscordFetchService::removeRoleFromMember($guild->id, $holiday->user_id, $holiday_role_id);
+                    }
+                    ActivityLog::make($guild->id, auth()->id(), $holiday->user_id, ActionTypeEnum::CANCEL_HOLIDAY, $archive_holiday->toArray());
+                    $delete_count++;
+                }
+            }
 
             return $delete_count;
         });

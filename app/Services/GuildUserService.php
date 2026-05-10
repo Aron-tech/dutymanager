@@ -333,7 +333,7 @@ class GuildUserService
         Bus::batch($jobs)
             ->name('Bulk Rank Update: id => '.$guild->id.', name => '.$guild?->name)
             ->then(function (Batch $batch) use ($auth_user, $data) {
-                broadcast(new SendUserMessageEvent($auth_user->id, ($data['action'] === 'promote') ? __('guild_user.success_promote_users', ['count' => $batch->totalJobs]) : __('guild_user.success_demote', ['count' => $batch->totalJobs]), 'success'));
+                broadcast(new SendUserMessageEvent($auth_user->id, ($data['action'] === 'promote') ? __('guild_user.success_promote_users', ['count' => $batch->totalJobs]) : __('guild_user.success_demote_users', ['count' => $batch->totalJobs]), 'success'));
             })
             ->catch(function (Batch $batch, Throwable $e) use ($auth_user) {
                 broadcast(new SendUserMessageEvent($auth_user->id, __('app.error_action'), 'danger'));

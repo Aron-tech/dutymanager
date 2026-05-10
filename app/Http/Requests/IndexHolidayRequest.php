@@ -18,8 +18,10 @@ class IndexHolidayRequest extends FormRequest
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'sort' => ['nullable', 'string', 'in:discord_id,discord_name,reason,started_at,ended_at,status'],
             'direction' => ['nullable', 'string', 'in:asc,desc'],
-            'date_from' => 'nullable|date',
-            'date_to' => 'nullable|date|after_or_equal:date_from',
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'statuses' => ['nullable', 'array'],
+            'statuses.*' => ['string', 'in:all,active,expired,revoked'],
         ];
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\ActionTypeEnum;
+use App\Enums\FeatureEnum;
+use App\Services\DiscordFetchService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,6 +37,11 @@ class Holiday extends Model
             'started_at' => $started_at,
             'ended_at' => $ended_at,
         ]);
+
+        $holiday_role_id = $guild_user->guild()->guildSettings->getFeatureSettings(FeatureEnum::HOLIDAY, 'holiday_role', null);
+        if (! empty($holiday_role_id)) {
+            DiscordFetchService::addRoleToMember($guild_user->guild_id, $guild_user->user_id, $holiday_role_id);
+        }
 
         ActivityLog::make($guild_user->guild_id, $guild_user->user_id, null, ActionTypeEnum::GET_HOLIDAY, $holiday->toArray());
 

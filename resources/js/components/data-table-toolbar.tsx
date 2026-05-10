@@ -62,23 +62,23 @@ export function DataTableToolbar({
                                  }: DataTableToolbarProps) {
     return (
         <div className="flex flex-wrap items-center justify-end gap-3">
-            <div className="relative w-full sm:w-64">
+            <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                     placeholder="Keresés..."
-                    className="pl-9"
+                    className="pl-9 w-full sm:w-auto"
                     value={search_query}
                     onChange={(e) => onSearchChange(e.target.value)}
                 />
             </div>
 
             {show_date_filter && (
-                <div className="flex items-center gap-2">
+                <div className="flex w-full sm:w-auto items-center gap-2">
                     <Input
                         type="date"
                         value={date_from}
                         onChange={(e) => onDateFromChange?.(e.target.value)}
-                        className="w-[140px]"
+                        className="w-full sm:w-auto"
                         title="Kezdő dátum"
                     />
                     <span className="text-muted-foreground">-</span>
@@ -86,7 +86,7 @@ export function DataTableToolbar({
                         type="date"
                         value={date_to}
                         onChange={(e) => onDateToChange?.(e.target.value)}
-                        className="w-[140px]"
+                        className="w-full sm:w-auto"
                         title="Vég dátum"
                     />
                 </div>
@@ -94,7 +94,7 @@ export function DataTableToolbar({
 
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
+                    <Button variant="outline" className="flex items-center gap-2 w-full sm:w-auto">
                         <SlidersHorizontal className="h-4 w-4" /> Oszlopok
                     </Button>
                 </DropdownMenuTrigger>
@@ -115,9 +115,9 @@ export function DataTableToolbar({
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            <div className="flex items-center gap-2">
+            <div className="flex w-full sm:w-auto items-center gap-2">
                 <Select value={per_page_amount} onValueChange={onPerPageChange}>
-                    <SelectTrigger className="w-[100px]">
+                    <SelectTrigger className="w-full sm:w-auto">
                         <SelectValue placeholder="Sor/oldal" />
                     </SelectTrigger>
                     <SelectContent>
@@ -131,7 +131,7 @@ export function DataTableToolbar({
                     <Input
                         type="number"
                         placeholder="db"
-                        className="w-16"
+                        className="w-full sm:w-auto sm:min-w-[4rem]"
                         value={custom_per_page}
                         onChange={(e) => onCustomPerPageChange(e.target.value)}
                         onKeyDown={onCustomPerPageSubmit}

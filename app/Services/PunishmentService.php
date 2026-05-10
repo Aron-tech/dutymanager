@@ -21,6 +21,7 @@ class PunishmentService
         $direction = strtolower($filters['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
         $date_from = $filters['date_from'] ?? null;
         $date_to = $filters['date_to'] ?? null;
+        $statuses = $filters['statuses'] ?? ['active'];
 
         $query = Punishment::query()
             ->withTrashed()
@@ -29,7 +30,42 @@ class PunishmentService
             ->join('users', 'guild_users.user_id', '=', 'users.id')
             ->leftJoin('users as creators', 'punishments.created_by', '=', 'creators.id')
             ->where('guild_users.guild_id', $guild->id)
+            ->whereNotNull('punishments.guild_user_id')
             ->with(['guildUser.user:id,name', 'createdByUser:id,name']);
+
+        if (! in_array('all', $statuses) && ! empty($statuses)) {
+            $query->where(function ($q) use ($statuses) {
+
+                if (in_array('active', $statuses)) {
+                    $q->orWhere(function ($q2) {
+                        $q2->whereNull('punishments.deleted_at')
+                            ->where(function ($q3) {
+                                $q3->whereNull('punishments.expires_at')
+                                    ->orWhere('punishments.expires_at', '>', now());
+                            });
+                    });
+                }
+
+                if (in_array('permanent', $statuses)) {
+                    $q->orWhere(function ($q2) {
+                        $q2->whereNull('punishments.deleted_at')
+                            ->whereNull('punishments.expires_at');
+                    });
+                }
+
+                if (in_array('expired', $statuses)) {
+                    $q->orWhere(function ($q2) {
+                        $q2->whereNull('punishments.deleted_at')
+                            ->whereNotNull('punishments.expires_at')
+                            ->where('punishments.expires_at', '<=', now());
+                    });
+                }
+
+                if (in_array('revoked', $statuses)) {
+                    $q->orWhereNotNull('punishments.deleted_at');
+                }
+            });
+        }
 
         if ($search_query) {
             $query->where(function ($q) use ($search_query) {
@@ -61,12 +97,12 @@ class PunishmentService
                 break;
             case 'status':
                 $query->orderByRaw("
-                    CASE
-                        WHEN punishments.deleted_at IS NOT NULL THEN 3
-                        WHEN punishments.expires_at IS NOT NULL AND punishments.expires_at < NOW() THEN 2
-                        ELSE 1
-                    END {$direction}
-                ");
+                CASE
+                    WHEN punishments.deleted_at IS NOT NULL THEN 3
+                    WHEN punishments.expires_at IS NOT NULL AND punishments.expires_at < NOW() THEN 2
+                    ELSE 1
+                END {$direction}
+            ");
                 break;
             case 'type':
             case 'level':
@@ -137,7 +173,6 @@ class PunishmentService
     }
 
     /**
-     * @param  PunishmentTypeEnum  $type
      * @param  string  $action  // 'add' or 'delete'
      */
     public function hasPermission(PunishmentTypeEnum $type, string $action = 'add'): bool
