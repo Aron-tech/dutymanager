@@ -1,3 +1,4 @@
+// holidays/index.tsx
 import { Head, router, usePage } from '@inertiajs/react';
 import { Trash2 } from 'lucide-react';
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -8,18 +9,6 @@ import type { ColumnDef } from '@/components/data-table';
 import { DataTableToolbar } from '@/components/data-table-toolbar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Combobox,
-    ComboboxChip,
-    ComboboxChips,
-    ComboboxChipsInput,
-    ComboboxContent,
-    ComboboxEmpty,
-    ComboboxItem,
-    ComboboxList,
-    ComboboxValue,
-    useComboboxAnchor,
-} from '@/components/ui/combobox';
 import {
     Tooltip,
     TooltipContent,
@@ -86,13 +75,8 @@ export default function HolidaysIndexView({
     const flash = props.flash as { success: string | null; error: string | null; };
 
     useEffect(() => {
-        if (flash?.success) {
-toast.success(flash.success);
-}
-
-        if (flash?.error) {
-toast.error(flash.error);
-}
+        if (flash?.success) toast.success(flash.success);
+        if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
     const safe_filters = Array.isArray(filters) ? {} : filters || {};
@@ -109,7 +93,6 @@ toast.error(flash.error);
     const [date_to, setDate_to] = useState(safe_filters.date_to || '');
 
     const [status_filters, setStatusFilters] = useState<string[]>(safe_filters.statuses || ['active']);
-    const status_anchor = useComboboxAnchor();
 
     const [selected_rows, setSelectedRows] = useState<(string | number)[]>([]);
 
@@ -137,27 +120,12 @@ toast.error(flash.error);
 
     const fetchFilteredData = useCallback(
         (search: string, limit: string, sort: string, dir: string, from?: string, to?: string, statuses?: string[]) => {
-            const queryParams: any = {
-                per_page: limit,
-                sort,
-                direction: dir,
-            };
+            const queryParams: any = { per_page: limit, sort, direction: dir };
 
-            if (search) {
-queryParams.search = search;
-}
-
-            if (from) {
-queryParams.date_from = from;
-}
-
-            if (to) {
-queryParams.date_to = to;
-}
-
-            if (statuses && statuses.length > 0) {
-queryParams.statuses = statuses;
-}
+            if (search) queryParams.search = search;
+            if (from) queryParams.date_from = from;
+            if (to) queryParams.date_to = to;
+            if (statuses && statuses.length > 0) queryParams.statuses = statuses;
 
             router.get(route('holiday.index'), queryParams, {
                 preserveState: true,
@@ -171,7 +139,6 @@ queryParams.statuses = statuses;
     useEffect(() => {
         if (!is_mounted.current) {
             is_mounted.current = true;
-
             return;
         }
 
@@ -270,11 +237,9 @@ queryParams.statuses = statuses;
                         if (row.deleted_at) {
                             return <Badge variant="secondary" className="text-muted-foreground">Visszavonva</Badge>;
                         }
-
                         if (row.ended_at && new Date(row.ended_at) < new Date()) {
                             return <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">Lejárt</Badge>;
                         }
-
                         return <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">Aktív</Badge>;
                     };
                 }
@@ -326,83 +291,42 @@ queryParams.statuses = statuses;
                     <p className="text-sm text-muted-foreground mt-1">Tagok szabadságainak áttekintése és kezelése. Összesen: {holidays?.total || 0} bejegyzés.</p>
                 </div>
 
-                <div className="flex flex-col xl:flex-row justify-between gap-4 mt-8">
-                    <div className="flex flex-col lg:flex-row gap-4 flex-1 w-full">
-
-                        {selected_rows.length > 0 && (
-                            <div className="flex shrink-0 items-center gap-2 bg-muted/50 p-1.5 rounded-md border h-10">
-                                <span className="text-sm font-medium px-2">{selected_rows.length} elem kijelölve</span>
-
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    className="h-8"
-                                    onClick={() => setDeleteState({ is_open: true, is_bulk: true, ids: selected_rows, is_processing: false })}
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" /> Tömeges visszavonás
-                                </Button>
-                            </div>
-                        )}
-
-                        <div className="w-full flex-1 flex flex-col md:flex-row gap-4 items-start">
-                            <div className="flex-1 w-full">
-                                <DataTableToolbar
-                                    search_query={search_query}
-                                    onSearchChange={setSearchQuery}
-                                    columns={column_definitions}
-                                    visible_columns={visible_columns}
-                                    onToggleColumn={toggleColumnVisibility}
-                                    per_page_amount={per_page_amount}
-                                    onPerPageChange={handlePerPageChange}
-                                    custom_per_page={custom_per_page}
-                                    onCustomPerPageChange={setCustomPerPage}
-                                    onCustomPerPageSubmit={handleCustomPerPageSubmit}
-                                    show_date_filter={true}
-                                    date_from={date_from}
-                                    onDateFromChange={setDate_from}
-                                    date_to={date_to}
-                                    onDateToChange={setDate_to}
-                                />
-                            </div>
-
-                            <div className="w-full md:w-[350px] shrink-0">
-                                <Combobox
-                                    multiple
-                                    items={STATUS_OPTIONS.map(o => o.value)}
-                                    value={status_filters}
-                                    onValueChange={(val) => setStatusFilters(val as string[])}
-                                >
-                                    <ComboboxChips
-                                        ref={status_anchor}
-                                        className="w-full min-h-10"
-                                    >
-                                        <ComboboxValue>
-                                            {(values: string[]) => (
-                                                <React.Fragment>
-                                                    {values.map((val) => (
-                                                        <ComboboxChip key={val}>
-                                                            {STATUS_OPTIONS.find(o => o.value === val)?.label}
-                                                        </ComboboxChip>
-                                                    ))}
-                                                    <ComboboxChipsInput placeholder="Státusz szűrő..." />
-                                                </React.Fragment>
-                                            )}
-                                        </ComboboxValue>
-                                    </ComboboxChips>
-                                    <ComboboxContent anchor={status_anchor}>
-                                        <ComboboxEmpty>Nincs ilyen státusz.</ComboboxEmpty>
-                                        <ComboboxList>
-                                            {(item: string) => (
-                                                <ComboboxItem key={item} value={item}>
-                                                    {STATUS_OPTIONS.find(o => o.value === item)?.label}
-                                                </ComboboxItem>
-                                            )}
-                                        </ComboboxList>
-                                    </ComboboxContent>
-                                </Combobox>
-                            </div>
+                <div className="flex flex-col gap-4 mt-8 mb-4 w-full">
+                    {selected_rows.length > 0 && (
+                        <div className="flex shrink-0 items-center gap-2 bg-muted/50 p-1.5 rounded-md border h-10 w-fit">
+                            <span className="text-sm font-medium px-2">{selected_rows.length} elem kijelölve</span>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                className="h-8"
+                                onClick={() => setDeleteState({ is_open: true, is_bulk: true, ids: selected_rows, is_processing: false })}
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" /> Tömeges visszavonás
+                            </Button>
                         </div>
-                    </div>
+                    )}
+
+                    <DataTableToolbar
+                        search_query={search_query}
+                        onSearchChange={setSearchQuery}
+                        columns={column_definitions}
+                        visible_columns={visible_columns}
+                        onToggleColumn={toggleColumnVisibility}
+                        per_page_amount={per_page_amount}
+                        onPerPageChange={handlePerPageChange}
+                        custom_per_page={custom_per_page}
+                        onCustomPerPageChange={setCustomPerPage}
+                        onCustomPerPageSubmit={handleCustomPerPageSubmit}
+                        show_date_filter={true}
+                        date_from={date_from}
+                        onDateFromChange={setDate_from}
+                        date_to={date_to}
+                        onDateToChange={setDate_to}
+                        show_status_filter={true}
+                        status_options={STATUS_OPTIONS}
+                        status_filters={status_filters}
+                        onStatusFilterChange={setStatusFilters}
+                    />
                 </div>
 
                 <div className="rounded-md border bg-background shadow-sm">
@@ -430,15 +354,7 @@ queryParams.statuses = statuses;
                                 size="sm"
                                 disabled={!link.url}
                                 onClick={() =>
-                                    link.url &&
-                                    router.get(
-                                        link.url,
-                                        {},
-                                        {
-                                            preserveState: true,
-                                            preserveScroll: true
-                                        }
-                                    )
+                                    link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })
                                 }
                                 dangerouslySetInnerHTML={{ __html: link.label || '' }}
                             />

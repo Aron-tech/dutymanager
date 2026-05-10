@@ -1,3 +1,4 @@
+// activity-logs/index.tsx
 import { Head, router, usePage } from '@inertiajs/react';
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
@@ -90,11 +91,7 @@ export default function ActivityLogsIndexView({
 
     const fetchFilteredData = useCallback(
         (search: string, limit: string, sort: string, dir: string, from?: string, to?: string) => {
-            const query_params: any = {
-                per_page: limit,
-                sort,
-                direction: dir,
-            };
+            const query_params: any = { per_page: limit, sort, direction: dir };
 
             if (search) query_params.search = search;
             if (from) query_params.date_from = from;
@@ -198,7 +195,6 @@ export default function ActivityLogsIndexView({
             });
     }, [column_definitions, visible_columns, available_actions]);
 
-
     return (
         <AppLayout>
             <Head title="Aktivitás Napló" />
@@ -210,28 +206,24 @@ export default function ActivityLogsIndexView({
                     <p className="text-sm text-muted-foreground mt-1">Szerveren történt események naplója. Összesen: {logs?.total || 0} bejegyzés.</p>
                 </div>
 
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-8">
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-4 flex-1">
-                        <div className="w-full flex-1">
-                            <DataTableToolbar
-                                search_query={search_query}
-                                onSearchChange={setSearchQuery}
-                                columns={column_definitions}
-                                visible_columns={visible_columns}
-                                onToggleColumn={toggleColumnVisibility}
-                                per_page_amount={per_page_amount}
-                                onPerPageChange={handlePerPageChange}
-                                custom_per_page={custom_per_page}
-                                onCustomPerPageChange={setCustomPerPage}
-                                onCustomPerPageSubmit={handleCustomPerPageSubmit}
-                                show_date_filter={true}
-                                date_from={date_from}
-                                onDateFromChange={setDateFrom}
-                                date_to={date_to}
-                                onDateToChange={setDateTo}
-                            />
-                        </div>
-                    </div>
+                <div className="flex flex-col gap-4 mt-8 mb-4 w-full">
+                    <DataTableToolbar
+                        search_query={search_query}
+                        onSearchChange={setSearchQuery}
+                        columns={column_definitions}
+                        visible_columns={visible_columns}
+                        onToggleColumn={toggleColumnVisibility}
+                        per_page_amount={per_page_amount}
+                        onPerPageChange={handlePerPageChange}
+                        custom_per_page={custom_per_page}
+                        onCustomPerPageChange={setCustomPerPage}
+                        onCustomPerPageSubmit={handleCustomPerPageSubmit}
+                        show_date_filter={true}
+                        date_from={date_from}
+                        onDateFromChange={setDateFrom}
+                        date_to={date_to}
+                        onDateToChange={setDateTo}
+                    />
                 </div>
 
                 <div className="rounded-md border bg-background shadow-sm">
@@ -258,15 +250,7 @@ export default function ActivityLogsIndexView({
                                 size="sm"
                                 disabled={!link.url}
                                 onClick={() =>
-                                    link.url &&
-                                    router.get(
-                                        link.url,
-                                        {},
-                                        {
-                                            preserveState: true,
-                                            preserveScroll: true
-                                        }
-                                    )
+                                    link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })
                                 }
                                 dangerouslySetInnerHTML={{ __html: link.label || '' }}
                             />

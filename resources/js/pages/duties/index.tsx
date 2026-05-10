@@ -1,3 +1,4 @@
+// duties/index.tsx
 import { Head, router, usePage } from '@inertiajs/react';
 import { ArrowRightLeft, Plus, Trash2, FolderInput } from 'lucide-react';
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -32,6 +33,12 @@ import AppLayout from '@/layouts/app-layout';
 import { formatDuty, formatDate } from '@/lib/utils';
 import EditDutyModal from '@/pages/guild-users/_edit-duty-modal';
 import type { Duty, GuildUser } from '@/types';
+
+const STATUS_OPTIONS = [
+    { label: 'Összes', value: 'all' },
+    { label: 'Aktuális', value: '0' },
+    { label: 'Archív', value: '1' },
+];
 
 const defaultDuties = {
     data: [],
@@ -70,13 +77,8 @@ export default function DutiesIndexView({
     const flash = props.flash as { success: string | null; error: string | null; };
 
     useEffect(() => {
-        if (flash?.success) {
-            toast.success(flash.success);
-        }
-
-        if (flash?.error) {
-            toast.error(flash.error);
-        }
+        if (flash?.success) toast.success(flash.success);
+        if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
     const safe_filters = Array.isArray(filters) ? {} : filters || {};
@@ -94,7 +96,6 @@ export default function DutiesIndexView({
     const [date_to, setDateTo] = useState(safe_filters.date_to || '');
 
     const [selected_rows, setSelectedRows] = useState<(string | number)[]>([]);
-
     const [selected_guild_user_id, setSelectedGuildUserId] = useState<string>('');
     const [modal_user, setModalUser] = useState<GuildUser | null>(null);
 
@@ -122,12 +123,7 @@ export default function DutiesIndexView({
 
     const fetchFilteredData = useCallback(
         (search: string, limit: string, sort: string, dir: string, status: string, from?: string, to?: string) => {
-            const queryParams: any = {
-                per_page: limit,
-                sort,
-                direction: dir,
-                status
-            };
+            const queryParams: any = { per_page: limit, sort, direction: dir, status };
 
             if (search) queryParams.search = search;
             if (from) queryParams.date_from = from;
@@ -187,9 +183,7 @@ export default function DutiesIndexView({
             { duty_ids: numericIds, status: targetStatus },
             {
                 preserveScroll: true,
-                onSuccess: () => {
-                    setSelectedRows([]);
-                },
+                onSuccess: () => setSelectedRows([]),
                 onError: () => toast.error('Hiba a státusz frissítésekor.'),
             }
         );
@@ -214,9 +208,7 @@ export default function DutiesIndexView({
         } else {
             router.delete(route('duty.delete', delete_state.ids[0]), {
                 preserveScroll: true,
-                onSuccess: () => {
-                    setDeleteState({ is_open: false, is_bulk: false, ids: [], is_processing: false });
-                },
+                onSuccess: () => setDeleteState({ is_open: false, is_bulk: false, ids: [], is_processing: false }),
                 onError: () => {
                     setDeleteState((prev) => ({ ...prev, is_processing: false }));
                     toast.error('Hiba történt a törlés során.');
@@ -311,10 +303,7 @@ export default function DutiesIndexView({
     const handleUserSelect = (val: string) => {
         setSelectedGuildUserId(val);
         const selected = (guild_users || []).find((gu) => String(gu.id) === val);
-
-        if (selected) {
-            setModalUser(selected.full_user);
-        }
+        if (selected) setModalUser(selected.full_user);
     };
 
     const searchable_users = guild_users.map(gu => ({
@@ -354,86 +343,62 @@ export default function DutiesIndexView({
                     </AccordionItem>
                 </Accordion>
 
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-8">
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-4 flex-1">
-                        {selected_rows.length > 0 && (
-                            <div className="flex shrink-0 items-center gap-2 bg-muted/50 p-1.5 rounded-md border">
-                                <span className="text-sm font-medium px-2">{selected_rows.length} elem kijelölve</span>
+                <div className="flex flex-col gap-4 mt-8 mb-4 w-full">
+                    {selected_rows.length > 0 && (
+                        <div className="flex shrink-0 items-center gap-2 bg-muted/50 p-1.5 rounded-md border w-fit h-10">
+                            <span className="text-sm font-medium px-2">{selected_rows.length} elem kijelölve</span>
 
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm" className="shadow-sm h-8 bg-background">
-                                            <FolderInput className="mr-2 h-4 w-4" /> Státusz váltás
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => handleUpdateStatus(selected_rows, 0)}>
-                                            Áthelyezés aktuális időszakba
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleUpdateStatus(selected_rows, 1)}>
-                                            Áthelyezés archívba
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="shadow-sm h-8 bg-background">
+                                        <FolderInput className="mr-2 h-4 w-4" /> Státusz váltás
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleUpdateStatus(selected_rows, 0)}>
+                                        Áthelyezés aktuális időszakba
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleUpdateStatus(selected_rows, 1)}>
+                                        Áthelyezés archívba
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
 
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    className="h-8"
-                                    onClick={() => setDeleteState({ is_open: true, is_bulk: true, ids: selected_rows, is_processing: false })}
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" /> Tömeges törlés
-                                </Button>
-                            </div>
-                        )}
-
-                        <div className="w-full flex-1">
-                            <DataTableToolbar
-                                search_query={search_query}
-                                onSearchChange={setSearchQuery}
-                                columns={column_definitions}
-                                visible_columns={visible_columns}
-                                onToggleColumn={toggleColumnVisibility}
-                                per_page_amount={per_page_amount}
-                                onPerPageChange={handlePerPageChange}
-                                custom_per_page={custom_per_page}
-                                onCustomPerPageChange={setCustomPerPage}
-                                onCustomPerPageSubmit={handleCustomPerPageSubmit}
-                                show_date_filter={true}
-                                date_from={date_from}
-                                onDateFromChange={setDateFrom}
-                                date_to={date_to}
-                                onDateToChange={setDateTo}
-                            />
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                className="h-8"
+                                onClick={() => setDeleteState({ is_open: true, is_bulk: true, ids: selected_rows, is_processing: false })}
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" /> Tömeges törlés
+                            </Button>
                         </div>
-                    </div>
+                    )}
 
-                    <div className="flex shrink-0 items-center gap-2 bg-muted/30 p-1 rounded-lg border w-fit">
-                        <Button
-                            variant={status_filter === 'all' ? 'secondary' : 'ghost'}
-                            size="sm"
-                            onClick={() => setStatusFilter('all')}
-                            className="h-8 text-xs font-medium"
-                        >
-                            Összes
-                        </Button>
-                        <Button
-                            variant={status_filter === '0' ? 'secondary' : 'ghost'}
-                            size="sm"
-                            onClick={() => setStatusFilter('0')}
-                            className="h-8 text-xs font-medium"
-                        >
-                            Aktuális
-                        </Button>
-                        <Button
-                            variant={status_filter === '1' ? 'secondary' : 'ghost'}
-                            size="sm"
-                            onClick={() => setStatusFilter('1')}
-                            className="h-8 text-xs font-medium"
-                        >
-                            Archív
-                        </Button>
-                    </div>
+                    <DataTableToolbar
+                        search_query={search_query}
+                        onSearchChange={setSearchQuery}
+                        columns={column_definitions}
+                        visible_columns={visible_columns}
+                        onToggleColumn={toggleColumnVisibility}
+                        per_page_amount={per_page_amount}
+                        onPerPageChange={handlePerPageChange}
+                        custom_per_page={custom_per_page}
+                        onCustomPerPageChange={setCustomPerPage}
+                        onCustomPerPageSubmit={handleCustomPerPageSubmit}
+                        show_date_filter={true}
+                        date_from={date_from}
+                        onDateFromChange={setDateFrom}
+                        date_to={date_to}
+                        onDateToChange={setDateTo}
+                        show_status_filter={true}
+                        status_options={STATUS_OPTIONS}
+                        status_filters={status_filter ? [status_filter] : ['all']}
+                        onStatusFilterChange={(val) => {
+                            const selected = val.length > 0 ? val[val.length - 1] : 'all';
+                            setStatusFilter(selected);
+                        }}
+                    />
                 </div>
 
                 <div className="rounded-md border bg-background shadow-sm">
@@ -460,15 +425,7 @@ export default function DutiesIndexView({
                                 size="sm"
                                 disabled={!link.url}
                                 onClick={() =>
-                                    link.url &&
-                                    router.get(
-                                        link.url,
-                                        {},
-                                        {
-                                            preserveState: true,
-                                            preserveScroll: true
-                                        }
-                                    )
+                                    link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })
                                 }
                                 dangerouslySetInnerHTML={{ __html: link.label || '' }}
                             />
