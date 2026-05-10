@@ -24,11 +24,6 @@ class DutyService
 
     private ?Duty $duty = null;
 
-    public function loadModel(?Duty $duty, ?int $duty_id): void
-    {
-        $this->duty = $duty ?? Duty::findOrFail($duty_id);
-    }
-
     public function getPaginatedDuties(Guild $guild, array $filters = []): LengthAwarePaginator
     {
         $search_query = $filters['search'] ?? null;

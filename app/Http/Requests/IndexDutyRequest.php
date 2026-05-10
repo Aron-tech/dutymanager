@@ -29,7 +29,9 @@ class IndexDutyRequest extends FormRequest
             'per_page' => ['nullable', 'int', 'min:1', 'max:100'],
             'sort' => ['nullable', 'string', 'max:64'],
             'direction' => ['nullable', 'in:asc,desc'],
-            'status' => 'nullable|string|in:all,0,1',
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'status' => ['nullable', 'string', 'in:all,0,1'],
         ];
     }
 }
