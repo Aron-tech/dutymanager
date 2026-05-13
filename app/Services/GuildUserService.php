@@ -116,7 +116,7 @@ class GuildUserService
             default:
                 if (str_starts_with($sort, 'detail_')) {
                     $field_name = str_replace('detail_', '', $sort);
-                    $query->orderByRaw("JSON_UNQUOTE(JSON_EXTRACT(details, '$.\"$field_name\"')) $direction");
+                    $query->orderBy("details->{$field_name}", $direction);
                 } else {
                     $query->orderBy($sort, $direction);
                 }
