@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['user_id', 'guild_id', 'guild_user_id', 'type', 'level', 'reason', 'expires_at', 'created_by'])]
+#[Fillable(['user_id', 'guild_id', 'guild_user_id', 'type', 'level', 'reason', 'expires_at', 'created_by', 'is_expired'])]
 class Punishment extends Model
 {
     use SoftDeletes;
@@ -23,6 +23,7 @@ class Punishment extends Model
         return [
             'expires_at' => 'datetime',
             'type' => PunishmentTypeEnum::class,
+            'is_expired' => 'bool',
         ];
     }
 
@@ -78,6 +79,7 @@ class Punishment extends Model
             'reason' => $reason,
             'expires_at' => $expires_at ?: null,
             'created_by' => $created_by?->id ?: auth()->id(),
+            'is_expired' => false,
         ]);
 
         ActivityLog::make($guild_id, $created_by?->id, $target_user_id, ActionTypeEnum::ADD_PUNISHMENT_TO_GUILD_USER, $punishment->toArray());

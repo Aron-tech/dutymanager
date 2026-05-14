@@ -11,12 +11,21 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['guild_user_id', 'guild_id', 'user_id', 'reason', 'started_at', 'ended_at'])]
+#[Fillable(['guild_user_id', 'guild_id', 'user_id', 'reason', 'started_at', 'ended_at', 'is_expired'])]
 class Holiday extends Model
 {
     use SoftDeletes;
 
     public $timestamps = false;
+
+    protected function casts(): array
+    {
+        return [
+            'started_at' => 'datetime',
+            'ended_at' => 'datetime',
+            'is_expired' => 'bool',
+        ];
+    }
 
     public static function make(GuildUser $guild_user, string $reason, int $duration_in_days, int $holiday_start_delay_days = 0): ?Holiday
     {
@@ -37,6 +46,7 @@ class Holiday extends Model
             'reason' => $reason,
             'started_at' => $started_at,
             'ended_at' => $ended_at,
+            'is_expired' => false,
         ]);
 
         $guild = $guild_user->guild()->installed()->with('guildSettings')->first();
