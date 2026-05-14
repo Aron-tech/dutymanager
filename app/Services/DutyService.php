@@ -7,6 +7,7 @@ use App\Concerns\ServiceTrait;
 use App\Enums\ActionTypeEnum;
 use App\Enums\DutyStatusEnum;
 use App\Events\SendUserMessageEvent;
+use App\Jobs\DeleteDutyJob;
 use App\Models\ActivityLog;
 use App\Models\Duty;
 use App\Models\Guild;
@@ -206,14 +207,14 @@ class DutyService
             ->then(function (Batch $batch) use ($causer_id) {
                 broadcast(new SendUserMessageEvent(
                     $causer_id,
-                    "A szolgálati idők törlése sikeresen befejeződött ({$batch->totalJobs} elem).",
+                    __('success_duties_delete', ['count' => $batch->totalJobs]),
                     'success'
                 ));
             })
             ->catch(function (Batch $batch, Throwable $e) use ($causer_id) {
                 broadcast(new SendUserMessageEvent(
                     $causer_id,
-                    'Hiba történt a szolgálati idők törlése során.',
+                    __('app.error_action'),
                     'danger'
                 ));
             })

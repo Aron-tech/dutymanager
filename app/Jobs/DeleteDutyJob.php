@@ -20,7 +20,7 @@ class DeleteDutyJob implements ShouldQueue
 
     public function __construct(
         public Duty $duty,
-        public string $causer_id
+        public ?string $causer_id
     ) {}
 
     public function handle(): bool
