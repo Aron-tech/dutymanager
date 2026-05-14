@@ -98,7 +98,6 @@ class GuildService
             if ($feature_id === 'general_settings') {
                 $this->processGeneralSettings($settings);
                 unset($settings['role_permissions']);
-                unset($settings['preset_roles']);
             }
 
             $current_feature_settings = $guild_settings->feature_settings ?? [];
