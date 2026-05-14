@@ -18,8 +18,10 @@ return new class extends Migration
         Schema::create('duties', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(GuildUser::class)->nullable()->constrained()->nullOnDelete();
-            $table->foreignIdFor(Guild::class)->constrained();
-            $table->foreignIdFor(User::class)->constrained();
+            $table->string('guild_id');
+            $table->foreign('guild_id')->references('id')->on('guilds');
+            $table->string('user_id');
+            $table->foreign('user_id')->references('id')->on('users');
             $table->integer('value')->nullable();
             $table->timestamp('started_at');
             $table->timestamp('finished_at')->nullable();

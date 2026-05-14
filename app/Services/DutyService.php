@@ -136,7 +136,7 @@ class DutyService
             ->where('guild_users.guild_id', $guild->id)
             ->where('duties.started_at', '>=', $now->copy()->subHours(24))
             ->whereNotNull('guild_users.accepted_at') // Grafikon adatoknál is csak a jóváhagyott tagok
-            ->selectRaw('DATE_FORMAT(duties.started_at, "%H:00") as date, COUNT(*) as count')
+            ->selectRaw("TO_CHAR(duties.started_at, 'HH24:00') as date, COUNT(*) as count")
             ->groupBy('date')
             ->get();
 

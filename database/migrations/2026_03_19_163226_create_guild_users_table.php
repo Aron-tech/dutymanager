@@ -20,7 +20,7 @@ return new class extends Migration
             $table->boolean('is_request');
             $table->timestamp('accepted_at')->nullable();
             $table->string('added_by')->nullable();
-            $table->json('cached_roles')->nullable();
+            $table->jsonb('cached_roles')->nullable();
             $table->timestamp('roles_last_synced')->nullable();
             $table->timestamp('rank_changed_at')->default(now());
             $table->timestamps();

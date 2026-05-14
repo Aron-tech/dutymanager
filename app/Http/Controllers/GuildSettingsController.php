@@ -5,12 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\LanguageEnum;
 use App\Enums\PermissionEnum;
 use App\Http\Requests\UpdateGuildSettingsRequest;
-use App\Models\Guild;
+use App\Models\LicenseKey;
 use App\Services\DiscordFetchService;
 use App\Services\GuildSettingsService;
 use App\Services\SelectedGuildService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -63,11 +62,23 @@ class GuildSettingsController extends Controller
         $discord_text_channels = DiscordFetchService::getGuildChannels($guild->id, true, [0, 5]);
         $discord_voice_channels = DiscordFetchService::getGuildChannels($guild->id, true, [2]);
 
+        $active_license = LicenseKey::where('guild_id', $guild->id)
+            ->latest('used_at')
+            ->get()
+            ->filter(fn ($lic) => $lic->is_active)
+            ->first();
+
         return Inertia::render('guilds/settings', [
             'guild' => $guild,
             'initialSettings' => $initial_settings,
             'initialEnabledFeatures' => $guild_settings?->features ?? [],
             'context_data' => [
+                'guild_id' => $guild->id,
+                'license' => [
+                    'is_active' => (bool) $active_license,
+                    'plan_type' => $active_license?->plan_type,
+                    'expires_at' => $active_license?->expires_at,
+                ],
                 'languages' => $languages,
                 'permissions' => $permissions,
                 'discord_roles' => $discord_roles,

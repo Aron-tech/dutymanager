@@ -12,18 +12,16 @@ return new class extends Migration
      */
     public function up(): void
     {
+        DB::statement('ALTER TABLE duties ALTER COLUMN status TYPE bigint USING status::bigint');
         Schema::table('duties', function (Blueprint $table) {
             $table->unsignedBigInteger('status')->default(DutyStatusEnum::CURRENT_PERIOD->value)->change();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('duties', function (Blueprint $table) {
-            //
+            $table->string('status')->change();
         });
     }
 };

@@ -8,6 +8,7 @@ use App\Http\Controllers\GuildSettingsController;
 use App\Http\Controllers\GuildUserController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\LicenseKeyController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PunishmentController;
 use App\Http\Controllers\SubscriptionController;
@@ -33,6 +34,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
     Route::post('/subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store');
     Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
+    Route::post('/guilds/{guild}/license/activate', [LicenseKeyController::class, 'activate'])->name('guild.license.activate');
 
     Route::middleware([SelectedGuildMiddleware::class, RequireGuildSetupMiddleware::class])->group(function () {
         Route::get('dashboard', [PageController::class, 'dashboard'])->name('dashboard');

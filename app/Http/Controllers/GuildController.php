@@ -8,6 +8,7 @@ use App\Enums\PermissionEnum;
 use App\Http\Requests\SaveFeatureSettingsRequest;
 use App\Http\Requests\SaveFeaturesRequest;
 use App\Models\Guild;
+use App\Models\LicenseKey;
 use App\Services\DiscordFetchService;
 use App\Services\GuildService;
 use App\Services\SelectedGuildService;
@@ -24,8 +25,6 @@ class GuildController extends Controller
     ) {}
 
     /**
-     * @return RedirectResponse|Response
-     *
      * @throws Exception
      */
     public function selector(): RedirectResponse|Response
@@ -59,8 +58,6 @@ class GuildController extends Controller
     }
 
     /**
-     * @param Guild $guild
-     * @return RedirectResponse|Response
      * @throws Exception
      */
     public function select(Guild $guild): RedirectResponse|Response
@@ -101,9 +98,6 @@ class GuildController extends Controller
         ]);
     }
 
-    /**
-     * @return Response
-     */
     public function show(): Response
     {
         $guild = SelectedGuildService::get();
@@ -130,9 +124,7 @@ class GuildController extends Controller
         ]);
 
         $discord_roles = DiscordFetchService::getGuildRoles($guild->id, true);
-
         $discord_text_channels = DiscordFetchService::getGuildChannels($guild->id, true, [0, 5]);
-
         $discord_voice_channels = DiscordFetchService::getGuildChannels($guild->id, true, [2]);
 
         $features = collect(FeatureEnum::cases())->map(fn ($feature) => [
@@ -141,12 +133,24 @@ class GuildController extends Controller
             'description' => $feature->getDescription(),
         ])->toArray();
 
+        $active_license = LicenseKey::where('guild_id', $guild->id)
+            ->latest('used_at')
+            ->get()
+            ->filter(fn ($lic) => $lic->is_active)
+            ->first();
+
         return Inertia::render('guilds/setup', [
             'guild' => $guild,
             'settings' => $guild_settings,
             'features' => $features,
             'enabled_features' => $guild_settings->features ?? [],
             'context_data' => [
+                'guild_id' => $guild->id,
+                'license' => [
+                    'is_active' => (bool) $active_license,
+                    'plan_type' => $active_license?->plan_type,
+                    'expires_at' => $active_license?->expires_at,
+                ],
                 'languages' => $languages,
                 'permissions' => $permissions,
                 'discord_roles' => $discord_roles,
@@ -156,10 +160,6 @@ class GuildController extends Controller
         ]);
     }
 
-    /**
-     * @param SaveFeaturesRequest $request
-     * @return RedirectResponse
-     */
     public function saveFeatures(SaveFeaturesRequest $request): RedirectResponse
     {
         $validated = $request->validated();
@@ -175,9 +175,6 @@ class GuildController extends Controller
     }
 
     /**
-     * @param SaveFeatureSettingsRequest $request
-     * @param string $feature_id
-     * @return RedirectResponse
      * @throws Throwable
      */
     public function saveFeatureSettings(SaveFeatureSettingsRequest $request, string $feature_id): RedirectResponse

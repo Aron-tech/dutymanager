@@ -17,13 +17,16 @@ return new class extends Migration
     {
         Schema::create('punishments', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(User::class)->constrained();
-            $table->foreignIdFor(Guild::class)->constrained();
+            $table->string('guild_id');
+            $table->foreign('guild_id')->references('id')->on('guilds');
+            $table->string('user_id');
+            $table->foreign('user_id')->references('id')->on('users');
             $table->foreignIdFor(GuildUser::class)->nullable()->constrained()->nullOnDelete();
             $table->enum('type', PunishmentTypeEnum::getOptions());
             $table->unsignedTinyInteger('level')->nullable();
             $table->text('reason');
-            $table->foreignIdFor(User::class, 'created_by')->constrained('users');
+            $table->string('created_by');
+            $table->foreign('created_by')->references('id')->on('users');
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
             $table->softDeletes();

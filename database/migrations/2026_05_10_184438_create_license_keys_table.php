@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Guild;
-use App\Models\GuildUser;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -14,17 +13,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('holidays', function (Blueprint $table) {
+        Schema::create('license_keys', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(GuildUser::class)->nullable()->constrained()->nullOnDelete();
+            $table->string('key')->unique();
+            $table->string('plan_type')->default('year');
+            $table->timestamp('used_at')->nullable();
+            $table->string('activated_by')->nullable();
+            $table->foreign('activated_by')->references('id')->on('users');
             $table->string('guild_id');
             $table->foreign('guild_id')->references('id')->on('guilds');
-            $table->string('user_id');
-            $table->foreign('user_id')->references('id')->on('users');
-            $table->text('reason');
-            $table->timestamp('started_at');
-            $table->timestamp('ended_at');
-            $table->softDeletes();
+            $table->timestamps();
         });
     }
 
@@ -33,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('holidays');
+        Schema::dropIfExists('license_keys');
     }
 };
