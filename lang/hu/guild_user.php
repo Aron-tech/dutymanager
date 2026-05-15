@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'error_not_found_user' => 'A felhasználó nincs hozzáadva a szerverhez!',
     'success_add_new_user' => 'Sikeresen hozzáadtad :user felhasználót!',
     'success_accepted_user' => 'Sikeresen jóváhagytad :user felhasználót!',
     'delete_users_in_queue_started' => 'A felhasználók törlése a háttérben elkezdődött.',

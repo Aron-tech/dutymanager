@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Concerns\ServiceTrait;
+use App\DTO\ServiceResponseDTO;
 use App\Enums\ActionTypeEnum;
 use App\Enums\FeatureEnum;
 use App\Models\ActivityLog;
@@ -12,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class HolidayService
 {
+    use ServiceTrait;
+
     public function getPaginatedHolidays(Guild $guild, array $filters = []): LengthAwarePaginator
     {
         $search_query = $filters['search'] ?? null;
@@ -46,7 +50,7 @@ class HolidayService
             $query->whereDate('holidays.started_at', '<=', $date_to);
         }
 
-        if (!empty($status_filters) && !in_array('all', $status_filters)) {
+        if (! empty($status_filters) && ! in_array('all', $status_filters)) {
             $query->where(function ($q) use ($status_filters) {
                 if (in_array('revoked', $status_filters)) {
                     $q->orWhereNotNull('holidays.deleted_at');
@@ -98,6 +102,37 @@ class HolidayService
         }
 
         return $query->paginate($per_page)->withQueryString();
+    }
+
+    public function store($data): ServiceResponseDTO
+    {
+        $guild = SelectedGuildService::get();
+        $guild_user = $guild->acceptedGuildUsers()->where('user_id', $data['user_id'])->first();
+
+        if (! $guild_user) {
+            return $this->makeResponse(false, null, 'guild_user.error_not_found_user');
+        }
+
+        if (! $guild->guildSettings->isEnabledFeature(FeatureEnum::HOLIDAY)) {
+            return $this->makeResponse(false, null, __('app.feature_not_enabled'));
+        }
+
+        $holiday = DB::transaction(function () use ($guild_user, $data) {
+
+            $holiday = Holiday::make($guild_user, $data['reason'], $data['duration_in_days'], $data['holiday_start_delay_days'] ?? 0);
+
+            if (! empty($holiday)) {
+                ActivityLog::make($guild_user->guild_id, auth()->id(), $guild_user->user_id, ActionTypeEnum::GET_HOLIDAY, $holiday->toArray());
+            }
+
+            return $holiday;
+        });
+
+        if ($holiday === null) {
+            return $this->makeResponse(false, null, 'holiday.guild_user_already_has_active_holiday');
+        } else {
+            return $this->makeResponse(true, $holiday, 'holiday.success_get_holiday', (int) ['days' => $data['duration_in_days']]);
+        }
     }
 
     public function delete(Holiday $holiday): bool
