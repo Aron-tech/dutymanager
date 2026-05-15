@@ -135,9 +135,9 @@ class HolidayService
         }
     }
 
-    public function delete(Holiday $holiday): bool
+    public function delete(Holiday $holiday, ?Guild $guild = null): bool
     {
-        $guild = SelectedGuildService::get();
+        $guild ??= SelectedGuildService::get();
         $holiday_id_array = [$holiday->id];
         $holiday_role_id = $guild->guildSettings->getFeatureSettings(FeatureEnum::HOLIDAY, 'holiday_role_id', null);
 
