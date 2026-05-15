@@ -4,12 +4,16 @@ namespace App\Models;
 
 use App\Enums\ActionTypeEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable(['guild_id', 'user_id', 'target_id', 'action', 'details', 'created_at'])]
 class ActivityLog extends Model
 {
+    use MassPrunable;
+
     public $timestamps = false;
 
     protected function casts(): array
@@ -19,6 +23,14 @@ class ActivityLog extends Model
             'details' => 'json',
             'created_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @return Builder
+     */
+    public function prunable(): Builder
+    {
+        return static::where('created_at', '<', now()->subMonths(6));
     }
 
     public function actor(): BelongsTo
