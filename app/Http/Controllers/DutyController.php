@@ -13,7 +13,6 @@ use App\Models\Duty;
 use App\Services\DutyService;
 use App\Services\SelectedGuildService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -52,10 +51,6 @@ class DutyController extends Controller
         ]);
     }
 
-    /**
-     * @param IndexDutyRequest $request
-     * @return Response
-     */
     public function active(IndexDutyRequest $request): Response
     {
         if ($request->user()->cannot(PermissionEnum::VIEW_DUTIES->value)) {
@@ -167,6 +162,30 @@ class DutyController extends Controller
             Log::error($e->getMessage());
 
             return back()->withErrors(['form_error' => __('app.error_action')])->withInput();
+        }
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function reset()
+    {
+        if (auth()->user()->cannot(PermissionEnum::EDIT_DUTIES)) {
+            abort(403, __('app.error.no_permission'));
+        }
+
+        $guild = SelectedGuildService::get();
+
+        try {
+            $updated_duties_count = $this->service->resetDutiesForGuild($guild);
+
+            if ($updated_duties_count > 0) {
+                return back()->with('success', __('duty.success_duty_update_status'));
+            }
+
+            return back()->with('error', __('app.error_action'));
+        } catch (Throwable $exception) {
+            return back()->with('error', __('app.error_action'));
         }
     }
 }

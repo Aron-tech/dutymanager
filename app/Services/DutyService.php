@@ -150,16 +150,16 @@ class DutyService
         return array_values($chart_data_array);
     }
 
-    public function storeDuty(array $data): Duty
+    public function storeDuty(array $data, ?GuildUser $guild_user = null): Duty
     {
-        return DB::transaction(function () use ($data) {
-            $guild_user = GuildUser::where('id', $data['guild_user_id'])->accepted()->firstOrFail();
+        return DB::transaction(function () use ($data, $guild_user) {
+            $guild_user ??= GuildUser::where('id', $data['guild_user_id'])->accepted()->firstOrFail();
             $duty = $guild_user->duties()->create([
                 ...$data,
                 'user_id' => $guild_user->user_id,
                 'guild_id' => $guild_user->guild_id,
-                'started_at' => time(),
-                'finished_at' => time(),
+                'started_at' => now(),
+                'finished_at' => now(),
             ]);
 
             ActivityLog::make($guild_user->guild_id, auth()->id(), $guild_user->user_id, ActionTypeEnum::ADD_DUTY_TO_GUILD_USER, $duty->toArray());
@@ -219,5 +219,25 @@ class DutyService
                 ));
             })
             ->dispatch();
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function resetDutiesForGuild(Guild $guild): int
+    {
+        DB::beginTransaction();
+
+        try {
+            $updated_count = $guild->duties()->whereNotNull('finished_at')->where('status', DutyStatusEnum::CURRENT_PERIOD)->update(['status' => DutyStatusEnum::ALL_PERIOD]);
+
+            DB::commit();
+
+            return $updated_count;
+        } catch (Throwable $exception) {
+            DB::rollBack();
+            Log::error('Failed reset duties: '.$exception->getMessage());
+            throw $exception;
+        }
     }
 }

@@ -66,6 +66,11 @@ class Guild extends Model
         return $this->hasManyThrough(User::class, GuildUser::class);
     }
 
+    public function duties(): HasMany
+    {
+        return $this->hasMany(Duty::class, 'id', 'guild_id');
+    }
+
     /**
      * @return HasManyThrough
      */
@@ -125,6 +130,6 @@ class Guild extends Model
      */
     public function getDutiesValue(DutyStatusEnum $status = DutyStatusEnum::CURRENT_PERIOD): int
     {
-        return $this->guildDuties()->where('status', '<=', $status)->sum('value');
+        return $this->duties()->where('status', '<=', $status)->sum('value');
     }
 }
