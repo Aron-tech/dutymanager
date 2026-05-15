@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Concerns\ServiceTrait;
 use App\Enums\ActionTypeEnum;
 use App\Enums\PermissionEnum;
 use App\Enums\PunishmentTypeEnum;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class PunishmentService
 {
+    use ServiceTrait;
+
     public function getPaginatedPunishments(Guild $guild, array $filters = []): LengthAwarePaginator
     {
         $search_query = $filters['search'] ?? null;
@@ -121,12 +124,13 @@ class PunishmentService
 
     public function create(array $data): Punishment
     {
-        return DB::transaction(function () use ($data) {
-            $guild = SelectedGuildService::get();
-            $guild_user = $guild->acceptedGuildUsers()->where('user_id', $data['user_id'])->first();
-            $type_enum = PunishmentTypeEnum::from($data['type']);
-            $expires_at = (int) $data['expire_days'] > 0 ? now()->addDays($data['expire_days']) : null;
-            $created_by = auth()->user();
+        $guild = SelectedGuildService::get();
+        $guild_user = $guild->acceptedGuildUsers()->where('user_id', $data['user_id'])->first();
+        $type_enum = PunishmentTypeEnum::from($data['type']);
+        $expires_at = (int) $data['expire_days'] > 0 ? now()->addDays($data['expire_days']) : null;
+        $created_by = auth()->user();
+
+        return DB::transaction(function () use ($data, $guild, $guild_user, $type_enum, $expires_at, $created_by) {
 
             $punishment = Punishment::make($guild_user, null, $guild, $type_enum, $data['level'], $data['reason'], $expires_at, $created_by);
 
