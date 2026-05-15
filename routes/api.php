@@ -12,5 +12,6 @@ Route::prefix('/guild')->group(function () {
     Route::get('/{guild}/whitelist-roles', [GuildController::class, 'getRolesWhitelist']);
     Route::put('/{guild}/sync-roles', [GuildUserController::class, 'updateRoles']);
 });
-
-Route::put('/duty/toggle', [GuildUserController::class, 'toggleDuty'])->middleware('api.context');
+Route::middleware('api.context')->group(function () {
+    Route::put('/duty/toggle', [GuildUserController::class, 'toggleDuty']);
+});
