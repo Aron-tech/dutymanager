@@ -39,8 +39,6 @@ class SubscriptionController extends Controller
         ]);
     }
 
-    // ... (store metódus változatlan)
-
     public function update(UpdateSubscriptionRequest $request, Subscription $subscription): RedirectResponse
     {
         $data = $request->validated();

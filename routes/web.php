@@ -11,7 +11,6 @@ use App\Http\Controllers\ItemController;
 use App\Http\Controllers\LicenseKeyController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PunishmentController;
-use App\Http\Controllers\SubscriptionController;
 use App\Http\Middleware\RequireGuildSetupMiddleware;
 use App\Http\Middleware\SelectedGuildMiddleware;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
@@ -31,9 +30,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/guilds/select/{guild}', [GuildController::class, 'select'])->name('guilds.select');
 
     // Subscriptions
-    Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
+    /*Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
     Route::post('/subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store');
-    Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
+    Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');*/
     Route::post('/guilds/{guild}/license/activate', [LicenseKeyController::class, 'activate'])->name('guild.license.activate');
 
     Route::middleware([SelectedGuildMiddleware::class, RequireGuildSetupMiddleware::class])->group(function () {
