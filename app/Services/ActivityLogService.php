@@ -8,6 +8,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class ActivityLogService
 {
+    public function __construct(private readonly ActivityLogFormatterService $formatter) {}
     public function getPaginatedLogs(Guild $guild, array $filters = []): LengthAwarePaginator
     {
         $search_query = $filters['search'] ?? null;
@@ -67,14 +68,17 @@ class ActivityLogService
             case 'target_discord_id':
                 $query->orderBy('activity_logs.target_id', $direction);
                 break;
-            case 'created_at':
-                $query->orderBy('activity_logs.created_at', $direction);
-                break;
             default:
                 $query->orderBy('activity_logs.created_at', $direction);
                 break;
         }
 
-        return $query->paginate($per_page)->withQueryString();
+        return $query->paginate($per_page)
+            ->withQueryString()
+            ->through(function (ActivityLog $log): ActivityLog {
+                $log->formatted_description = $this->formatter->format($log);
+
+                return $log;
+            });
     }
 }

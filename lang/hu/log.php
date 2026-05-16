@@ -31,4 +31,41 @@ return [
     'request_join_guild' => 'Csatlakozási kérelem a guildhez',
     'get_holiday' => 'Szabadság kivétele',
     'cancel_holiday' => 'Szabadság lemondása',
+
+    'unknown' => 'Ismeretlen',
+    'unknown_reason' => 'Nincs megadva indok',
+    'unknown_type' => 'Ismeretlen típus',
+    'unknown_item' => 'Ismeretlen tárgy',
+
+    'format' => [
+        'duty_added' => ':minutes perc manuálisan hozzáadva a szolgálati időhöz.',
+        'duty_deleted' => ':minutes perces szolgálati napló törölve.',
+        'duty_canceled' => 'Aktív szolgálat megszakítva (érvénytelenítve).',
+        'duty_finished' => 'Szolgálat befejezve. Hozzáírt idő: :minutes perc.',
+        'on_duty' => 'Szolgálatba lépett.',
+
+        'request_join' => 'Csatlakozási kérelmet adott be.',
+        'user_added' => 'Hozzáadva a szervezethez.',
+        'user_accepted' => 'Csatlakozási kérelem elfogadva.',
+        'user_deleted' => 'Eltávolítva a szervezetből.',
+        'user_updated' => 'Felhasználói adatok frissítve.',
+
+        'rank_promoted' => 'Előléptetve (Korábbi rang ID: :old → Új rang ID: :new).',
+        'rank_demoted' => 'Lefokozva (Korábbi rang ID: :old → Új rang ID: :new).',
+        'rank_changed' => 'Rang módosítva (Korábbi rang ID: :old → Új rang ID: :new).',
+
+        'holiday_added' => 'Szabadság kiadva: :duration nap. Indok: :reason',
+        'holiday_canceled' => 'Szabadság visszavonva/törölve.',
+
+        'punishment_added' => 'Büntetés kiosztva (:type). Indok: :reason',
+        'punishment_deleted' => 'Büntetés eltávolítva.',
+
+        'item_added' => 'Új tárgy (:type) hozzáadva: :name',
+        'item_deleted' => 'Tárgy törölve a szervezetből.',
+
+        'image_uploaded' => 'Kép feltöltve.',
+        'image_deleted' => 'Kép törölve.',
+
+        'bot_added' => 'Discord Bot csatlakoztatva a szervezetbe.',
+    ],
 ];

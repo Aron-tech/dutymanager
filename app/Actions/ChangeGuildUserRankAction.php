@@ -72,7 +72,7 @@ class ChangeGuildUserRankAction
             $archive_duties_on_promotion = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'archive_duties_on_promotion', false);
             $announcement_channel_id = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'announcement_channel_id', null);
 
-            $rank_history = ['old_rank_id' => $old_rank_id, 'current_rank_id' => $rank_roles[$new_rank_index]];
+            $rank_history = ['old' => $old_rank_id, 'new' => $rank_roles[$new_rank_index]];
 
             DB::transaction(function () use ($guild_user, $action, $archive_duties_on_promotion, $rank_history, $auth_id) {
                 $guild_user->rank_changed_at = now();
@@ -122,6 +122,6 @@ class ChangeGuildUserRankAction
             'demote' => $archive_duties_on_promotion ? ActionTypeEnum::RANK_DOWN_WITH_RESET_GUILD_USER : ActionTypeEnum::RANK_DOWN_GUILD_USER,
         };
 
-        ActivityLog::make($guild_user->guild_id, $auth_id, $guild_user->user_id, $action_enum, $rank_history);
+        ActivityLog::make($guild_user->guild_id, $auth_id, $guild_user->user_id, $action_enum, $rank_history, __(''));
     }
 }

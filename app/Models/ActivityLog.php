@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['guild_id', 'user_id', 'target_id', 'action', 'details', 'created_at'])]
+#[Fillable(['guild_id', 'user_id', 'target_id', 'action', 'details', 'message', 'created_at'])]
 class ActivityLog extends Model
 {
     use MassPrunable;
@@ -25,9 +25,6 @@ class ActivityLog extends Model
         ];
     }
 
-    /**
-     * @return Builder
-     */
     public function prunable(): Builder
     {
         return static::where('created_at', '<', now()->subMonths(6));
