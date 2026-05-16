@@ -22,10 +22,10 @@ class Duty extends Model
     protected function casts(): array
     {
         return [
+            'value' => 'integer',
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
             'status' => DutyStatusEnum::class,
-            'value' => 'int',
         ];
     }
 
