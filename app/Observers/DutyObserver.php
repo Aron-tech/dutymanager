@@ -2,16 +2,17 @@
 
 namespace App\Observers;
 
-use App\Enums\FeatureEnum;
-use App\Models\ActivityLog;
 use App\Models\Duty;
-use App\Models\GuildSettings;
-use App\Models\GuildUser;
-use App\Services\DiscordFetchService;
-use Illuminate\Support\Facades\Log;
 
 class DutyObserver
 {
+    public function updating(Duty $duty): void
+    {
+        if ($duty->isDirty('value') && ! is_int($duty->value)) {
+            $duty->value = (int) round((float) $duty->value);
+        }
+    }
+
     /**
      * Handle the Duty "created" event.
      */
