@@ -10,6 +10,7 @@ use App\Concerns\FileHandlerTrait;
 use App\Enums\ActionTypeEnum;
 use App\Enums\DutyStatusEnum;
 use App\Enums\FeatureEnum;
+use App\Enums\PunishmentTypeEnum;
 use App\Events\SendUserMessageEvent;
 use App\Jobs\DeleteGuildUserJob;
 use App\Jobs\UpdateGuildUserRankJob;
@@ -17,6 +18,7 @@ use App\Models\ActivityLog;
 use App\Models\Guild;
 use App\Models\GuildUser;
 use App\Models\Image;
+use App\Models\Punishment;
 use App\Models\User;
 use Exception;
 use Illuminate\Bus\Batch;
@@ -146,10 +148,17 @@ class GuildUserService
 
             $added_by = auth()->user();
 
-            $is_assigned_user = GuildUser::where('user_id', $data['user_id'])->where('guild_id', $guild->id)->exists();
+            $assigned_user = GuildUser::where('user_id', $data['user_id'])->where('guild_id', $guild->id)->with(['user:id,name'])->first();
 
-            if ($is_assigned_user) {
-                throw new Exception('A felhasználó már be van regisztrálva.');
+            if ($assigned_user) {
+                throw new Exception(__('guild_user.already_exists_user', ['user' => $assigned_user->user->name]));
+            }
+
+            if ($guild->guildSettings->isEnabledFeature(FeatureEnum::WARN)) {
+                $blacklist = Punishment::where('guild_id', $guild->id)->where('user_id', $data['user_id'])->where('type', PunishmentTypeEnum::BLACKLIST)->select('id, reason')->first();
+                if ($blacklist) {
+                    throw new Exception(__('guild_user.error_blacklisted_user', ['reason' => $blacklist->reason]));
+                }
             }
 
             return JoinUserToGuildAction::run(

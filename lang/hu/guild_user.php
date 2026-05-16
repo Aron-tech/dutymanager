@@ -15,4 +15,5 @@ return [
     'success_demote_users' => 'Sikeresen lefokoztál :count felhasználót',
     'already_exists_user' => 'A(z) :user felhasználó már hozzá van adva a rendszerhez!',
     'error_pending_approval' => 'A discord szerverhez jóváhagyásra vár a felhasználói fiókod!',
+    'error_blacklisted_user' => 'A felhasználó feketelistán van a következő indokkal: {reason}',
 ];

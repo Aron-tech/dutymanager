@@ -58,9 +58,9 @@ class GuildUserController extends Controller
         $data['guild'] = $guild;
 
         try {
-            $this->service->joinUserToGuild($data);
+            $guild_user = $this->service->joinUserToGuild($data);
 
-            return back()->with('success', 'Felhasználó sikeresen hozzáadva!');
+            return back()->with('success', __('guild_user.success_add_new_user', ['user' => $guild_user->user->name]));
         } catch (ValidationException $e) {
             return back()->withErrors($e->errors())->withInput();
         } catch (Throwable $e) {
