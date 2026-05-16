@@ -7,7 +7,6 @@ use App\Http\Requests\DashboardRequest;
 use App\Http\Requests\StatisticsRequest;
 use App\Services\PageService;
 use App\Services\SelectedGuildService;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 

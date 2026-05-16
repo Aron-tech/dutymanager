@@ -11,12 +11,13 @@ use App\Models\Punishment;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 final class PageService
 {
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     public function getDashboardData(array $data = []): array
@@ -26,14 +27,14 @@ final class PageService
         $guild = SelectedGuildService::get();
 
         $guild_user = auth()->user()->guildUser($guild->id)
-            ->withExists(['duties as has_active_duty' => function ($query) {
+            ->withExists(['duties as has_active_duty' => static function ($query): void {
                 $query->where('status', '<=', DutyStatusEnum::CURRENT_PERIOD)
                     ->whereNull('finished_at');
             }])
-            ->withSum(['duties as total_duty_time' => function ($query) {
+            ->withSum(['duties as total_duty_time' => static function ($query): void {
                 $query->where('status', '<=', DutyStatusEnum::ALL_PERIOD);
             }], 'value')
-            ->withSum(['duties as current_total_duty_time' => function ($query) {
+            ->withSum(['duties as current_total_duty_time' => static function ($query): void {
                 $query->where('status', '<=', DutyStatusEnum::CURRENT_PERIOD);
             }], 'value')
             ->firstOrFail();
@@ -45,14 +46,23 @@ final class PageService
             ->get()
             ->groupBy('date');
 
-        $guild_avg_raw = Duty::query()
-            ->whereIn('guild_user_id', function ($query) use ($guild) {
-                $query->select('id')->from('guild_users')->where('guild_id', $guild->id);
-            })
-            ->where('started_at', '>=', now()->subDays($stats)->startOfDay())
-            ->selectRaw('DATE(started_at) as date, (SUM(value) / COUNT(DISTINCT guild_user_id)) as avg_value')
-            ->groupBy('date')
-            ->pluck('avg_value', 'date');
+        $guild_avg_raw = Cache::remember(
+            "guild_{$guild->id}_duty_avg_{$stats}_days_v2",
+            now()->addMinutes(15),
+            static function () use ($guild, $stats): array {
+                return Duty::query()
+                    ->whereIn('guild_user_id', static function ($query) use ($guild): void {
+                        $query->select('id')
+                            ->from('guild_users')
+                            ->where('guild_id', $guild->id);
+                    })
+                    ->where('started_at', '>=', now()->subDays($stats)->startOfDay())
+                    ->selectRaw('DATE(started_at) as date, (SUM(value) / COUNT(DISTINCT guild_user_id)) as avg_value')
+                    ->groupBy('date')
+                    ->pluck('avg_value', 'date')
+                    ->toArray();
+            }
+        );
 
         $period = CarbonPeriod::create(now()->subDays($stats), now());
         $duty_chart_data = [];
@@ -62,13 +72,13 @@ final class PageService
 
             $day_data = $duties_raw->get($date_string) ?? collect();
 
-            $current_value = $day_data->filter(fn ($item) => $item->status->value <= DutyStatusEnum::CURRENT_PERIOD->value)
+            $current_value = $day_data->filter(static fn ($item): bool => $item->status->value <= DutyStatusEnum::CURRENT_PERIOD->value)
                 ->sum('total_value');
 
-            $all_value = $day_data->filter(fn ($item) => $item->status->value <= DutyStatusEnum::ALL_PERIOD->value)
+            $all_value = $day_data->filter(static fn ($item): bool => $item->status->value <= DutyStatusEnum::ALL_PERIOD->value)
                 ->sum('total_value');
 
-            $guild_avg = $guild_avg_raw->get($date_string) ?? 0;
+            $guild_avg = $guild_avg_raw[$date_string] ?? 0;
 
             $duty_chart_data[] = [
                 'date' => $date_string,
@@ -94,8 +104,6 @@ final class PageService
     }
 
     /**
-     * @param string $guild_id
-     * @param int $days
      * @return array<string, mixed>
      */
     public function getStatistics(string $guild_id, int $days): array
@@ -112,8 +120,6 @@ final class PageService
     }
 
     /**
-     * @param string $guild_id
-     * @param Carbon $start_date
      * @return array<string, int>
      */
     private function getDutyDistribution(string $guild_id, Carbon $start_date): array
@@ -146,11 +152,6 @@ final class PageService
         ];
     }
 
-    /**
-     * @param string $guild_id
-     * @param Carbon $start_date
-     * @return Collection
-     */
     private function getPunishmentDistribution(string $guild_id, Carbon $start_date): Collection
     {
         return Punishment::query()
@@ -161,11 +162,6 @@ final class PageService
             ->pluck('total', 'type');
     }
 
-    /**
-     * @param string $guild_id
-     * @param Carbon $start_date
-     * @return Collection
-     */
     private function getTopActiveUsers(string $guild_id, Carbon $start_date): Collection
     {
         return GuildUser::query()
@@ -192,8 +188,6 @@ final class PageService
     }
 
     /**
-     * @param string $guild_id
-     * @param int $days
      * @return array<int, array<string, mixed>>
      */
     private function getDailyStats(string $guild_id, int $days): array
@@ -231,11 +225,6 @@ final class PageService
         return $daily_stats;
     }
 
-    /**
-     * @param string $guild_id
-     * @param Carbon $start_date
-     * @return int
-     */
     private function getTotalPeriodTime(string $guild_id, Carbon $start_date): int
     {
         return (int) Duty::query()
