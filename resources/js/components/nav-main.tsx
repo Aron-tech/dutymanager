@@ -13,7 +13,7 @@ export function NavMain({ title = "", items = [] }: { title : string, items: Nav
     const { isCurrentUrl } = useCurrentUrl();
     const { activeGuild } = usePage().props as any
 
-    if (!activeGuild) {
+    if (!activeGuild || items.length === 0) {
         return null;
     }
 

@@ -59,6 +59,8 @@ enum PermissionEnum: string
     case VIEW_DUTIES = 'view_duties';
     case VIEW_DUTIES_STATS = 'view_duties_stats';
     case VIEW_PUNISHMENTS = 'view_punishments';
+
+    case VIEW_HOLIDAYS = 'view_holidays';
     case VIEW_STATISTICS = 'view_statistics';
     case VIEW_LOGS = 'view_logs';
 

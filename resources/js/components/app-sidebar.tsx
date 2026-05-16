@@ -12,7 +12,6 @@ import {
     Shirt,
     Users,
 } from 'lucide-react';
-import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -26,10 +25,10 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { usePermissions } from '@/hooks/use-permissions';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
-// Segédfüggvény az inicialéknak
 const getInitials = (name: string): string => {
     return name
         .split(' ')
@@ -40,7 +39,7 @@ const getInitials = (name: string): string => {
 };
 
 export function AppSidebar() {
-    // Adatok kinyerése az Inertia shared props-ból
+    const { can, canAny } = usePermissions();
     const { selectedGuild } = usePage<{ selectedGuild: { id: string; name: string; icon: string | null } }>().props;
 
     const mainNavItems: NavItem[] = [
@@ -48,61 +47,90 @@ export function AppSidebar() {
             title: 'Kezdőlap',
             href: dashboard(),
             icon: LayoutGrid,
-        },
-        {
+        }
+    ];
+
+    if (canAny(['view_item_clothes', 'view_items'])) {
+        mainNavItems.push({
             title: 'Ruházatok',
             href: route('items.index', { type: 'clothing' }),
             icon: Shirt,
-        },
-        {
+        });
+    }
+
+    if (canAny(['view_item_vehicles', 'view_items'])) {
+        mainNavItems.push({
             title: 'Járművek',
             href: route('items.index', { type: 'vehicle' }),
             icon: Car,
-        },
-    ];
+        });
+    }
+    
+    const adminNavItems: NavItem[] = [];
 
-    const adminNavItems: NavItem[] = [
-        {
+    if (can('view_guild_users')) {
+        adminNavItems.push({
             title: 'Panel',
             href: route('guild.users.index'),
             icon: Users,
-        },
-        {
+        });
+    }
+
+    if (can('view_duties')) {
+        adminNavItems.push({
             title: 'Szolgálatban lévők',
             href: route('duty.active'),
             icon: ShieldCheck,
-        },
-        {
+        });
+    }
+
+    if (can('view_punishments')) {
+        adminNavItems.push({
             title: 'Büntetések',
             href: route('punishment.index'),
             icon: Gavel,
-        },
-        {
+        });
+    }
+
+    if (can('view_holidays')) {
+        adminNavItems.push({
             title: 'Szabadságok',
             href: route('holiday.index'),
             icon: CalendarOff,
-        },
-        {
+        });
+    }
+
+    if (can('view_duties')) {
+        adminNavItems.push({
             title: 'Duty log',
             href: route('duty.index'),
             icon: History,
-        },
-        {
+        });
+    }
+
+    if (can('view_statistics')) {
+        adminNavItems.push({
             title: 'Statisztikák',
             href: route('statistics'),
             icon: ChartPie,
-        },
-        {
+        });
+    }
+
+    if (can('view_logs')) {
+        adminNavItems.push({
             title: 'Aktivitás Napló',
             href: route('activity-log.index'),
             icon: ActivitySquare,
-        },
-        {
+        });
+    }
+
+    if (canAny(['view_guild_settings', 'edit_settings'])) {
+        adminNavItems.push({
             title: 'Beállítások',
             href: route('guild.settings'),
             icon: Settings,
-        },
-    ];
+        });
+    }
 
     return (
         <Sidebar collapsible="icon" variant="inset">
