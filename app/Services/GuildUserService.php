@@ -155,7 +155,7 @@ class GuildUserService
             }
 
             if ($guild->guildSettings->isEnabledFeature(FeatureEnum::WARN)) {
-                $blacklist = Punishment::where('guild_id', $guild->id)->where('user_id', $data['user_id'])->where('type', PunishmentTypeEnum::BLACKLIST)->select('id, reason')->first();
+                $blacklist = $guild->punishments()->where('user_id', $data['user_id'])->where('type', PunishmentTypeEnum::BLACKLIST)->where('is_expired', false)->select('id, reason')->latest()->first();
                 if ($blacklist) {
                     throw new Exception(__('guild_user.error_blacklisted_user', ['reason' => $blacklist->reason]));
                 }

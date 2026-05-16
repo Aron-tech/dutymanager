@@ -14,7 +14,6 @@ use App\Models\Guild;
 use App\Services\Api\GuildUserService;
 use App\Services\SelectedGuildService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class GuildUserController extends Controller

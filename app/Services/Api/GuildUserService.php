@@ -9,8 +9,10 @@ use App\Concerns\ServiceTrait;
 use App\DTO\ServiceResponseDTO;
 use App\Enums\DutyActionEnum;
 use App\Enums\FeatureEnum;
+use App\Enums\PunishmentTypeEnum;
 use App\Models\Guild;
 use App\Models\GuildUser;
+use App\Models\Punishment;
 use App\Models\User;
 use App\Services\DiscordFetchService;
 use App\Services\SelectedGuildService;
@@ -36,6 +38,13 @@ class GuildUserService
         $exists_guild_user = $guild->acceptedGuildUsers()->where('user_id', $data['user_id'])->exists();
         if ($exists_guild_user) {
             return $this->makeResponse(false, null, __('guild_user.already_exists_user', ['user' => $user->name]), 409);
+        }
+
+        if ($guild->guildSettings->isEnabledFeature(FeatureEnum::WARN)) {
+            $punishment = $guild->punishments()->where('user_id', $data['user_id'])->where('type', PunishmentTypeEnum::BLACKLIST)->where('is_expired', false)->select(['id', 'reason'])->latest()->first();
+            if ($punishment) {
+                return $this->makeResponse(false, null, __('guid_user.error_blacklisted_user', ['reason' => $punishment->reason]));
+            }
         }
 
         $added_by = null;

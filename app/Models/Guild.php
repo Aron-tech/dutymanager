@@ -116,6 +116,14 @@ class Guild extends Model
     }
 
     /**
+     * @return HasMany
+     */
+    public function punishments(): HasMany
+    {
+        return $this->hasMany(Punishment::class, 'id', 'guild_id');
+    }
+
+    /**
      * @param Builder $query
      * @return Builder
      */
