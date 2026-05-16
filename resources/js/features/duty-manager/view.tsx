@@ -134,19 +134,6 @@ export default function DutyManagerView({
                     message={errors['active_duty_channel_id']}
                 />
             </div>
-
-            {/* --- DUTY LOG SZÓBA --- */}
-            <div className="space-y-2">
-                <Label>Duty Log Szoba</Label>
-                <SearchableSingleSelect
-                    items={text_channel_options}
-                    value={data.duty_log_channel_id}
-                    onChange={(val) => onChange('duty_log_channel_id', val)}
-                    placeholder="Keresés szöveges csatornára..."
-                    renderItem={(item) => item.label}
-                />
-                <InputError message={errors['duty_log_channel_id']} />
-            </div>
         </div>
     );
 }

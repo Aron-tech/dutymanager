@@ -14,7 +14,6 @@ class DutyManagerRules implements ValidationRule
             "{$prefix}.duty_panel_channel_id" => ['required', 'string'],
             "{$prefix}.duty_voice_channel_id" => ['nullable', 'string'],
             "{$prefix}.active_duty_channel_id" => ['nullable', 'string'],
-            "{$prefix}.duty_log_channel_id" => ['required', 'string'],
         ];
     }
 
@@ -23,7 +22,6 @@ class DutyManagerRules implements ValidationRule
         return [
             "{$prefix}.duty_role_id.required" => __('A Duty rang kiválasztása kötelező!'),
             "{$prefix}.duty_panel_channel_id.required" => __('A Duty panel csatorna kiválasztása kötelező!'),
-            "{$prefix}.duty_log_channel_id.required" => __('A Duty log csatorna kiválasztása kötelező!'),
         ];
     }
 
