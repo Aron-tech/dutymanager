@@ -194,7 +194,7 @@ class GuildUser extends Model
         if ($diff_in_minutes > 0) {
             $current_duty->update([
                 'finished_at' => $now,
-                'value' => $diff_in_minutes,
+                'value' => round($diff_in_minutes),
             ]);
 
             ActivityLog::make($this->guild_id, $this->user_id, null, ActionTypeEnum::OFF_DUTY, $current_duty->toArray());

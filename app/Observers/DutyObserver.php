@@ -6,13 +6,6 @@ use App\Models\Duty;
 
 class DutyObserver
 {
-    public function updating(Duty $duty): void
-    {
-        if ($duty->isDirty('value') && ! is_int($duty->value)) {
-            $duty->value = (int) round((float) $duty->value);
-        }
-    }
-
     /**
      * Handle the Duty "created" event.
      */
