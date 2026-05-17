@@ -35,6 +35,7 @@ class ChangeGuildUserRankAction
         try {
             $guild ??= SelectedGuildService::get();
             $guild_settings = $guild->guildSettings;
+            $has_premium = $guild->hasActiveLicenseKey();
             $auth_id = $causer_id ?: auth()->id();
 
             if (! $guild_settings) {
@@ -85,7 +86,7 @@ class ChangeGuildUserRankAction
                 $this->makeLog($guild_user, $action, $archive_duties_on_promotion, $rank_history, $auth_id);
             });
 
-            if ($announcement_channel_id) {
+            if ($has_premium && $announcement_channel_id) {
                 $embed = DiscordEmbedFactory::create($action, [
                     'user_id' => $guild_user->user_id,
                     'rank' => '<@&'.$rank_roles[$new_rank_index].'>',
