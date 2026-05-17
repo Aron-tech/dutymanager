@@ -98,6 +98,27 @@ class Guild extends Model
     /**
      * @return HasOne
      */
+    public function activeLicenseKey(): HasOne
+    {
+        return $this->hasOne(LicenseKey::class)
+            ->whereNotNull('used_at')
+            ->where(function (Builder $query): void {
+                $query->where('plan_type', 'lifetime')
+                    ->orWhere('used_at', '>', now()->subYear());
+            });
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasActiveLicenseKey(): bool
+    {
+        return $this->activeLicenseKey()->exists();
+    }
+
+    /**
+     * @return HasOne
+     */
     public function activeSubscription(): HasOne
     {
         return $this->hasOne(Subscription::class)

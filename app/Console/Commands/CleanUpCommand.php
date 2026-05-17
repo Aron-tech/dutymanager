@@ -23,6 +23,7 @@ class CleanUpCommand extends Command
         $this->call('app:cleanup-duties-command', $options);
         $this->call('app:cleanup-punishments-command', $options);
         $this->call('app:cleanup-holidays-command', $options);
+        $this->call('app:cleanup-expired-premium-data', $options);
 
         return CommandAlias::SUCCESS;
     }
