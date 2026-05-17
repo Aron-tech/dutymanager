@@ -3,7 +3,6 @@
 namespace App\Observers;
 
 use App\Models\GuildUser;
-use App\Services\DiscordFetchService;
 
 class GuildUserObserver
 {
