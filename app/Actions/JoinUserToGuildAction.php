@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Enums\ActionTypeEnum;
+use App\Jobs\AddDiscordRoleJob;
 use App\Models\ActivityLog;
 use App\Models\Duty;
 use App\Models\Guild;
@@ -11,6 +12,7 @@ use App\Models\Holiday;
 use App\Models\Punishment;
 use App\Models\User;
 use App\Services\DiscordFetchService;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class JoinUserToGuildAction
@@ -36,9 +38,13 @@ class JoinUserToGuildAction
             ActivityLog::make($guild->id, $added_by->id, $user->id, ActionTypeEnum::ADD_USER_TO_GUILD_WITH_RESTORE, $guild_user->toArray());
         } else {
             $default_role = $guild->guildSettings->getGeneralSettings('default_role');
+
             if ($default_role) {
-                DiscordFetchService::addRoleToMember($guild->id, $user->id, $default_role);
+                DB::afterCommit(function () use ($guild, $user, $default_role) {
+                    AddDiscordRoleJob::dispatch($guild->id, $user->id, $default_role);
+                });
             }
+
             ActivityLog::make($guild->id, $added_by->id, $user->id, ActionTypeEnum::ADD_USER_TO_GUILD, $guild_user->toArray());
         }
 
