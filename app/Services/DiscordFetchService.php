@@ -134,7 +134,7 @@ class DiscordFetchService
 
     public static function getGuildRoles(string $guild_id, bool $select_format = false): array
     {
-        $data = Cache::remember("discord_guild_{$guild_id}_roles", now()->addMinutes(15), function () use ($guild_id) {
+        $data = Cache::remember("discord_guild_{$guild_id}_roles", now()->addMinutes(5), function () use ($guild_id) {
             return self::callBotApi('GET', "/guilds/{$guild_id}/roles") ?? [];
         });
 
@@ -159,7 +159,7 @@ class DiscordFetchService
             $cache_key .= '_'.implode('_', $allowed_types);
         }
 
-        return Cache::remember($cache_key, now()->addMinutes(15), function () use ($guild_id, $select_format, $allowed_types) {
+        return Cache::remember($cache_key, now()->addMinutes(5), function () use ($guild_id, $select_format, $allowed_types) {
             $data = self::callBotApi('GET', "/guilds/{$guild_id}/channels") ?? [];
 
             if (empty($data)) {
@@ -194,7 +194,7 @@ class DiscordFetchService
         $cache_filter = $filter ?? 0;
         $cache_key = "discord_guild_{$guild_id}_members_".($select_format ? 'select' : 'raw')."_{$cache_filter}";
 
-        return Cache::remember($cache_key, now()->addMinutes(15), function () use ($guild_id, $select_format, $filter) {
+        return Cache::remember($cache_key, now()->addMinutes(5), function () use ($guild_id, $select_format, $filter) {
             $data = self::callBotApi('GET', "/guilds/{$guild_id}/members") ?? [];
 
             if (empty($data)) {
