@@ -41,7 +41,7 @@ class JoinUserToGuildAction
 
             if ($default_role) {
                 DB::afterCommit(function () use ($guild, $user, $default_role) {
-                    AddDiscordRoleJob::dispatch($guild->id, $user->id, $default_role);
+                    AddDiscordRoleJob::dispatch($guild->id, $user->id, [$default_role]);
                 });
             }
 

@@ -12,6 +12,7 @@ use App\Enums\DutyStatusEnum;
 use App\Enums\FeatureEnum;
 use App\Enums\PunishmentTypeEnum;
 use App\Events\SendUserMessageEvent;
+use App\Jobs\AddDiscordRoleJob;
 use App\Jobs\DeleteGuildUserJob;
 use App\Jobs\UpdateGuildUserRankJob;
 use App\Models\ActivityLog;
@@ -233,7 +234,9 @@ class GuildUserService
             $guild = $guild_user->guild;
             $default_role = $guild->guildSettings?->feature_settings['general']['default_role'] ?? null;
             if ($default_role) {
-                DiscordFetchService::addRoleToMember($guild->id, $guild_user->user_id, $default_role);
+                DB::afterCommit(function () use ($guild, $guild_user, $default_role) {
+                    AddDiscordRoleJob::dispatch($guild->id, $guild_user->user_id, [$default_role]);
+                });
             }
 
             ActivityLog::make($guild_user->guild_id, $auth_user->id, $guild_user->user_id, ActionTypeEnum::ACCEPTED_USER_TO_GUILD, $guild_user->toArray());
