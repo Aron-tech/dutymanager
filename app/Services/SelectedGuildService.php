@@ -26,15 +26,24 @@ class SelectedGuildService
             return self::$resolved_guild;
         }
 
-        return once(function () {
-            if (! Session::has(self::SESSION_KEY)) {
-                return null;
-            }
+        if (! Session::has(self::SESSION_KEY) || ! auth()->check()) {
+            return null;
+        }
 
-            self::$resolved_guild = Guild::with('guildSettings')->find(Session::get(self::SESSION_KEY));
+        $guild_id = Session::get(self::SESSION_KEY);
+        $user = auth()->user();
 
-            return self::$resolved_guild;
-        });
+        $guild = $user->guilds()->with('guildSettings')->find($guild_id);
+
+        if (! $guild) {
+            self::clear();
+
+            return null;
+        }
+
+        self::$resolved_guild = $guild;
+
+        return self::$resolved_guild;
     }
 
     public static function isSelected(): bool
