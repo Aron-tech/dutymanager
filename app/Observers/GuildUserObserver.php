@@ -9,6 +9,7 @@ class GuildUserObserver
 {
     public function deleting(GuildUser $guildUser): void
     {
+        GuildUser::deletePermissionCache($guildUser->guild_id, $guildUser->user_id);
         $guildUser->duties()->update(['guild_user_id' => null]);
         $guildUser->punishments()->update(['guild_user_id' => null]);
         $guildUser->holidays()->update(['guild_user_id' => null]);
