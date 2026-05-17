@@ -5,8 +5,16 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class BulkDeleteGuildUserRequest extends FormRequest
+class DeleteGuildUserRequest extends FormRequest
 {
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -15,9 +23,7 @@ class BulkDeleteGuildUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'ids' => 'required|array',
-            'ids.*' => 'required|exists:guild_users,id',
-            'should_kick' => ['boolean'],
+            'should_kick' => ['bool'],
         ];
     }
 }

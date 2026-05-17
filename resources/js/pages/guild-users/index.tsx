@@ -173,7 +173,7 @@ export default function UserManagerView({
         );
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = (should_kick?: boolean) => {
         if (delete_state.ids.length === 0) {
             return;
         }
@@ -182,7 +182,7 @@ export default function UserManagerView({
 
         const is_single = delete_state.ids.length === 1;
         const route_name = is_single ? 'guild.users.delete' : 'guild.users.bulk.delete';
-        const payload = is_single ? {} : { data: { ids: delete_state.ids } };
+        const payload = is_single ? { data: { should_kick } } : { data: { ids: delete_state.ids, should_kick } };
         const url = is_single ? route(route_name, delete_state.ids[0]) : route(route_name);
 
         router.delete(url, {
@@ -454,6 +454,7 @@ export default function UserManagerView({
                 onClose={() => setDeleteState((prev) => ({ ...prev, is_open: false }))}
                 onConfirm={confirmDelete}
                 isProcessing={delete_state.is_processing}
+                checkboxText="Kirúgás a Discord szerverről"
                 description={
                     delete_state.ids.length === 1
                         ? "Biztosan törölni szeretnéd ezt a felhasználót? Ez a művelet végleges."

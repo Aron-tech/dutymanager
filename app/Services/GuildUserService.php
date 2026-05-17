@@ -256,13 +256,13 @@ class GuildUserService
     /**
      * @throws Throwable
      */
-    public function deleteUsersFromGuild(Guild $guild, array $ids): Batch
+    public function deleteUsersFromGuild(Guild $guild, array $ids, bool $should_kick = false): Batch
     {
         $guild_users = GuildUser::where('guild_id', $guild->id)->whereIn('id', $ids)->get();
         $causer_id = auth()->id();
 
-        $jobs = $guild_users->map(function ($guild_user) use ($causer_id) {
-            return new DeleteGuildUserJob($guild_user, $causer_id);
+        $jobs = $guild_users->map(function ($guild_user) use ($causer_id, $should_kick) {
+            return new DeleteGuildUserJob($guild_user, $causer_id, $should_kick);
         });
 
         return Bus::batch($jobs)

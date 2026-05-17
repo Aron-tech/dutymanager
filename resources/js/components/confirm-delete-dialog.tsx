@@ -11,28 +11,39 @@ import {
     AlertDialogMedia,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export interface ConfirmDeleteDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: () => void;
+    onConfirm: (checkbox_value?: boolean) => void;
     isProcessing?: boolean;
     title?: React.ReactNode;
     description: React.ReactNode;
     confirmText?: string;
     cancelText?: string;
+    checkboxText?: string;
 }
 
 export function ConfirmDeleteDialog({
-    isOpen,
-    onClose,
-    onConfirm,
-    isProcessing = false,
-    title = 'Törlés megerősítése',
-    description,
-    confirmText = 'Törlés',
-    cancelText = 'Mégse',
-}: ConfirmDeleteDialogProps) {
+                                        isOpen,
+                                        onClose,
+                                        onConfirm,
+                                        isProcessing = false,
+                                        title = 'Törlés megerősítése',
+                                        description,
+                                        confirmText = 'Törlés',
+                                        cancelText = 'Mégse',
+                                        checkboxText,
+                                    }: ConfirmDeleteDialogProps) {
+    const [checkboxValue, setCheckboxValue] = React.useState(false);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            setCheckboxValue(false);
+        }
+    }, [isOpen]);
+
     return (
         <AlertDialog
             open={isOpen}
@@ -48,6 +59,19 @@ export function ConfirmDeleteDialog({
                         {description}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
+
+                {checkboxText && (
+                    <div className="flex items-center space-x-2 mt-4">
+                        <Checkbox id="confirm_checkbox" checked={checkboxValue} onCheckedChange={(checked) => setCheckboxValue(Boolean(checked))} />
+                        <label
+                            htmlFor="confirm_checkbox"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                            {checkboxText}
+                        </label>
+                    </div>
+                )}
+
                 <AlertDialogFooter>
                     <AlertDialogCancel
                         variant="outline"
@@ -60,7 +84,7 @@ export function ConfirmDeleteDialog({
                         variant="destructive"
                         onClick={(e) => {
                             e.preventDefault();
-                            onConfirm();
+                            onConfirm(checkboxValue);
                         }}
                         disabled={isProcessing}
                     >

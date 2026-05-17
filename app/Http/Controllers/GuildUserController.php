@@ -8,6 +8,7 @@ use App\Enums\FeatureEnum;
 use App\Enums\PermissionEnum;
 use App\Enums\PunishmentTypeEnum;
 use App\Http\Requests\BulkDeleteGuildUserRequest;
+use App\Http\Requests\DeleteGuildUserRequest;
 use App\Http\Requests\IndexGuildUserRequest;
 use App\Http\Requests\StoreGuildUserRequest;
 use App\Http\Requests\UpdateGuildUserRequest;
@@ -107,16 +108,17 @@ class GuildUserController extends Controller
         }
     }
 
-    public function delete(GuildUser $guild_user): RedirectResponse
+    public function delete(GuildUser $guild_user, DeleteGuildUserRequest $request): RedirectResponse
     {
         if (auth()->user()->cannot(PermissionEnum::DELETE_GUILD_USERS)) {
             abort(403, __('app.error_no_permission'));
         }
 
         $guild = SelectedGuildService::get();
+        $data = $request->validated();
 
         try {
-            $this->service->deleteUsersFromGuild($guild, [$guild_user->id]);
+            $this->service->deleteUsersFromGuild($guild, [$guild_user->id], $data['should_kick'] ?? false);
 
             return back()->with('success', 'A felhasználó törölve lett.');
         } catch (Throwable $e) {
@@ -136,7 +138,7 @@ class GuildUserController extends Controller
         $validated = $request->validated();
 
         try {
-            $this->service->deleteUsersFromGuild($guild, $validated['ids']);
+            $this->service->deleteUsersFromGuild($guild, $validated['ids'], $validated['should_kick'] ?? false);
 
             return back()->with('success', __('guild_user.delete_users_in_queue_started'));
         } catch (Throwable $e) {
