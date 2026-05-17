@@ -74,6 +74,7 @@ class GuildSettingsController extends Controller
             'initialEnabledFeatures' => $guild_settings?->features ?? [],
             'context_data' => [
                 'guild_id' => $guild->id,
+                'has_premium' => (bool) $active_license,
                 'license' => [
                     'is_active' => (bool) $active_license,
                     'plan_type' => $active_license?->plan_type,

@@ -12,7 +12,7 @@ class DutyManagerRules implements ValidationRule
         return [
             "{$prefix}.duty_role_id" => ['required', 'string'],
             "{$prefix}.duty_panel_channel_id" => ['required', 'string'],
-            "{$prefix}.duty_voice_channel_id" => ['nullable', 'string'],
+            "{$prefix}.duty_voice_channel_id" => ['nullable', 'string', new HasPremium()],
             "{$prefix}.active_duty_channel_id" => ['nullable', 'string'],
         ];
     }

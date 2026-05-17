@@ -15,7 +15,7 @@ class UserDetailsRules implements ValidationRule
             "{$prefix}.name_format" => ['nullable', 'string'],
             "{$prefix}.log_channel_id" => ['nullable', 'string'],
 
-            "{$prefix}.config" => ['nullable', 'array'],
+            "{$prefix}.config" => ['nullable', 'array', new UserDetailsConfigPremiumRule],
             "{$prefix}.config.*.name" => ["required_with:{$prefix}.config", 'string'],
             "{$prefix}.config.*.type" => ["required_with:{$prefix}.config", 'string', 'in:int,string,boolean'],
             "{$prefix}.config.*.required" => ["required_with:{$prefix}.config", 'boolean'],
@@ -26,7 +26,6 @@ class UserDetailsRules implements ValidationRule
     {
         return [];
     }
-
 
     /**
      * Run the validation rule.

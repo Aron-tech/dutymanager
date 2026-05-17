@@ -7,14 +7,14 @@ namespace App\Rules;
 final class RankSystemRules
 {
     /**
-     * @return array<string, array<int, string>>
+     * @return array<string, array<int, mixed>>
      */
     public static function rules(string $prefix = 'settings.rank_system'): array
     {
         return [
             "{$prefix}.rank_roles" => ['required', 'array', 'min:2'],
             "{$prefix}.rank_roles.*" => ['required', 'string'],
-            "{$prefix}.announcement_channel_id" => ['nullable', 'string'],
+            "{$prefix}.announcement_channel_id" => ['nullable', 'string', new HasPremium],
             "{$prefix}.archive_duties_on_promotion" => ['nullable', 'boolean'],
         ];
     }
