@@ -9,10 +9,12 @@ use App\Enums\DutyActionEnum;
 use App\Enums\FeatureEnum;
 use App\Enums\PermissionEnum;
 use App\Models\Duty;
+use App\Models\GuildUser;
 use App\Services\DiscordFetchService;
 use App\Services\DutyService;
 use Discord\Discord;
 use Discord\Parts\Interactions\Interaction as DiscordInteraction;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class HandleDutyInteraction
@@ -28,7 +30,7 @@ class HandleDutyInteraction
     {
         $this->init($discord, $interaction, app(DutyService::class));
         if (! $this->guild->guildSettings->isEnabledFeature(FeatureEnum::DUTY)) {
-            $this->respondSimpleEmbed($interaction, __('app.feature_not_enabled'), 'FF0000');
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.feature_not_enabled'), 'FF0000');
 
             return;
         }
@@ -38,6 +40,7 @@ class HandleDutyInteraction
         match ($command_name) {
             'duty' => $this->handleDutyCommand($interaction),
             'duty-cancel' => $this->handleDutyCancelCommand($interaction),
+            'duty-fcancel' => $this->handleDutyForceCancelCommand($interaction),
             default => null,
         };
     }
@@ -45,7 +48,7 @@ class HandleDutyInteraction
     public function handleDutyCommand(DiscordInteraction $interaction): void
     {
         if (! $this->hasPermission($interaction, PermissionEnum::TOGGLE_DUTY)) {
-            $this->respondSimpleEmbed($interaction, __('app.error_no_permission'), 'FF0000');
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_no_permission'), 'FF0000');
 
             return;
         }
@@ -64,24 +67,68 @@ class HandleDutyInteraction
             $data = $this->buildEmbedData('🚨 '.__('duty.success_duty_off'), 'FF0000', fields: $fields);
             $this->respondEphemeralEmbed($interaction, 'normal', $data);
         } else {
-            $this->respondSimpleEmbed($interaction, __('app.error_action'), 'FF0000');
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
         }
     }
 
     public function handleDutyCancelCommand(DiscordInteraction $interaction): void
     {
-        if (! $this->hasPermission($interaction, PermissionEnum::TOGGLE_DUTY)) {
-            $this->respondSimpleEmbed($interaction, __('app.error_no_permission'), 'FF0000');
+        try {
+            if (! $this->hasPermission($interaction, PermissionEnum::EDIT_DUTIES)) {
+                $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_no_permission'), 'FF0000');
+
+                return;
+            }
+
+            $this->cancelDuty($interaction, $this->guild_user);
+
+        } catch (\Throwable $e) {
+            \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
+        }
+    }
+
+    public function handleDutyForceCancelCommand(DiscordInteraction $interaction): void
+    {
+        try {
+            if (! $this->hasPermission($interaction, PermissionEnum::FORCE_CANCEL_DUTIES)) {
+                $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_no_permission'), 'FF0000');
+
+                return;
+            }
+
+            $member_id = $interaction->data->options->get('name', 'member')?->value;
+            $target_guild_user = $this->guild->acceptedGuildUsers()->where('user_id', $member_id)->first();
+            if (! $target_guild_user) {
+                $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_not_found_user'), 'FF0000');
+            }
+
+            $this->cancelDuty($interaction, $target_guild_user);
+
+        } catch (\Throwable $e) {
+            \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
+        }
+    }
+
+    private function cancelDuty(DiscordInteraction $interaction, GuildUser $guild_user): void
+    {
+        $active_duty = $guild_user->currentDuty()->first();
+
+        if (! $active_duty) {
+            $this->respondSimpleEmbed($interaction, __('🚨 '.'duty.not_on_duty'), 'FF0000');
+
             return;
         }
 
-        $active_duty = $this->guild_user->currentDuty()->first();
+        DB::transaction(function () use ($active_duty) {
+            if (DeleteActiveDutyAction::run($active_duty, null, $this->guild_user, $this->guild->guildSettings)) {
+                $active_duty->delete();
+            } else {
+                throw new \Exception('Duty deletion failed logic.');
+            }
+        });
 
-        if (empty($active_duty) || (! DeleteActiveDutyAction::run($active_duty, null, $this->guild_user, $this->guild->guildSettings))) {
-            $this->respondSimpleEmbed($interaction, __('duty.not_on_duty'), 'FF0000');
-            return;
-        }
-
-        $this->respondEphemeralEmbed($interaction, 'normal', $this->buildEmbedData(__('duty.success_duty_cancel'), '00FF00'));
+        $this->respondEphemeralEmbed($interaction, 'normal', $this->buildEmbedData('🚨 '.__('duty.success_duty_cancel'), '00FF00', ''));
     }
 }

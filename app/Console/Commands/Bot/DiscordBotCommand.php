@@ -34,7 +34,6 @@ class DiscordBotCommand extends Command
             $this->registerCommands($discord)->then(fn () => $this->info('Parancsok szinkronizálva.'), fn (\Throwable $e) => $this->error($e->getMessage()));
             $bot->getLoop()->addPeriodicTimer(1.0, function () use ($discord) {
                 while ($taskJson = Redis::lpop('discord_bot_tasks')) {
-                    $this->info('Valami');
                     $task = json_decode($taskJson, true);
                     $this->processTask($task, $discord);
                 }
@@ -48,7 +47,7 @@ class DiscordBotCommand extends Command
 
             $this->info('Interakció érkezett: '.$interaction->data->name);
 
-            if (in_array($interaction->data->name, ['duty', 'duty-cancel'], true)) {
+            if (str_starts_with($interaction->data->name, 'duty')) {
                 $handler = new HandleDutyInteraction;
                 $handler->handle($bot, $interaction);
             }

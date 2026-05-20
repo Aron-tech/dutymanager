@@ -26,6 +26,8 @@ enum PermissionEnum: string
     // Szolgálat kezelése
     case ADD_DUTIES = 'add_duties';
     case EDIT_DUTIES = 'edit_duties';
+
+    case FORCE_CANCEL_DUTIES = 'force_cancel_duties';
     case DELETE_DUTIES = 'delete_duties';
 
     // Punishment kezelése
@@ -112,6 +114,7 @@ enum PermissionEnum: string
                 PermissionEnum::VIEW_DUTIES_STATS,
                 PermissionEnum::VIEW_PUNISHMENTS,
                 PermissionEnum::ADD_DUTIES,
+                PermissionEnum::FORCE_CANCEL_DUTIES,
                 PermissionEnum::ADD_VERBAL_WARNING,
                 PermissionEnum::DELETE_VERBAL_WARNING,
                 PermissionEnum::ADD_WARNING,

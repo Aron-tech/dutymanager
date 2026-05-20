@@ -14,7 +14,8 @@ return [
     'current_duties_sum' => 'Aktuális összes szolgálati idő',
     'all_duties_sum' => 'Összes szolgálati idő',
     'duty_value' => 'Szolgálatba voltál',
-    'duty_command_description' => 'Szolgálatba lépés/Szolgálatból kilépés',
-    'duty_cancel_command_description' => 'Szolgálatból kilépés mentés nélkül',
     'not_on_duty' => 'Nem vagy szolgálatban!',
+    'duty_command_description' => 'Szolgálatba lépés/Szolgálatból kilépés',
+    'duty_cancel_command_description' => 'Szolgálatból kilépés (mentés nélkül)',
+    'duty_fcancel_command_description' => 'Felhasználó kiléptetése a szolgálatból (mentés nélkül',
 ];
