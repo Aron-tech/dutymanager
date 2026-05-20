@@ -17,4 +17,5 @@ return [
     'error_pending_approval' => 'A discord szerverhez jóváhagyásra vár a felhasználói fiókod!',
     'error_blacklisted_user' => 'A felhasználó feketelistán van a következő indokkal: {reason}',
     'in_your_rank' => 'Ennyi ideje vagy a rangodon',
+    'user' => 'Felhasználó',
 ];

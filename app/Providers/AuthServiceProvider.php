@@ -15,7 +15,7 @@ class AuthServiceProvider extends ServiceProvider
     {
         Gate::before(function (User $user, string $ability) {
 
-            if ($user->global_role == GlobalRoleEnum::DEVELOPER) {
+            if ($user->global_role === GlobalRoleEnum::DEVELOPER) {
                 return true;
             }
 
@@ -52,7 +52,7 @@ class AuthServiceProvider extends ServiceProvider
                 return null;
             }
 
-            if ($guild->owner_id == $user->id) {
+            if ($guild->owner_id === $user->id) {
                 return true;
             }
 
@@ -64,7 +64,7 @@ class AuthServiceProvider extends ServiceProvider
                 return false;
             }
 
-            if ($guild_user->global_role == GlobalRoleEnum::ADMIN) {
+            if ($guild_user->global_role === GlobalRoleEnum::ADMIN) {
                 return true;
             }
 

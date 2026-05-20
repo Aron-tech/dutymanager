@@ -1,6 +1,31 @@
 <?php
 
 return [
+    'command_data' => [
+        [
+            'name' => 'duty',
+            'description' => 'duty.duty_command_description',
+            'type' => 1,
+        ],
+        [
+            'name' => 'duty-cancel',
+            'description' => 'duty.duty_cancel_command_description',
+            'type' => 1,
+        ],
+        [
+            'name' => 'duty-fcancel',
+            'description' => 'duty_fcancel_command_description',
+            'type' => 1,
+            'options' => [
+                [
+                    'name' => '',
+                    'description' => 'A tag akinek törölni szeretnéd a duty-ját',
+                    'type' => 6,
+                    'required' => true,
+                ],
+            ],
+        ],
+    ],
     'subscriptions' => [
         'monthly' => [
             'price' => 10,

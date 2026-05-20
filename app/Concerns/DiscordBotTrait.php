@@ -31,7 +31,6 @@ trait DiscordBotTrait
 
     public function processTask(array $task, Discord $discord): void
     {
-        // 1. Guild lekérése
         $guild = ($task['guild_id'] ?? null) ? $discord->guilds->get('id', $task['guild_id']) : null;
         if (! $guild) {
             $this->error('Guild nem található a cache-ben: '.($task['guild_id'] ?? 'null'));
@@ -39,7 +38,6 @@ trait DiscordBotTrait
             return;
         }
 
-        // Segédfüggvény: mindig Promise-t ad vissza a Member-ről
         $getMember = function ($guild, $userId) {
             $member = $guild->members->get('id', $userId);
 

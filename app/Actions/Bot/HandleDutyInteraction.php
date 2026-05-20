@@ -48,8 +48,6 @@ class HandleDutyInteraction
     public function handleDutyCommand(DiscordInteraction $interaction): void
     {
         if (! $this->hasPermission($interaction, PermissionEnum::TOGGLE_DUTY)) {
-            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_no_permission'), 'FF0000');
-
             return;
         }
 
@@ -74,9 +72,7 @@ class HandleDutyInteraction
     public function handleDutyCancelCommand(DiscordInteraction $interaction): void
     {
         try {
-            if (! $this->hasPermission($interaction, PermissionEnum::EDIT_DUTIES)) {
-                $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_no_permission'), 'FF0000');
-
+            if (! $this->hasPermission($interaction, PermissionEnum::TOGGLE_DUTY)) {
                 return;
             }
 
@@ -92,8 +88,6 @@ class HandleDutyInteraction
     {
         try {
             if (! $this->hasPermission($interaction, PermissionEnum::FORCE_CANCEL_DUTIES)) {
-                $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_no_permission'), 'FF0000');
-
                 return;
             }
 

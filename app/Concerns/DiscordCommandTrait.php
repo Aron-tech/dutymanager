@@ -12,6 +12,7 @@ use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Interactions\Interaction as DiscordInteraction;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Gate;
 
 trait DiscordCommandTrait
@@ -28,6 +29,8 @@ trait DiscordCommandTrait
 
     protected function init(Discord $discord, DiscordInteraction $interaction, mixed $service, array $data = []): void
     {
+        $locale = $this->guild->lang_code ?? config('app.locale');
+        App::setLocale($locale);
         $this->discord = $discord;
         $this->service = $service;
         $guild_id = $this->getGuildId($interaction);
@@ -52,8 +55,7 @@ trait DiscordCommandTrait
         }
 
         if (Gate::forUser($this->user)->denies($permission->value)) {
-            $data['title'] = __('app.error_no_permission');
-            $this->respondEphemeralEmbed($interaction, 'normal', $data);
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_no_permission'), 'FF0000');
 
             return false;
         }
