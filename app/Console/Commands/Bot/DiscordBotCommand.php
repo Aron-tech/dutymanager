@@ -41,15 +41,16 @@ class DiscordBotCommand extends Command
             });
         });
 
-        $bot->on(Event::INTERACTION_CREATE, function (DiscordInteraction $interaction) {
+        $bot->on(Event::INTERACTION_CREATE, function (DiscordInteraction $interaction) use ($bot) {
             if ($interaction->type !== 2) {
                 return;
             }
 
             $this->info('Interakció érkezett: '.$interaction->data->name);
 
-            if ($interaction->data->name === 'duty') {
-                app(HandleDutyInteraction::class)->handle($interaction);
+            if (in_array($interaction->data->name, ['duty', 'duty-cancel'], true)) {
+                $handler = new HandleDutyInteraction;
+                $handler->handle($bot, $interaction);
             }
         });
 

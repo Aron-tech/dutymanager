@@ -178,7 +178,7 @@ class DutyService
     public function deleteDuty(Duty $duty): void
     {
         DB::transaction(function () use ($duty) {
-            if (! DeleteActiveDutyAction::run($duty, auth()->id())) {
+            if (! DeleteActiveDutyAction::run($duty, $duty->user_id)) {
                 ActivityLog::make($duty->guild_id, auth()->id(), $duty->user_id, ActionTypeEnum::DELETE_DUTY_FROM_GUILD_USER, $duty->toArray());
             }
             $duty->delete();

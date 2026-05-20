@@ -25,6 +25,12 @@ class DiscordEmbedFactory
         ];
 
         $embed = match ($type) {
+            'normal' => array_merge($embed, [
+                'title' => $data['title'],
+                'color' => hexdec($data['color']),
+                'description' => $data['description'],
+                'fields' => $data['fields'],
+            ]),
             'promote' => array_merge($embed, [
                 'title' => '📈 Előléptetés',
                 'color' => hexdec('2ECC71'),

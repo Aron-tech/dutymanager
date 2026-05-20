@@ -6,10 +6,13 @@ use App\Enums\PermissionEnum;
 use App\Models\Guild;
 use App\Models\GuildUser;
 use App\Models\User;
+use App\Services\DiscordEmbedFactory;
 use App\Services\SelectedGuildService;
 use Discord\Builders\MessageBuilder;
-use Illuminate\Support\Facades\Gate;
+use Discord\Discord;
+use Discord\Parts\Embed\Embed;
 use Discord\Parts\Interactions\Interaction as DiscordInteraction;
+use Illuminate\Support\Facades\Gate;
 
 trait DiscordCommandTrait
 {
@@ -21,8 +24,11 @@ trait DiscordCommandTrait
 
     protected ?GuildUser $guild_user = null;
 
-    protected function init(DiscordInteraction $interaction, mixed $service, array $data = []): void
+    protected ?Discord $discord = null;
+
+    protected function init(Discord $discord, DiscordInteraction $interaction, mixed $service, array $data = []): void
     {
+        $this->discord = $discord;
         $this->service = $service;
         $guild_id = $this->getGuildId($interaction);
         SelectedGuildService::setFromDiscord($guild_id);
@@ -46,7 +52,8 @@ trait DiscordCommandTrait
         }
 
         if (Gate::forUser($this->user)->denies($permission->value)) {
-            $this->respondEphemeral($interaction, __('app.error_permission'));
+            $data['title'] = __('app.error_no_permission');
+            $this->respondEphemeralEmbed($interaction, 'normal', $data);
 
             return false;
         }
@@ -54,10 +61,36 @@ trait DiscordCommandTrait
         return true;
     }
 
-    protected function respondEphemeral(DiscordInteraction $interaction, string $message): void
+    protected function respondEphemeral(DiscordInteraction $interaction, string|array $messageOrEmbed): void
     {
-        $builder = MessageBuilder::new()->setContent($message);
+        $builder = MessageBuilder::new();
+
+        if (is_array($messageOrEmbed)) {
+            $embed = new Embed($this->discord, $messageOrEmbed);
+            $builder->addEmbed($embed);
+        } else {
+            $builder->setContent($messageOrEmbed);
+        }
+
         $interaction->respondWithMessage($builder->setFlags(64));
+    }
+
+    protected function respondEphemeralEmbed(DiscordInteraction $interaction, string $type, array $data = []): void
+    {
+        if ($this->guild) {
+            $data['guild_name'] ??= $this->guild->name;
+            $data['guild_icon_url'] ??= $this->guild->icon ? "https://cdn.discordapp.com/icons/{$this->guild->id}/{$this->guild->icon}.png" : null;
+        }
+
+        $embedData = DiscordEmbedFactory::create($type, $data);
+
+        $this->respondEphemeral($interaction, $embedData);
+    }
+
+    protected function respondSimpleEmbed(DiscordInteraction $interaction, string $title, string $color = '0000FF'): void
+    {
+        $data = $this->buildEmbedData($title, $color);
+        $this->respondEphemeralEmbed($interaction, 'normal', $data);
     }
 
     protected function getGuildId(DiscordInteraction $interaction): ?string

@@ -15,12 +15,12 @@ class DeleteActiveDutyAction
 {
     use AsAction;
 
-    public function handle(Duty $duty, ?string $user_id = null): bool
+    public function handle(Duty $duty, ?string $user_id = null, ?GuildUser $guild_user = null, ?GuildSettings $guild_settings = null): bool
     {
         if (is_null($duty->value) && is_null($duty->finished_at)) {
-            $guild_user = GuildUser::where('guild_id', $duty->guild_id)->where('user_id', $duty->user_id)->first();
+            $guild_user ??= GuildUser::where('guild_id', $duty->guild_id)->where('user_id', $duty->user_id)->first();
             if ($guild_user) {
-                $guild_settings = GuildSettings::where('guild_id', $guild_user->guild_id)->select(['guild_id', 'features', 'feature_settings'])->first();
+                $guild_settings ??= GuildSettings::where('guild_id', $guild_user->guild_id)->select(['guild_id', 'features', 'feature_settings'])->first();
                 if ($guild_settings) {
                     $duty_role = $guild_settings->getFeatureSettings(FeatureEnum::DUTY, 'duty_role_id');
                     DiscordFetchService::removeRoleFromMember($guild_user->guild_id, $guild_user->user_id, $duty_role);

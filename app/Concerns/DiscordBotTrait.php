@@ -14,16 +14,16 @@ trait DiscordBotTrait
 {
     public function registerCommands(Discord $discord): PromiseInterface
     {
-        $command_data = [
-            'name' => 'duty',
-            'description' => 'Duty rendszer kezelése',
-            'type' => 1,
-        ];
+        $command_data = config('params.command_data', []);
 
         $promises = [];
+
         foreach ($discord->guilds as $guild) {
-            $command = new DiscordCommand($discord, $command_data);
-            $promises[] = $guild->commands->save($command);
+            foreach ($command_data as $data) {
+                $data['description'] = $data['description'] ? __($data['description']) : '';
+                $command = new DiscordCommand($discord, $data);
+                $promises[] = $guild->commands->save($command);
+            }
         }
 
         return all($promises);
