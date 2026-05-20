@@ -7,10 +7,10 @@ use App\Models\Guild;
 use App\Models\GuildSettings;
 use App\Models\GuildUser;
 use App\Models\User;
-use DateTimeInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 
 class DiscordFetchService
 {
@@ -279,106 +279,67 @@ class DiscordFetchService
         });
     }
 
+    /**
+     * Aszinkron feladat küldése a Botnak a Redis-en keresztül.
+     */
+    private static function dispatchToBot(string $action, array $payload): bool
+    {
+        try {
+            $data = array_merge(['action' => $action], $payload);
+            Redis::rpush('discord_bot_tasks', json_encode($data));
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Hiba a Discord feladat Redis-be küldésekor: '.$e->getMessage());
+
+            return false;
+        }
+    }
+
     public static function addRoleToMember(string $guild_id, string $user_id, string $role_id): bool
     {
-        $response = self::callBotApi('POST', "/guilds/{$guild_id}/members/{$user_id}/roles/add", [
-            'roleId' => $role_id,
+        return self::dispatchToBot('add_role', [
+            'guild_id' => $guild_id,
+            'user_id' => $user_id,
+            'role_id' => $role_id,
         ]);
-
-        return isset($response['success']) && $response['success'] === true;
     }
 
     public static function removeRoleFromMember(string $guild_id, string $user_id, string $role_id): bool
     {
-        $response = self::callBotApi('POST', "/guilds/{$guild_id}/members/{$user_id}/roles/remove", [
-            'roleId' => $role_id,
+        return self::dispatchToBot('remove_role', [
+            'guild_id' => $guild_id,
+            'user_id' => $user_id,
+            'role_id' => $role_id,
         ]);
-
-        return isset($response['success']) && $response['success'] === true;
     }
 
     public static function kickMember(string $guild_id, string $user_id, string $reason = ''): bool
     {
-        $response = self::callBotApi('POST', "/guilds/{$guild_id}/members/{$user_id}/kick", [
+        return self::dispatchToBot('kick', [
+            'guild_id' => $guild_id,
+            'user_id' => $user_id,
             'reason' => $reason,
         ]);
-
-        return isset($response['success']) && $response['success'] === true;
     }
 
     public static function banMember(string $guild_id, string $user_id, string $reason = '', int $delete_message_seconds = 0): bool
     {
-        $response = self::callBotApi('POST', "/guilds/{$guild_id}/members/{$user_id}/ban", [
+        return self::dispatchToBot('ban', [
+            'guild_id' => $guild_id,
+            'user_id' => $user_id,
             'reason' => $reason,
-            'deleteMessageSeconds' => $delete_message_seconds,
+            'delete_message_seconds' => $delete_message_seconds,
         ]);
-
-        return isset($response['success']) && $response['success'] === true;
     }
 
-    public static function unbanMember(string $guild_id, string $user_id, string $reason = ''): bool
+    public static function sendMessage(string $channel_id, ?string $content = null, array $embeds = [], array $components = []): bool
     {
-        $response = self::callBotApi('POST', "/guilds/{$guild_id}/members/{$user_id}/unban", [
-            'reason' => $reason,
-        ]);
-
-        return isset($response['success']) && $response['success'] === true;
-    }
-
-    public static function timeoutMember(string $guild_id, string $user_id, ?\DateTime $until, string $reason = ''): bool
-    {
-        $response = self::callBotApi('POST', "/guilds/{$guild_id}/members/{$user_id}/timeout", [
-            'until' => $until?->format(DateTimeInterface::ATOM),
-            'reason' => $reason,
-        ]);
-
-        return isset($response['success']) && $response['success'] === true;
-    }
-
-    /**
-     * Üzenet küldése egy adott Discord csatornába (Embed támogatással).
-     *
-     * @param  string  $channel_id  A csatorna azonosítója
-     * @param  string|null  $content  Sima szöveges tartalom
-     * @param  array  $embeds  Embed objektumok tömbje
-     * @param  array  $components  Komponensek (gombok, select menük) tömbje
-     * @return string|null A sikeresen elküldött üzenet azonosítója, vagy null hiba esetén
-     */
-    public static function sendMessage(string $channel_id, ?string $content = null, array $embeds = [], array $components = []): ?string
-    {
-        $payload = [];
-
-        if ($content !== null) {
-            $payload['content'] = $content;
-        }
-
-        if (! empty($embeds)) {
-            $payload['embeds'] = $embeds;
-        }
-
-        if (! empty($components)) {
-            $payload['components'] = $components;
-        }
-
-        if (empty($payload)) {
-            Log::warning('DiscordFetchService::sendMessage - Üres payloadot próbáltál küldeni a(z) '.$channel_id.' csatornába.');
-
-            return null;
-        }
-
-        $response = self::callBotApi('POST', "/channels/{$channel_id}/messages", $payload);
-
-        return $response['messageId'] ?? null;
-    }
-
-    public static function replyToInteraction(string $interaction_token, string $content, bool $ephemeral = false): bool
-    {
-        $response = self::callBotApi('POST', '/interactions/reply', [
-            'interactionToken' => $interaction_token,
+        return self::dispatchToBot('send_message', [
+            'channel_id' => $channel_id,
             'content' => $content,
-            'ephemeral' => $ephemeral,
+            'embeds' => $embeds,
+            'components' => $components,
         ]);
-
-        return isset($response['success']) && $response['success'] === true;
     }
 }
