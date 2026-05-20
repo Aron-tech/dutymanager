@@ -20,6 +20,14 @@ class SelectedGuildService
         }
     }
 
+    public static function setFromDiscord(string $guild_id): void
+    {
+        $guild = Guild::where('id', $guild_id)->with('guildSettings')->first();
+        if ($guild) {
+            self::$resolved_guild = $guild;
+        }
+    }
+
     public static function get(): ?Guild
     {
         if (self::$resolved_guild) {
