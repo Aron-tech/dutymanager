@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Bot;
 
+use App\Actions\Bot\HandleGuildUserInteraction;
 use App\Actions\Bot\HandleDutyInteraction;
 use App\Concerns\DiscordBotTrait;
 use Discord\Discord;
@@ -47,9 +48,17 @@ class DiscordBotCommand extends Command
 
             $this->info('Interakció érkezett: '.$interaction->data->name);
 
-            if (str_starts_with($interaction->data->name, 'duty')) {
-                $handler = new HandleDutyInteraction;
-                $handler->handle($bot, $interaction);
+            $handlers = [
+                'duty' => HandleDutyInteraction::class,
+                'info' => HandleGuildUserInteraction::class,
+                'user' => HandleGuildUserInteraction::class,
+            ];
+
+            $command_name = $interaction->data->name;
+
+            if (isset($handlers[$command_name])) {
+                $handlerClass = $handlers[$command_name];
+                (new $handlerClass)->handle($bot, $interaction);
             }
         });
 
