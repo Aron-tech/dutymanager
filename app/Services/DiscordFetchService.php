@@ -14,56 +14,101 @@ use Illuminate\Support\Facades\Redis;
 
 class DiscordFetchService
 {
-    private static function callBotApi(string $method, string $endpoint, array $payload = []): mixed
+    private static function executeDiscordApiRequest(string $method, string $url, array $headers, array $payload = []): ?array
     {
-        $botApiUrl = config('services.bot_api.url', 'http://localhost:3000');
-        $botApiKey = config('services.bot_api.key');
+        $max_retries = 3;
+        $attempt = 0;
 
-        $url = rtrim($botApiUrl, '/').'/'.ltrim($endpoint, '/');
+        while ($attempt < $max_retries) {
+            try {
+                $request = Http::withHeaders($headers)->timeout(10);
 
-        $request = Http::withHeaders([
-            'x-api-key' => $botApiKey,
-            'Accept' => 'application/json',
-        ]);
+                $response = strtolower($method) === 'get'
+                    ? $request->get($url, $payload)
+                    : $request->post($url, $payload);
 
-        try {
-            $response = strtolower($method) === 'get'
-                ? $request->get($url, $payload)
-                : $request->post($url, $payload);
+                if ($response->successful()) {
+                    return $response->json();
+                }
 
-            if (! $response->successful()) {
-                Log::error("Discord Bot API hiba ({$endpoint}): ".$response->body());
+                if ($response->status() === 429) {
+                    $retry_after = $response->json('retry_after') ?? $response->header('Retry-After') ?? 1;
+                    sleep((int) ceil((float) $retry_after));
+                    $attempt++;
+
+                    continue;
+                }
+
+                Log::error("Discord API hiba ({$url}): ".$response->body());
+
+                return null;
+            } catch (\Exception $e) {
+                Log::error('Discord API kapcsolódási hiba: '.$e->getMessage());
 
                 return null;
             }
-
-            return $response->json();
-        } catch (\Exception $e) {
-            Log::error('Discord Bot API kapcsolódási hiba: '.$e->getMessage());
-
-            return null;
         }
+
+        return null;
+    }
+
+    private static function cacheValidResponse(string $key, int $minutes, \Closure $callback): mixed
+    {
+        $cached_data = Cache::get($key);
+
+        if ($cached_data !== null) {
+            return $cached_data;
+        }
+
+        $data = $callback();
+
+        if ($data !== null) {
+            Cache::put($key, $data, now()->addMinutes($minutes));
+        }
+
+        return $data;
+    }
+
+    private static function callBotApi(string $method, string $endpoint, array $payload = []): ?array
+    {
+        $bot_api_url = 'https://discord.com/api/v10';
+        $bot_api_key = config('services.discord.token');
+
+        $url = rtrim($bot_api_url, '/').'/'.ltrim($endpoint, '/');
+
+        $headers = [
+            'Authorization' => "Bot {$bot_api_key}",
+            'Accept' => 'application/json',
+        ];
+
+        return self::executeDiscordApiRequest($method, $url, $headers, $payload);
     }
 
     private static function fetchRawGuilds(string $token, string $user_id): array
     {
-        return Cache::remember("discord_guilds_user_{$user_id}", now()->addMinutes(5), function () use ($token) {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer '.$token,
-            ])->get('https://discord.com/api/users/@me/guilds');
+        $data = self::cacheValidResponse("discord_guilds_user_{$user_id}", 5, function () use ($token) {
+            $url = 'https://discord.com/api/v10/users/@me/guilds';
+            $headers = [
+                'Authorization' => "Bearer {$token}",
+                'Accept' => 'application/json',
+            ];
 
-            return $response->successful() ? $response->json() : [];
+            return self::executeDiscordApiRequest('GET', $url, $headers);
         });
+
+        return $data ?? [];
     }
 
     public static function getUserProfile(string $user_token): ?array
     {
-        return Cache::remember('discord_user_profile_'.md5($user_token), now()->addMinutes(15), function () use ($user_token) {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer '.$user_token,
-            ])->get('https://discord.com/api/users/@me');
+        return self::cacheValidResponse('discord_user_profile_'.md5($user_token), 15, function () use ($user_token) {
+            $url = 'https://discord.com/api/v10/users/@me';
+            $headers = [
+                'Authorization' => "Bearer {$user_token}",
+                'Accept' => 'application/json',
+            ];
 
-            return $response->successful() ? $response->json() : null;
+            return self::executeDiscordApiRequest('GET', $url, $headers);
         });
     }
 
@@ -127,16 +172,20 @@ class DiscordFetchService
 
     public static function getGuild(string $guild_id): ?array
     {
-        return Cache::remember("discord_guild_{$guild_id}", now()->addMinutes(15), function () use ($guild_id) {
+        return self::cacheValidResponse("discord_guild_{$guild_id}", 15, function () use ($guild_id) {
             return self::callBotApi('GET', "/guilds/{$guild_id}");
         });
     }
 
     public static function getGuildRoles(string $guild_id, bool $select_format = false): array
     {
-        $data = Cache::remember("discord_guild_{$guild_id}_roles", now()->addMinutes(5), function () use ($guild_id) {
-            return self::callBotApi('GET', "/guilds/{$guild_id}/roles") ?? [];
+        $data = self::cacheValidResponse("discord_guild_{$guild_id}_roles", 15, function () use ($guild_id) {
+            return self::callBotApi('GET', "/guilds/{$guild_id}/roles");
         });
+
+        if ($data === null) {
+            return [];
+        }
 
         if (! $select_format) {
             return $data;
@@ -159,11 +208,11 @@ class DiscordFetchService
             $cache_key .= '_'.implode('_', $allowed_types);
         }
 
-        return Cache::remember($cache_key, now()->addMinutes(5), function () use ($guild_id, $select_format, $allowed_types) {
-            $data = self::callBotApi('GET', "/guilds/{$guild_id}/channels") ?? [];
+        $result = self::cacheValidResponse($cache_key, 15, function () use ($guild_id, $select_format, $allowed_types) {
+            $data = self::callBotApi('GET', "/guilds/{$guild_id}/channels");
 
-            if (empty($data)) {
-                return [];
+            if ($data === null) {
+                return null;
             }
 
             $collection = collect($data);
@@ -182,6 +231,8 @@ class DiscordFetchService
 
             return $collection->values()->toArray();
         });
+
+        return $result ?? [];
     }
 
     public static function getGuildCategories(string $guild_id): array
@@ -194,11 +245,11 @@ class DiscordFetchService
         $cache_filter = $filter ?? 0;
         $cache_key = "discord_guild_{$guild_id}_members_".($select_format ? 'select' : 'raw')."_{$cache_filter}";
 
-        return Cache::remember($cache_key, now()->addMinutes(5), function () use ($guild_id, $select_format, $filter) {
-            $data = self::callBotApi('GET', "/guilds/{$guild_id}/members") ?? [];
+        $result = self::cacheValidResponse($cache_key, 15, function () use ($guild_id, $select_format, $filter) {
+            $data = self::callBotApi('GET', "/guilds/{$guild_id}/members");
 
-            if (empty($data)) {
-                return [];
+            if ($data === null) {
+                return null;
             }
 
             $collection = collect($data);
@@ -207,7 +258,7 @@ class DiscordFetchService
                 $db_user_ids = GuildUser::where('guild_id', $guild_id)->pluck('user_id')->toArray();
 
                 $collection = $collection->filter(function ($member) use ($db_user_ids, $filter) {
-                    $is_in_db = in_array((string) $member['id'], $db_user_ids);
+                    $is_in_db = in_array((string) $member['user']['id'], $db_user_ids);
 
                     return $filter === 1 ? $is_in_db : ! $is_in_db;
                 });
@@ -223,22 +274,28 @@ class DiscordFetchService
                 'name' => $member['username'],
             ])->values()->toArray();
         });
+
+        return $result ?? [];
     }
 
     public static function getGuildMemberIds(string $guild_id): array
     {
-        return Cache::remember("discord_guild_{$guild_id}_member_ids", now()->addMinutes(10), function () use ($guild_id) {
-            $data = self::callBotApi('GET', "/guilds/{$guild_id}/members") ?? [];
+        $result = self::cacheValidResponse("discord_guild_{$guild_id}_member_ids", 15, function () use ($guild_id) {
+            $data = self::callBotApi('GET', "/guilds/{$guild_id}/members");
 
-            return collect($data)->pluck('id')->toArray();
+            return $data !== null ? collect($data)->pluck('id')->toArray() : null;
         });
+
+        return $result ?? [];
     }
 
     public static function getGuildBans(string $guild_id): array
     {
-        return Cache::remember("discord_guild_{$guild_id}_bans", now()->addMinutes(10), function () use ($guild_id) {
-            return self::callBotApi('GET', "/guilds/{$guild_id}/bans") ?? [];
+        $result = self::cacheValidResponse("discord_guild_{$guild_id}_bans", 15, function () use ($guild_id) {
+            return self::callBotApi('GET', "/guilds/{$guild_id}/bans");
         });
+
+        return $result ?? [];
     }
 
     public static function getMemberDetails(string $guild_id, string $user_id): ?array
@@ -253,20 +310,20 @@ class DiscordFetchService
 
     public static function getUserPermissions(string $guild_id, string $user_id): array
     {
-        return Cache::remember("guild_{$guild_id}_user_{$user_id}_permissions", now()->addMinutes(15), function () use ($guild_id, $user_id) {
+        $result = self::cacheValidResponse("guild_{$guild_id}_user_{$user_id}_permissions", 15, function () use ($guild_id, $user_id) {
             $member = self::callBotApi('GET', "/guilds/{$guild_id}/members/{$user_id}");
 
-            if (! $member) {
-                return ['permissions' => [], 'last_fetched_at' => now()->toDateTimeString()];
+            if ($member === null) {
+                return null;
             }
 
             $user_roles = collect($member['roles'] ?? [])->pluck('id')->toArray();
 
             $settings = GuildSettings::where('guild_id', $guild_id)->first();
-            $roleMapping = $settings?->feature_settings['general_settings']['role_permissions'] ?? [];
+            $role_mapping = $settings?->feature_settings['general_settings']['role_permissions'] ?? [];
 
             $user_permissions = collect($user_roles)
-                ->map(fn ($roleId) => $roleMapping[$roleId] ?? [])
+                ->map(fn ($role_id) => $role_mapping[$role_id] ?? [])
                 ->flatten()
                 ->unique()
                 ->values()
@@ -277,6 +334,8 @@ class DiscordFetchService
                 'last_fetched_at' => now()->toDateTimeString(),
             ];
         });
+
+        return $result ?? ['permissions' => [], 'last_fetched_at' => now()->toDateTimeString()];
     }
 
     /**
