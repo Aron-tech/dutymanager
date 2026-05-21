@@ -39,19 +39,20 @@ class HandleGuildUserInteraction
             };
         } else {
             match ($this->sub_command_name) {
-                'toggle' => $this->handleUserInfoCommand($interaction, $this->target_guild_user),
+                'info' => $this->handleUserInfoCommand($interaction, $this->target_guild_user, $this->target_user_id),
                 default => $this->respondSimpleEmbed($interaction, '❌ '.__('app.unknow_command'), 'FF0000'),
             };
         }
     }
 
 
-    protected function handleUserInfoCommand(DiscordInteraction $interaction, ?GuildUser $guild_user): void
+    protected function handleUserInfoCommand(DiscordInteraction $interaction, ?GuildUser $guild_user, ?string $user_id = null): void
     {
         try {
+            $guild_user ??= ($user_id ? $this->guild->acceptedGuildUsers()->where('user_id', $user_id)->first() : null);
+
             if (! $guild_user) {
                 $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_not_found_user'), 'FF0000');
-
                 return;
             }
 
