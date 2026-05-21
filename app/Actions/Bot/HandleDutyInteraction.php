@@ -58,7 +58,7 @@ class HandleDutyInteraction
             DiscordFetchService::removeRoleFromMember($this->guild->id, $this->user->id, $this->duty_role);
             $fields[] = $this->makeEmbedField('🕒 '.__('duty.duty_value'), Duty::standardFormat($result['duty_model']->value), false);
             $fields[] = $this->makeEmbedField('⏱️ '.__('duty.current_duties_sum'), Duty::standardFormat($current_duties_sum), false);
-            $fields[] = $this->makeEmbedField('📅 '.__('guild_user.in_your_rank'), $this->guild_user->rank_changed_ago, false);
+            $fields[] = $this->makeEmbedField('📅 '.__('guild_user.user_in_rank'), $this->guild_user->rank_changed_ago, false);
             $data = $this->buildEmbedData('🚨 '.__('duty.success_duty_off'), 'FF0000', fields: $fields);
             $this->respondEphemeralEmbed($interaction, 'normal', $data);
         } else {
