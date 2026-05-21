@@ -18,4 +18,5 @@ return [
     'duty_command_description' => 'Szolgálatba lépés/Szolgálatból kilépés',
     'duty_cancel_command_description' => 'Szolgálatból kilépés (mentés nélkül)',
     'duty_fcancel_command_description' => 'Felhasználó kiléptetése a szolgálatból (mentés nélkül',
+    'duty_fcancel_command_user_description' => 'Felhasználó akit kiszeretnél léptetni a szolgálatból',
 ];
