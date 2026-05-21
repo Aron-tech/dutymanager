@@ -20,13 +20,32 @@ trait DiscordBotTrait
 
         foreach ($discord->guilds as $guild) {
             foreach ($command_data as $data) {
-                $data['description'] = $data['description'] ? __($data['description']) : '';
-                $command = new DiscordCommand($discord, $data);
-                $promises[] = $guild->commands->save($command);
+                $promises[] = $guild->commands->save($this->commandFormatter($discord, $data));
             }
         }
 
         return all($promises);
+    }
+
+    /**
+     * @param Discord $discord
+     * @param array $data
+     *
+     * @return DiscordCommand|null
+     */
+    private function commandFormatter(Discord $discord, array $data): ?DiscordCommand
+    {
+        if (isset($data['description'])) {
+            $data['description'] = $data['description'] ? __($data['description']) : '';
+        }
+        if (isset($data['options'])) {
+            foreach ($data['options'] as $option) {
+                if (isset($option['description'])) {
+                    $option['description'] = $option['description'] ? __($option['description']) : '';
+                }
+            }
+        }
+        return new DiscordCommand($discord, $data);
     }
 
     public function processTask(array $task, Discord $discord): void
