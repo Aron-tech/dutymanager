@@ -35,7 +35,7 @@ return [
         ],
         [
             'name' => 'duty',
-            'description' => 'Duty rendszer kezelése',
+            'description' => 'duty.duty_commands_description',
             'type' => 1,
             'options' => [
                 [
@@ -56,6 +56,45 @@ return [
                         [
                             'name' => 'user',
                             'description' => 'duty.duty_fcancel_command_user_description',
+                            'type' => 6,
+                            'required' => true,
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        [
+            'name' => 'holiday',
+            'description' => 'holiday.holiday_commands_description',
+            'type' => 1,
+             'options' => [
+                [
+                    'name' => 'start',
+                    'description' => 'holiday.holiday_start_command_description',
+                    'type' => 1,
+                    'options' => [
+                        [
+                            'name' => 'days',
+                            'description' => 'holiday.holiday_start_days_command_description',
+                            'type' => 4,
+                            'min_value' => 1,
+                            'required' => true,
+                        ],
+                    ],
+                ],
+                [
+                    'name' => 'cancel',
+                    'description' => 'holiday.holiday_cancel_command_description',
+                    'type' => 1,
+                ],
+                [
+                    'name' => 'fcancel',
+                    'description' => 'holiday.holiday_fcancel_command_description',
+                    'type' => 1,
+                    'options' => [
+                        [
+                            'name' => 'user',
+                            'description' => 'guild_user.user_option_description',
                             'type' => 6,
                             'required' => true,
                         ],
