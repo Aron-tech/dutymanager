@@ -12,4 +12,7 @@ return [
     'warning' => 'Figyelmeztetés',
     'blacklist' => 'Feketelista',
     'clothing_regex_invalid' => 'A(z) :attribute formátuma hibás. Helyes: szám - szám (pl. 1 - 5)',
+    // DutyStatusEnum
+    'duty_all_period' => 'Összes duty',
+    'duty_current_period' => 'Aktuális duty',
 ];
