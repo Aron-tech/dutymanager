@@ -70,6 +70,7 @@ enum PermissionEnum: string
     case EDIT_SETTINGS = 'edit_settings';
 
     // Alap jogosultságok
+    case GET_USER_INFO = 'get_user_info';
     case TOGGLE_DUTY = 'toggle_duty';
     case GET_HOLIDAY = 'get_holiday';
     case CANCEL_HOLIDAY = 'cancel_holiday';
@@ -101,6 +102,7 @@ enum PermissionEnum: string
         $default_permissions = [
             PermissionEnum::VIEW_ITEMS,
             PermissionEnum::TOGGLE_DUTY,
+            PermissionEnum::GET_USER_INFO,
             PermissionEnum::CANCEL_HOLIDAY,
             PermissionEnum::GET_HOLIDAY,
             PermissionEnum::MAKE_REQUEST,

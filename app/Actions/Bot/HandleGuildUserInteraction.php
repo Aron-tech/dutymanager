@@ -6,6 +6,7 @@ use App\Concerns\DiscordCommandTrait;
 use App\Concerns\DiscordEmbedTrait;
 use App\Enums\DutyStatusEnum;
 use App\Enums\FeatureEnum;
+use App\Enums\PermissionEnum;
 use App\Models\Duty;
 use App\Models\GuildUser;
 use App\Services\GuildUserService;
@@ -34,15 +35,21 @@ class HandleGuildUserInteraction
             };
         } else {
             match ($this->sub_command_name) {
-                'info' => $this->handleUserInfoCommand($interaction, $this->target_guild_user, $this->target_user_id),
+                'info' => $this->handleUserInfoCommand($interaction, $this->target_guild_user, $this->target_user_id, true),
                 default => $this->respondSimpleEmbed($interaction, '❌ '.__('app.unknow_command'), 'FF0000'),
             };
         }
     }
 
-    protected function handleUserInfoCommand(DiscordInteraction $interaction, ?GuildUser $guild_user, ?string $user_id = null): void
+    protected function handleUserInfoCommand(DiscordInteraction $interaction, ?GuildUser $guild_user, ?string $user_id = null, bool $is_admin = false): void
     {
         try {
+            $required_permission = $is_admin ? PermissionEnum::VIEW_GUILD_USERS : PermissionEnum::GET_USER_INFO;
+
+            if (! $this->hasPermission($interaction, $required_permission)) {
+                return;
+            }
+
             $guild_user ??= ($user_id ? $this->guild->acceptedGuildUsers()->where('user_id', $user_id)->first() : null);
 
             if (! $guild_user) {

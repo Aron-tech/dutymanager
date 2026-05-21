@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Gate;
 
 trait DiscordCommandTrait
 {
-    protected string $command_name;
+    protected string $command_name
     protected ?string $sub_command_name = null;
     protected mixed $active_options = null;
 
@@ -83,17 +83,15 @@ trait DiscordCommandTrait
     }
 
     /**
-     * @param DiscordInteraction $interaction
-     * @param FeatureEnum|null $feature = null
-     *
-     * @return bool
+     * @param  FeatureEnum|null  $feature  = null
      */
     protected function validateGuild(DiscordInteraction $interaction, ?FeatureEnum $feature = null): bool
     {
-        $is_invalid = !$this->guild || !$this->guild->is_installed || !$this->guild->guildSettings || ($feature && empty($this->guild->guildSettings->getFeatureSettings($feature, null)));
+        $is_invalid = ! $this->guild || ! $this->guild->is_installed || ! $this->guild->guildSettings || ($feature && empty($this->guild->guildSettings->getFeatureSettings($feature, null)));
 
         if ($is_invalid) {
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.not_installed'), 'FF0000');
+
             return false;
         }
 
@@ -108,6 +106,7 @@ trait DiscordCommandTrait
 
         if (! $this->guild->guildSettings->isEnabledFeature($feature)) {
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.feature_not_enabled'), 'FF0000');
+
             return false;
         }
 
@@ -120,7 +119,7 @@ trait DiscordCommandTrait
             return null;
         }
 
-        if (!preg_match('/^\d{17,20}$/', $user_id)) {
+        if (! preg_match('/^\d{17,20}$/', $user_id)) {
             return null;
         }
 
