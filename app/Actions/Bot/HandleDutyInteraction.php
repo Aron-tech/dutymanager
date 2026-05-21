@@ -6,6 +6,7 @@ use App\Actions\DeleteActiveDutyAction;
 use App\Concerns\DiscordCommandTrait;
 use App\Concerns\DiscordEmbedTrait;
 use App\Enums\DutyActionEnum;
+use App\Enums\DutyStatusEnum;
 use App\Enums\FeatureEnum;
 use App\Enums\PermissionEnum;
 use App\Models\Duty;
@@ -38,6 +39,9 @@ class HandleDutyInteraction
             'toggle' => $this->handleDutyToggleCommand($interaction),
             'cancel' => $this->handleDutyCancelCommand($interaction),
             'fcancel' => $this->handleDutyForceCancelCommand($interaction),
+            'delete' => $this->handleDutyDeleteCommand($interaction),
+            'reset' => $this->handleDutyResetCommand($interaction),
+            'clear' => $this->handleDutyClearCommand($interaction),
             default => $this->respondSimpleEmbed($interaction, '❌ '.__('app.unknow_command'), 'FF0000'),
         };
     }
@@ -94,6 +98,72 @@ class HandleDutyInteraction
             }
 
             $this->cancelDuty($interaction, $this->target_guild_user);
+
+        } catch (\Throwable $e) {
+            \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
+        }
+    }
+
+    public function handleDutyResetCommand(DiscordInteraction $interaction): void
+    {
+        try {
+            if (! $this->hasPermission($interaction, PermissionEnum::EDIT_DUTIES)) {
+                return;
+            }
+
+            $updated_duties_count = DB::transaction(function () {
+                return $this->guild->guildDuties()->whereNotNull('finished_at')->where('status', DutyStatusEnum::CURRENT_PERIOD)->update(['status' => DutyStatusEnum::ALL_PERIOD]);
+            });
+
+            $this->respondSimpleEmbed($interaction, '🚨 '.__('duty.success_duty_update_status', ['count' => $updated_duties_count]), '00FF00');
+
+        } catch (\Throwable $e) {
+            \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
+        }
+    }
+
+    public function handleDutyDeleteCommand(DiscordInteraction $interaction): void
+    {
+        try {
+            if (! $this->hasPermission($interaction, PermissionEnum::DELETE_DUTIES)) {
+                return;
+            }
+
+            if (! $this->target_guild_user) {
+                $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_not_found_user'), 'FF0000');
+                return;
+            }
+
+            $status = DutyStatusEnum::from($this->active_options->get('name', 'status')) ?? DutyStatusEnum::ALL_PERIOD;
+
+            $deleted_duties_count = DB::transaction(function () use ($status) {
+                return $this->target_guild_user->duties()->whereNotNull('finished_at')->where('status', '<=', $status)->delete();
+            });
+
+            $this->respondSimpleEmbed($interaction, '🚨 '.__('duty.success_duties_delete_from_user', ['count' => $deleted_duties_count, 'user' => '<@'.$this->target_user_id.'>']), '00FF00');
+
+        } catch (\Throwable $e) {
+            \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
+        }
+    }
+
+    public function handleDutyClearCommand(DiscordInteraction $interaction): void
+    {
+        try {
+            if (! $this->hasPermission($interaction, PermissionEnum::DELETE_DUTIES)) {
+                return;
+            }
+
+            $status = DutyStatusEnum::from($this->active_options->get('name', 'status')) ?? DutyStatusEnum::ALL_PERIOD;
+
+            $deleted_duties_count = DB::transaction(function () use ($status) {
+                return $this->guild->guildDuties()->whereNotNull('finished_at')->where('status', '<=', $status)->delete();
+            });
+
+            $this->respondSimpleEmbed($interaction, '🚨 '.__('duty.success_duty_update_status', ['count' => $deleted_duties_count]), '00FF00');
 
         } catch (\Throwable $e) {
             \Log::error('Hiba a duty törlésekor: '.$e->getMessage());

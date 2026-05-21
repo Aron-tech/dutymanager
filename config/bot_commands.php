@@ -60,6 +60,37 @@ return [
                     ],
                 ],
             ],
+            [
+                'name' => 'delete',
+                'description' => 'duty.duty_delete_command_description',
+                'type' => 1,
+                'options' => [
+                    [
+                        'name' => 'user',
+                        'description' => 'duty.duty_delete_command_user_description',
+                        'type' => 6,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'status',
+                        'description' => 'duty.duty_delete_command_status_description',
+                        'type' => 4,
+                        'min_value' => 0,
+                        'max_value' => 1,
+                        'required' => false,
+                    ],
+                ],
+            ],
+            [
+                'name' => 'reset',
+                'description' => 'duty.duty_reset_command_description',
+                'type' => 1,
+            ],
+            [
+                'name' => 'clear',
+                'description' => 'duty.duty_clear_command_description',
+                'type' => 1,
+            ],
         ],
     ],
     [

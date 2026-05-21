@@ -7,9 +7,10 @@ return [
     'success_duty_forced_cancel' => 'Sikeresen kiléptetted mentés nélkül :user felhasználót a szolgálatból!',
     'success_duty_add' => 'Sikeresen hozzáadtad a szolgálati időt!',
     'success_duty_update' => 'Sikeresen módosítottad a szolgálati időt!',
-    'success_duty_update_status' => 'Sikeresen módosítottad a szogálati idő(k) státuszát!',
+    'success_duty_update_status' => 'Sikeresen módosítottad a státuszát :count szogálati időnek!',
     'duties_delete_started' => 'A szolgálati idők törlése a háttérben elindult.',
     'success_duties_delete' => 'Sikeresen töröltél :count szolgálati időt!',
+    'success_duties_delete_from_user' => 'Sikeresen töröltél :count szolgálati időt :user felhasználótól',
     'success_duty_delete' => 'Sikeresen törölted a szolgálati időt!',
     'current_duties_sum' => 'Aktuális összes szolgálati idő',
     'all_duties_sum' => 'Összes szolgálati idő',
@@ -20,4 +21,6 @@ return [
     'duty_cancel_command_description' => 'Szolgálatból kilépés (mentés nélkül)',
     'duty_fcancel_command_description' => 'Felhasználó kiléptetése a szolgálatból (mentés nélkül',
     'duty_fcancel_command_user_description' => 'Felhasználó akit kiszeretnél léptetni a szolgálatból',
+    'duty_reset_command_description' => 'Törli az összes aktuális szolgálati időt.',
+    'duty_clear_command_description' => 'Törli az összes szolgálati időt.',
 ];
