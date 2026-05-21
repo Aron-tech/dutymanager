@@ -37,8 +37,8 @@ class HandleDutyInteraction
 
         match ($this->sub_command_name) {
             'toggle' => $this->handleDutyToggleCommand($interaction),
-            'cancel' => $this->handleDutyCancelCommand($interaction),
-            'fcancel' => $this->handleDutyForceCancelCommand($interaction),
+            'cancel' => $this->handleCancelCommand($interaction, $this->guild_user),
+            'fcancel' => $this->handleCancelCommand($interaction, $this->target_guild_user, true),
             'add' => $this->handleAddOrRemoveDutyCommand($interaction),
             'remove' => $this->handleAddOrRemoveDutyCommand($interaction, true),
             'delete' => $this->handleDutyDeleteCommand($interaction),
@@ -72,42 +72,6 @@ class HandleDutyInteraction
         }
     }
 
-    public function handleDutyCancelCommand(DiscordInteraction $interaction): void
-    {
-        try {
-            if (! $this->hasPermission($interaction, PermissionEnum::TOGGLE_DUTY)) {
-                return;
-            }
-
-            $this->cancelDuty($interaction, $this->guild_user);
-
-        } catch (\Throwable $e) {
-            \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
-            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
-        }
-    }
-
-    public function handleDutyForceCancelCommand(DiscordInteraction $interaction): void
-    {
-        try {
-            if (! $this->hasPermission($interaction, PermissionEnum::FORCE_CANCEL_DUTIES)) {
-                return;
-            }
-
-            if (! $this->target_guild_user) {
-                $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_not_found_user'), 'FF0000');
-
-                return;
-            }
-
-            $this->cancelDuty($interaction, $this->target_guild_user);
-
-        } catch (\Throwable $e) {
-            \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
-            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
-        }
-    }
-
     public function handleAddOrRemoveDutyCommand(DiscordInteraction $interaction, bool $is_remove = false): void
     {
         try {
@@ -129,9 +93,10 @@ class HandleDutyInteraction
 
             $this->service->storeDuty($data, $this->target_guild_user);
 
-            $message = $is_remove ? __('duty.success_duty_remove_from_user', ['value' => $original_minutes, 'user' => '<@'.$this->target_user_id.'>']) : __('duty.success_duty_add_to_user', ['value' => $original_minutes, 'user' => '<@'.$this->target_user_id.'>']);
-
-            $this->respondSimpleEmbed($interaction, '🚨 '.$message, '00FF00');
+            $title = $is_remove ? __('duty.success_duty_remove_from_user', ['value' => $original_minutes]) : __('duty.success_duty_add_to_user', ['value' => $original_minutes]);
+            $fields[] = $this->makeEmbedField(__('guild_user.user'), '<@'.$this->target_user_id.'>');
+            $data = $this->buildEmbedData('🚨 '.$title, '00FF00', '', $fields);
+            $this->respondEphemeralEmbed($interaction, 'normal', $data);
         } catch (\Throwable $e) {
             \Log::error('Hiba a duty hozzáadásakor: '.$e->getMessage());
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
@@ -166,6 +131,7 @@ class HandleDutyInteraction
 
             if (! $this->target_guild_user) {
                 $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_not_found_user'), 'FF0000');
+
                 return;
             }
 
@@ -175,8 +141,9 @@ class HandleDutyInteraction
                 return $this->target_guild_user->duties()->whereNotNull('finished_at')->where('status', '<=', $status)->delete();
             });
 
-            $this->respondSimpleEmbed($interaction, '🚨 '.__('duty.success_duties_delete_from_user', ['count' => $deleted_duties_count, 'user' => '<@'.$this->target_user_id.'>']), '00FF00');
-
+            $fields[] = $this->makeEmbedField(__('guild_user.user'), '<@'.$this->target_user_id.'>');
+            $data = $this->buildEmbedData('🚨 '.__('duty.success_duties_delete_from_user', ['count' => $deleted_duties_count]), '00FF00', '', $fields);
+            $this->respondEphemeralEmbed($interaction, 'normal', $data);
         } catch (\Throwable $e) {
             \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
@@ -204,24 +171,44 @@ class HandleDutyInteraction
         }
     }
 
-    private function cancelDuty(DiscordInteraction $interaction, GuildUser $guild_user): void
+    protected function handleCancelCommand(DiscordInteraction $interaction, ?GuildUser $guild_user, $is_force = false): void
     {
-        $active_duty = $guild_user->currentDuty()->first();
-
-        if (! $active_duty) {
-            $this->respondSimpleEmbed($interaction, __('🚨 '.'duty.not_on_duty'), 'FF0000');
-
-            return;
-        }
-
-        DB::transaction(function () use ($active_duty) {
-            if (DeleteActiveDutyAction::run($active_duty, $this->user->id, $this->guild_user, $this->guild->guildSettings)) {
-                $active_duty->delete();
-            } else {
-                throw new \Exception('Duty deletion failed logic.');
+        try {
+            $required_permission = $is_force ? PermissionEnum::FORCE_CANCEL_DUTIES : PermissionEnum::TOGGLE_DUTY;
+            if (! $this->hasPermission($interaction, $required_permission)) {
+                return;
             }
-        });
 
-        $this->respondEphemeralEmbed($interaction, 'normal', $this->buildEmbedData('🚨 '.__('duty.success_duty_cancel'), '00FF00', ''));
+            if (! $guild_user) {
+                $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_not_found_user'), 'FF0000');
+
+                return;
+            }
+
+            $active_duty = $guild_user->currentDuty()->first();
+
+            if (! $active_duty) {
+                $title = $is_force ? __('duty.not_on_duty_user') : __('duty.not_in_duty');
+                $this->respondSimpleEmbed($interaction, '🚨 '.$title, 'FF0000');
+
+                return;
+            }
+
+            DB::transaction(function () use ($active_duty, $guild_user) {
+                if (DeleteActiveDutyAction::run($active_duty, $this->user->id, $guild_user, $this->guild->guildSettings)) {
+                    $active_duty->delete();
+                } else {
+                    throw new \Exception('Duty deletion failed logic.');
+                }
+            });
+
+            $title = $is_force ? __('duty.success_duty_force_cancel') : __('duty.success_duty_cancel');
+            $fields = $is_force ? [$this->makeEmbedField(__('guild_user.user'), '<@'.$guild_user->user_id.'>')] : [];
+            $data = $this->buildEmbedData('🚨 '.$title, '00FF00', '', $fields);
+            $this->respondEphemeralEmbed($interaction, 'normal', $data);
+        } catch (\Throwable $e) {
+            \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
+        }
     }
 }
