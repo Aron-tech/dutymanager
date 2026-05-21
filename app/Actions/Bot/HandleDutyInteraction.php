@@ -35,14 +35,14 @@ class HandleDutyInteraction
         $this->duty_role = $this->guild->guildSettings->getFeatureSettings(FeatureEnum::DUTY, 'duty_role_id', null);
 
         match ($this->sub_command_name) {
-            'toggle' => $this->handleDutyCommand($interaction),
+            'toggle' => $this->handleDutyToggleCommand($interaction),
             'cancel' => $this->handleDutyCancelCommand($interaction),
             'fcancel' => $this->handleDutyForceCancelCommand($interaction),
             default => $this->respondSimpleEmbed($interaction, '❌ '.__('app.unknow_command'), 'FF0000'),
         };
     }
 
-    public function handleDutyCommand(DiscordInteraction $interaction): void
+    public function handleDutyToggleCommand(DiscordInteraction $interaction): void
     {
         if (! $this->hasPermission($interaction, PermissionEnum::TOGGLE_DUTY)) {
             return;

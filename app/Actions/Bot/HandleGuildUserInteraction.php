@@ -33,19 +33,19 @@ class HandleGuildUserInteraction
         }
         if (empty($this->sub_command_name)) {
             match ($this->command_name) {
-                'info' => $this->getUserInfo($interaction, $this->guild_user),
+                'info' => $this->handleUserInfoCommand($interaction, $this->guild_user),
                 default => $this->respondSimpleEmbed($interaction, '❌ '.__('app.unknow_command'), 'FF0000'),
             };
         } else {
             match ($this->sub_command_name) {
-                'toggle' => $this->getUserInfo($interaction, $this->target_guild_user),
+                'toggle' => $this->handleUserInfoCommand($interaction, $this->target_guild_user),
                 default => $this->respondSimpleEmbed($interaction, '❌ '.__('app.unknow_command'), 'FF0000'),
             };
         }
     }
 
 
-    protected function getUserInfo(DiscordInteraction $interaction, ?GuildUser $guild_user): void
+    protected function handleUserInfoCommand(DiscordInteraction $interaction, ?GuildUser $guild_user): void
     {
         if (! $guild_user) {
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_not_found_user'), 'FF0000');
