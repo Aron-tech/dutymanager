@@ -18,33 +18,23 @@ use function React\Promise\all;
 
 trait DiscordBotTrait
 {
-    /**
-     * @param Discord $discord
-     * @return PromiseInterface
-     */
-    public function syncCommands(Discord $discord): PromiseInterface
+    public function syncGuildCommands(Discord $discord, $guild): PromiseInterface
     {
-        $promises = [];
+        $this->info("Szinkronizálás indítása a szerveren: {$guild->name}");
 
-        foreach ($discord->guilds as $guild) {
-            $this->info("Szinkronizálás indítása a szerveren: {$guild->name}");
+        return $guild->commands->freshen()->then(function ($commands) use ($discord, $guild) {
+            $delete_promises = [];
 
-            $promises[] = $guild->commands->freshen()->then(function ($commands) use ($discord, $guild) {
-                $delete_promises = [];
+            foreach ($commands as $command) {
+                $delete_promises[] = $guild->commands->delete($command);
+            }
 
-                foreach ($commands as $command) {
-                    $delete_promises[] = $guild->commands->delete($command);
-                }
+            return all($delete_promises)->then(function () use ($discord, $guild) {
+                $this->info("Régi parancsok törölve, újak regisztrálása: {$guild->name}");
 
-                return all($delete_promises)->then(function () use ($discord, $guild) {
-                    $this->info("Régi parancsok törölve, újak regisztrálása: {$guild->name}");
-
-                    return $this->registerGuildCommands($discord, $guild);
-                });
+                return $this->registerGuildCommands($discord, $guild);
             });
-        }
-
-        return all($promises);
+        });
     }
 
     /**
@@ -70,23 +60,35 @@ trait DiscordBotTrait
 
     private function commandFormatter(Discord $discord, array $data): ?DiscordCommand
     {
+        $translateOption = function (array $option) use (&$translateOption) {
+            if (isset($option['description']) && $option['description']) {
+                $option['description'] = __($option['description']);
+            }
+
+            if (isset($option['choices']) && is_array($option['choices'])) {
+                foreach ($option['choices'] as $key => $choice) {
+                    if (isset($choice['name']) && $choice['name']) {
+                        $option['choices'][$key]['name'] = __($choice['name']);
+                    }
+                }
+            }
+
+            if (isset($option['options']) && is_array($option['options'])) {
+                foreach ($option['options'] as $key => $sub_option) {
+                    $option['options'][$key] = $translateOption($sub_option);
+                }
+            }
+
+            return $option;
+        };
+
         if (isset($data['description']) && $data['description']) {
             $data['description'] = __($data['description']);
         }
 
-        if (isset($data['options'])) {
+        if (isset($data['options']) && is_array($data['options'])) {
             foreach ($data['options'] as $key => $option) {
-                if (isset($option['description']) && $option['description']) {
-                    $data['options'][$key]['description'] = __($option['description']);
-                }
-
-                if (isset($option['options'])) {
-                    foreach ($option['options'] as $sub_key => $sub_option) {
-                        if (isset($sub_option['description']) && $sub_option['description']) {
-                            $data['options'][$key]['options'][$sub_key]['description'] = __($sub_option['description']);
-                        }
-                    }
-                }
+                $data['options'][$key] = $translateOption($option);
             }
         }
 
@@ -239,5 +241,16 @@ trait DiscordBotTrait
                 'exception' => $e,
             ]);
         }
+    }
+
+    public function findGuild(Discord $discord, string $guildId): ?\Discord\Parts\Guild\Guild
+    {
+        $guild = $discord->guilds->get('id', $guildId);
+
+        if ($guild) {
+            return $guild;
+        }
+
+        return null;
     }
 }

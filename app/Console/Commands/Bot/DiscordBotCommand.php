@@ -16,28 +16,35 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
-use Throwable;
 
-#[Signature('bot:start')]
+#[Signature('bot:start {--dev : Development mode} {--loud : Loud mode}')]
 #[Description('Start discord bot command')]
 class DiscordBotCommand extends Command
 {
     use DiscordBotTrait;
+
+    protected bool $dev_mode = false;
+    protected ?string $dev_guild_id = null;
 
     /**
      * @throws IntentException
      */
     public function handle(): void
     {
+        $this->dev_mode = (bool) $this->option('dev');
+        $this->dev_guild_id = (string) config('services.discord.dev_guild_id');
+
+        if ($this->dev_mode && empty($this->dev_guild_id)) {
+            $this->error('Hiba: A dev mode aktív, de a services.discord.dev_guild_id nincs beállítva!');
+            return;
+        }
+
         $bot = new Discord([
             'token' => config('services.discord.token'),
             'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS,
         ]);
 
         $bot->on('init', function (Discord $discord) use ($bot) {
-            $this->syncCommands($discord)->then(function () {
-                $this->info('Minden szerveren befejeződött a parancsok szinkronizálása.');
-            });
             $bot->getLoop()->addPeriodicTimer(1.0, function () use ($discord) {
                 while ($taskJson = Redis::lpop('discord_bot_tasks')) {
                     $task = json_decode($taskJson, true);
@@ -47,7 +54,14 @@ class DiscordBotCommand extends Command
         });
 
         $bot->on(Event::GUILD_CREATE, function ($guild) use ($bot) {
-            $this->registerGuildCommands($bot, $guild);
+            if ($this->dev_mode) {
+                if ($this->dev_guild_id === (string) $guild->id) {
+                    $this->syncGuildCommands($bot, $guild);
+                }
+                return;
+            }
+
+            $this->syncGuildCommands($bot, $guild);
         });
 
         $bot->on(Event::INTERACTION_CREATE, function (DiscordInteraction $interaction) use ($bot) {
@@ -55,15 +69,22 @@ class DiscordBotCommand extends Command
                 return;
             }
 
-            $this->info('Interakció érkezett: '.$interaction->data->name);
+            if ($this->dev_mode && $this->dev_guild_id !== (string) $interaction->guild_id) {
+                $this->info('Kivétel: '.$this->dev_guild_id.' Aktuális: '.$interaction->guild_id);
+                return;
+            }
+
+            $command_name = $interaction->data->name;
+
+            if ($this->dev_mode) {
+                $this->info('Interakció érkezett: '.$command_name);
+            }
 
             $handlers = [
                 'duty' => HandleDutyInteraction::class,
                 'info' => HandleGuildUserInteraction::class,
                 'user' => HandleGuildUserInteraction::class,
             ];
-
-            $command_name = $interaction->data->name;
 
             if (isset($handlers[$command_name])) {
                 $handlerClass = $handlers[$command_name];
@@ -76,15 +97,15 @@ class DiscordBotCommand extends Command
                 return;
             }
 
+            if ($this->dev_mode && $this->dev_guild_id !== (string) $member->guild_id) {
+                return;
+            }
+
             $cache_key = Guild::ROLE_WHITELIST_CACHE_PREFIX.$member->guild_id;
 
             $whitelist = Cache::remember($cache_key, now()->addHour(), function () use ($member) {
                 $guild = Guild::where('id', $member->guild_id)->with(['guildRoles', 'guildSettings'])->installed()->first();
-                if (! $guild) {
-                    return [];
-                }
-
-                return $this->listRoleWhitelist($guild);
+                return $guild ? $this->listRoleWhitelist($guild) : [];
             });
 
             if (empty($whitelist)) {
@@ -101,7 +122,9 @@ class DiscordBotCommand extends Command
             $relevant_removed = array_intersect($removed, $whitelist);
 
             if (! empty($relevant_added) || ! empty($relevant_removed)) {
-                $this->info("Releváns rangváltozás: {$member->user->username}");
+                if ($this->dev_mode) {
+                    $this->info("Releváns rangváltozás: {$member->user->username}");
+                }
 
                 $roles_to_save = array_values(array_intersect($new_role_ids, $whitelist));
                 $this->updateRoles($member->guild_id, $member->id, $roles_to_save);
