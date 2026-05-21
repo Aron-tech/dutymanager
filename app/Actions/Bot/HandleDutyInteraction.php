@@ -112,7 +112,7 @@ class HandleDutyInteraction
         }
 
         DB::transaction(function () use ($active_duty) {
-            if (DeleteActiveDutyAction::run($active_duty, null, $this->guild_user, $this->guild->guildSettings)) {
+            if (DeleteActiveDutyAction::run($active_duty, $this->user->id, $this->guild_user, $this->guild->guildSettings)) {
                 $active_duty->delete();
             } else {
                 throw new \Exception('Duty deletion failed logic.');
