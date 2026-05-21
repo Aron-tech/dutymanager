@@ -39,6 +39,8 @@ class HandleDutyInteraction
             'toggle' => $this->handleDutyToggleCommand($interaction),
             'cancel' => $this->handleDutyCancelCommand($interaction),
             'fcancel' => $this->handleDutyForceCancelCommand($interaction),
+            'add' => $this->handleAddOrRemoveDutyCommand($interaction),
+            'remove' => $this->handleAddOrRemoveDutyCommand($interaction, true),
             'delete' => $this->handleDutyDeleteCommand($interaction),
             'reset' => $this->handleDutyResetCommand($interaction),
             'clear' => $this->handleDutyClearCommand($interaction),
@@ -94,6 +96,7 @@ class HandleDutyInteraction
 
             if (! $this->target_guild_user) {
                 $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_not_found_user'), 'FF0000');
+
                 return;
             }
 
@@ -101,6 +104,36 @@ class HandleDutyInteraction
 
         } catch (\Throwable $e) {
             \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
+        }
+    }
+
+    public function handleAddOrRemoveDutyCommand(DiscordInteraction $interaction, bool $is_remove = false): void
+    {
+        try {
+            if (! $this->hasPermission($interaction, PermissionEnum::ADD_DUTIES)) {
+                return;
+            }
+
+            if (! $this->target_guild_user) {
+                $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_not_found_user'), 'FF0000');
+
+                return;
+            }
+
+            $data['guild_user_id'] = $this->guild_user->id;
+
+            $original_minutes = $this->active_options->get('name', 'minutes')?->value;
+            $data['value'] = $is_remove ? $original_minutes * (-1) : $original_minutes;
+            $data['status'] = DutyStatusEnum::from($this->active_options->get('name', 'status')?->value) ?? DutyStatusEnum::CURRENT_PERIOD;
+
+            $this->service->storeDuty($data, $this->target_guild_user);
+
+            $message = $is_remove ? __('duty.success_duty_remove_from_user', ['value' => $original_minutes, 'user' => '<@'.$this->target_user_id.'>']) : __('duty.success_duty_add_to_user', ['value' => $original_minutes, 'user' => '<@'.$this->target_user_id.'>']);
+
+            $this->respondSimpleEmbed($interaction, '🚨 '.$message, '00FF00');
+        } catch (\Throwable $e) {
+            \Log::error('Hiba a duty hozzáadásakor: '.$e->getMessage());
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
         }
     }
@@ -136,7 +169,7 @@ class HandleDutyInteraction
                 return;
             }
 
-            $status = DutyStatusEnum::from($this->active_options->get('name', 'status')) ?? DutyStatusEnum::ALL_PERIOD;
+            $status = DutyStatusEnum::from($this->active_options->get('name', 'status')?->value) ?? DutyStatusEnum::ALL_PERIOD;
 
             $deleted_duties_count = DB::transaction(function () use ($status) {
                 return $this->target_guild_user->duties()->whereNotNull('finished_at')->where('status', '<=', $status)->delete();
@@ -157,7 +190,7 @@ class HandleDutyInteraction
                 return;
             }
 
-            $status = DutyStatusEnum::from($this->active_options->get('name', 'status')) ?? DutyStatusEnum::ALL_PERIOD;
+            $status = DutyStatusEnum::from($this->active_options->get('name', 'status')?->value) ?? DutyStatusEnum::ALL_PERIOD;
 
             $deleted_duties_count = DB::transaction(function () use ($status) {
                 return $this->guild->guildDuties()->whereNotNull('finished_at')->where('status', '<=', $status)->delete();

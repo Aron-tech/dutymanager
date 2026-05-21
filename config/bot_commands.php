@@ -61,6 +61,82 @@ return [
                 ],
             ],
             [
+                'name' => 'add',
+                'description' => 'duty.duty_add_command_description',
+                'type' => 1,
+                'options' => [
+                    [
+                        'name' => 'user',
+                        'description' => 'duty.duty_add_command_user_description',
+                        'type' => 6,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'minutes',
+                        'description' => 'duty.duty_add_command_minutes_description',
+                        'type' => 4,
+                        'min_value' => 1,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'status',
+                        'description' => 'duty.duty_add_command_status_description',
+                        'type' => 4,
+                        'min_value' => 0,
+                        'max_value' => 1,
+                        'required' => false,
+                        'choices' => [
+                            [
+                                'name' => 'enum.duty_current_period',
+                                'value' => 0,
+                            ],
+                            [
+                                'name' => 'enum.duty_all_period',
+                                'value' => 1,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'name' => 'remove',
+                'description' => 'duty.duty_remove_command_description',
+                'type' => 1,
+                'options' => [
+                    [
+                        'name' => 'user',
+                        'description' => 'duty.duty_remove_command_user_description',
+                        'type' => 6,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'minutes',
+                        'description' => 'duty.duty_remove_command_minutes_description',
+                        'type' => 4,
+                        'min_value' => 1,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'status',
+                        'description' => 'duty.duty_add_command_status_description',
+                        'type' => 4,
+                        'min_value' => 0,
+                        'max_value' => 1,
+                        'required' => false,
+                        'choices' => [
+                            [
+                                'name' => 'enum.duty_current_period',
+                                'value' => 0,
+                            ],
+                            [
+                                'name' => 'enum.duty_all_period',
+                                'value' => 1,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
                 'name' => 'delete',
                 'description' => 'duty.duty_delete_command_description',
                 'type' => 1,
