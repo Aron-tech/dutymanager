@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Gate;
 
 trait DiscordCommandTrait
 {
-    protected string $command_name
+    protected string $command_name;
     protected ?string $sub_command_name = null;
     protected mixed $active_options = null;
 
