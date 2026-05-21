@@ -13,7 +13,7 @@ return [
             'type' => 1,
             'options' => [
                 [
-                    'name' => 'info', // /user info
+                    'name' => 'info',
                     'description' => 'guild_user.user_info_command_description',
                     'type' => 1,
                     'options' => [
@@ -39,17 +39,17 @@ return [
             'type' => 1,
             'options' => [
                 [
-                    'name' => 'toggle', // Sima /duty helyett /duty toggle
+                    'name' => 'toggle',
                     'description' => 'duty.duty_command_description',
                     'type' => 1,
                 ],
                 [
-                    'name' => 'cancel', // /duty cancel
+                    'name' => 'cancel',
                     'description' => 'duty.duty_cancel_command_description',
                     'type' => 1,
                 ],
                 [
-                    'name' => 'fcancel', // /duty fcancel
+                    'name' => 'fcancel',
                     'description' => 'duty.duty_fcancel_command_description',
                     'type' => 1,
                     'options' => [
