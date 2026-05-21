@@ -150,9 +150,11 @@ class DutyService
         return array_values($chart_data_array);
     }
 
-    public function storeDuty(array $data, ?GuildUser $guild_user = null): Duty
+    public function storeDuty(array $data, ?GuildUser $guild_user = null, ?string $causer_id = null): Duty
     {
-        return DB::transaction(function () use ($data, $guild_user) {
+        $causer_id ??= auth()->id();
+
+        return DB::transaction(function () use ($data, $guild_user, $causer_id) {
             $guild_user ??= GuildUser::where('id', $data['guild_user_id'])->accepted()->firstOrFail();
             $duty = $guild_user->duties()->create([
                 ...$data,
@@ -162,7 +164,7 @@ class DutyService
                 'finished_at' => now(),
             ]);
 
-            ActivityLog::make($guild_user->guild_id, auth()->id(), $guild_user->user_id, ActionTypeEnum::ADD_DUTY_TO_GUILD_USER, $duty->toArray());
+            ActivityLog::make($guild_user->guild_id, $causer_id, $guild_user->user_id, ActionTypeEnum::ADD_DUTY_TO_GUILD_USER, $duty->toArray());
 
             return $duty;
         });
