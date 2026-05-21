@@ -24,6 +24,6 @@ return [
     'info_command_description' => 'Saját felhasználói információk megjelenítése',
     'user_info_command_description' => 'Felhasználói információ megjelenítése',
     'accepted_at' => 'Felvétel dátuma',
-    'last_warning_time' => 'Utolsó figyelmeztetés dátuma',
+    'last_punishment_time' => 'Utolsó :punishment_type lejárati dátuma',
     'user_info_command_title' => 'Felhasználói információk',
 ];
