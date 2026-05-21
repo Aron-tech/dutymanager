@@ -29,15 +29,12 @@ class HandleDutyInteraction
     public function handle(Discord $discord, DiscordInteraction $interaction): void
     {
         $this->init($discord, $interaction, app(DutyService::class));
-        if (! $this->guild->guildSettings->isEnabledFeature(FeatureEnum::DUTY)) {
-            $this->respondSimpleEmbed($interaction, '❌ '.__('app.feature_not_enabled'), 'FF0000');
-
+        if (! $this->validateFeature($interaction, FeatureEnum::DUTY)) {
             return;
         }
         $this->duty_role = $this->guild->guildSettings->getFeatureSettings(FeatureEnum::DUTY, 'duty_role_id', null);
-        $command_name = $interaction->data->name;
 
-        match ($command_name) {
+        match ($this->command_name) {
             'duty' => $this->handleDutyCommand($interaction),
             'duty-cancel' => $this->handleDutyCancelCommand($interaction),
             'duty-fcancel' => $this->handleDutyForceCancelCommand($interaction),
@@ -91,13 +88,12 @@ class HandleDutyInteraction
                 return;
             }
 
-            $member_id = $interaction->data->options->get('name', 'member')?->value;
-            $target_guild_user = $this->guild->acceptedGuildUsers()->where('user_id', $member_id)->first();
-            if (! $target_guild_user) {
+            if (! $this->target_guild_user) {
                 $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_not_found_user'), 'FF0000');
+                return;
             }
 
-            $this->cancelDuty($interaction, $target_guild_user);
+            $this->cancelDuty($interaction, $this->target_guild_user);
 
         } catch (\Throwable $e) {
             \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
