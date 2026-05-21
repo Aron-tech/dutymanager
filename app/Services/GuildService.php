@@ -143,6 +143,7 @@ class GuildService
                     'permissions' => $permissions,
                 ]);
             }
+            Guild::deleteRoleWhitelistCache($this->guild->id);
         }
 
         foreach ($existing_roles as $role) {

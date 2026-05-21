@@ -2,12 +2,18 @@
 
 namespace App\Concerns;
 
+use App\Enums\FeatureEnum;
+use App\Models\Guild;
+use App\Models\GuildUser;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use React\Promise\PromiseInterface;
 
+use Throwable;
 use function React\Promise\all;
 
 trait DiscordBotTrait
@@ -176,6 +182,62 @@ trait DiscordBotTrait
             }
         } catch (\Exception $e) {
             $this->error("Kritikus hiba a feladat végrehajtásakor ({$task['action']}): ".$e->getMessage());
+        }
+    }
+
+    /**
+     * @param Guild $guild
+     * @return array
+     */
+    public function listRoleWhitelist(Guild $guild): array
+    {
+        $guild_settings = $guild->guildSettings;
+
+        $rank_role_ids = [];
+        $guild_role_ids = [];
+        foreach ($guild->guildRoles as $role) {
+            $guild_role_ids[] = $role->role_id;
+        }
+
+        if ($guild_settings->isEnabledFeature(FeatureEnum::RANK)) {
+            $rank_role_ids = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'rank_roles', []);
+        }
+
+        return array_unique(array_merge($guild_role_ids, $rank_role_ids));
+    }
+
+    /**
+     * @param string $guild_id
+     * @param string $user_id
+     * @param array $role_ids
+     * @return void
+     * @throws Throwable
+     */
+    public function updateRoles(string $guild_id, string $user_id, array $role_ids): void
+    {
+        DB::beginTransaction();
+
+        try {
+            $updated = GuildUser::where('guild_id', $guild_id)->where('user_id', $user_id)->accepted()->update(['cached_roles' => $role_ids]);
+
+            if ($updated < 1) {
+                DB::rollBack();
+
+                return;
+            }
+
+            GuildUser::deletePermissionCache($guild_id, $user_id);
+
+            DB::commit();
+
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            Log::error('Hiba a rangok frissítésekor: '.$e->getMessage(), [
+                'guild_id' => $guild->id ?? null,
+                'user_id' => $data['user_id'] ?? null,
+                'exception' => $e,
+            ]);
         }
     }
 }

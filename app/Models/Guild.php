@@ -11,12 +11,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
 
 #[Fillable(['id', 'name', 'icon', 'owner_id', 'lang_code', 'is_installed'])]
 #[Hidden(['lang_code'])]
 class Guild extends Model
 {
     use SoftDeletes;
+
+    public const string ROLE_WHITELIST_CACHE_PREFIX = 'guild_role_whitelist:';
 
     protected $primaryKey = 'id';
 
@@ -32,6 +35,11 @@ class Guild extends Model
         return [
             'is_installed' => 'bool',
         ];
+    }
+
+    public static function deleteRoleWhitelistCache(string $guild_id): void
+    {
+        Cache::forget(self::ROLE_WHITELIST_CACHE_PREFIX.$guild_id);
     }
 
     /**
