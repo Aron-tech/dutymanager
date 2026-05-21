@@ -89,6 +89,9 @@ class DiscordBotCommand extends Command
             if (isset($handlers[$command_name])) {
                 $handlerClass = $handlers[$command_name];
                 (new $handlerClass)->handle($bot, $interaction);
+            } else {
+                $firstHandlerClass = reset($handlers);
+                (new $firstHandlerClass)->handle($bot, $interaction);
             }
         });
 
