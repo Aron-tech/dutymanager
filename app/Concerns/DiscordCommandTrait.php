@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Gate;
 trait DiscordCommandTrait
 {
     protected string $command_name;
+    protected ?string $sub_command_name = null;
+    protected mixed $active_options = null;
 
     protected mixed $service;
 
@@ -37,6 +39,16 @@ trait DiscordCommandTrait
     protected function init(Discord $discord, DiscordInteraction $interaction, mixed $service, array $data = []): void
     {
         $this->command_name = $interaction->data->name;
+        $this->active_options = $interaction->data->options;
+
+        if ($this->active_options !== null && $this->active_options->count() > 0) {
+            $first_option = $this->active_options->first();
+            if ($first_option->type === 1) {
+                $this->sub_command_name = $first_option->name;
+                $this->active_options = $first_option->options;
+            }
+        }
+
         $this->discord = $discord;
         $this->service = $service;
         $guild_id = $this->getGuildId($interaction);
@@ -51,8 +63,8 @@ trait DiscordCommandTrait
             $this->guild_user = $this->guild->acceptedGuildUsers()->where('user_id', $this->user->id)->first();
         }
 
-        if ($interaction->data->options !== null && $interaction->data->options->count() > 0) {
-            $option = $interaction->data->options->get('name', 'user') ?? $interaction->data->options->get('name', 'discord_id');
+        if ($this->active_options !== null && $this->active_options->count() > 0) {
+            $option = $this->active_options->get('name', 'user') ?? $this->active_options->get('name', 'discord_id');
             $raw_id = $option?->value;
 
             if ($raw_id) {

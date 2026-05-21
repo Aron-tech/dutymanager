@@ -35,16 +35,26 @@ trait DiscordBotTrait
      */
     private function commandFormatter(Discord $discord, array $data): ?DiscordCommand
     {
-        if (isset($data['description'])) {
-            $data['description'] = $data['description'] ? __($data['description']) : '';
+        if (isset($data['description']) && $data['description']) {
+            $data['description'] = __($data['description']);
         }
+
         if (isset($data['options'])) {
-            foreach ($data['options'] as $option) {
-                if (isset($option['description'])) {
-                    $option['description'] = $option['description'] ? __($option['description']) : '';
+            foreach ($data['options'] as $key => $option) {
+                if (isset($option['description']) && $option['description']) {
+                    $data['options'][$key]['description'] = __($option['description']);
+                }
+
+                if (isset($option['options'])) {
+                    foreach ($option['options'] as $sub_key => $sub_option) {
+                        if (isset($sub_option['description']) && $sub_option['description']) {
+                            $data['options'][$key]['options'][$sub_key]['description'] = __($sub_option['description']);
+                        }
+                    }
                 }
             }
         }
+
         return new DiscordCommand($discord, $data);
     }
 

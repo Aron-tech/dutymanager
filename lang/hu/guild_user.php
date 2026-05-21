@@ -19,6 +19,7 @@ return [
     'in_your_rank' => 'Ennyi ideje vagy a rangodon',
     'user_option_description' => 'Discord felhasználó',
     'discord_id_description' => 'Felhasználó discord azonosítója',
+    'user_commands_description' => 'Felhasználói parancsok',
     'info_command_description' => 'Saját felhasználói információk megjelenítése',
     'user_info_command_description' => 'Felhasználói információ megjelenítése',
 ];

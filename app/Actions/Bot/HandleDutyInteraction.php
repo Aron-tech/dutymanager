@@ -34,11 +34,11 @@ class HandleDutyInteraction
         }
         $this->duty_role = $this->guild->guildSettings->getFeatureSettings(FeatureEnum::DUTY, 'duty_role_id', null);
 
-        match ($this->command_name) {
-            'duty' => $this->handleDutyCommand($interaction),
-            'duty-cancel' => $this->handleDutyCancelCommand($interaction),
-            'duty-fcancel' => $this->handleDutyForceCancelCommand($interaction),
-            default => null,
+        match ($this->sub_command_name) {
+            'toggle' => $this->handleDutyCommand($interaction),
+            'cancel' => $this->handleDutyCancelCommand($interaction),
+            'fcancel' => $this->handleDutyForceCancelCommand($interaction),
+            default => $this->respondSimpleEmbed($interaction, '❌ '.__('app.unknow_command'), 'FF0000'),
         };
     }
 
