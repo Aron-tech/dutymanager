@@ -2,17 +2,15 @@
 
 namespace App\Actions\Bot;
 
-use App\Services\GuildUserService;
 use App\Concerns\DiscordCommandTrait;
 use App\Concerns\DiscordEmbedTrait;
 use App\Enums\DutyStatusEnum;
 use App\Enums\FeatureEnum;
-use App\Enums\PermissionEnum;
-use App\Models\GuildUser;
 use App\Models\Duty;
+use App\Models\GuildUser;
+use App\Services\GuildUserService;
 use Discord\Discord;
 use Discord\Parts\Interactions\Interaction as DiscordInteraction;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -42,7 +40,6 @@ class HandleGuildUserInteraction
         }
     }
 
-
     protected function handleUserInfoCommand(DiscordInteraction $interaction, ?GuildUser $guild_user, ?string $user_id = null): void
     {
         try {
@@ -50,6 +47,7 @@ class HandleGuildUserInteraction
 
             if (! $guild_user) {
                 $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_not_found_user'), 'FF0000');
+
                 return;
             }
 

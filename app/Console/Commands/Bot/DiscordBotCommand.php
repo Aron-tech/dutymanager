@@ -32,13 +32,19 @@ class DiscordBotCommand extends Command
         ]);
 
         $bot->on('init', function (Discord $discord) use ($bot) {
-            $this->registerCommands($discord)->then(fn () => $this->info('Parancsok szinkronizálva.'), fn (\Throwable $e) => $this->error($e->getMessage()));
+            $this->syncCommands($discord)->then(function () {
+                $this->info('Minden szerveren befejeződött a parancsok szinkronizálása.');
+            });
             $bot->getLoop()->addPeriodicTimer(1.0, function () use ($discord) {
                 while ($taskJson = Redis::lpop('discord_bot_tasks')) {
                     $task = json_decode($taskJson, true);
                     $this->processTask($task, $discord);
                 }
             });
+        });
+
+        $bot->on(Event::GUILD_CREATE, function ($guild) use ($bot) {
+            $this->registerGuildCommands($bot, $guild);
         });
 
         $bot->on(Event::INTERACTION_CREATE, function (DiscordInteraction $interaction) use ($bot) {

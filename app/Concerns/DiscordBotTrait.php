@@ -12,16 +12,30 @@ use function React\Promise\all;
 
 trait DiscordBotTrait
 {
-    public function registerCommands(Discord $discord): PromiseInterface
+    /**
+     * @param Discord $discord
+     * @return PromiseInterface
+     */
+    public function syncCommands(Discord $discord): PromiseInterface
     {
-        $command_data = config('params.command_data', []);
-
         $promises = [];
 
         foreach ($discord->guilds as $guild) {
-            foreach ($command_data as $data) {
-                $promises[] = $guild->commands->save($this->commandFormatter($discord, $data));
-            }
+            $this->info("Szinkronizálás indítása a szerveren: {$guild->name}");
+
+            $promises[] = $guild->commands->freshen()->then(function ($commands) use ($discord, $guild) {
+                $delete_promises = [];
+
+                foreach ($commands as $command) {
+                    $delete_promises[] = $guild->commands->delete($command);
+                }
+
+                return all($delete_promises)->then(function () use ($discord, $guild) {
+                    $this->info("Régi parancsok törölve, újak regisztrálása: {$guild->name}");
+
+                    return $this->registerGuildCommands($discord, $guild);
+                });
+            });
         }
 
         return all($promises);
@@ -29,10 +43,25 @@ trait DiscordBotTrait
 
     /**
      * @param Discord $discord
-     * @param array $data
-     *
-     * @return DiscordCommand|null
+     * @param $guild
+     * @return PromiseInterface
      */
+    public function registerGuildCommands(Discord $discord, $guild): PromiseInterface
+    {
+        $command_data = config('bot_commands', []);
+        $promises = [];
+
+        foreach ($command_data as $data) {
+            $formatted = $this->commandFormatter($discord, $data);
+            $promises[] = $guild->commands->save($formatted)->then(
+                fn ($cmd) => $this->info("Sikeres regisztráció: {$guild->name} -> /{$cmd->name}"),
+                fn ($e) => $this->error("Hiba a(z) {$data['name']} parancsnál ({$guild->name}): {$e->getMessage()}")
+            );
+        }
+
+        return all($promises);
+    }
+
     private function commandFormatter(Discord $discord, array $data): ?DiscordCommand
     {
         if (isset($data['description']) && $data['description']) {

@@ -26,4 +26,7 @@ return [
     'accepted_at' => 'Felvétel dátuma',
     'last_punishment_time' => 'Utolsó :punishment_type lejárati dátuma',
     'user_info_command_title' => 'Felhasználói információk',
+    'user' => 'Felhasználó',
+    'ic_name' => 'IC név',
+
 ];
