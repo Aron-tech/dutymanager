@@ -41,10 +41,10 @@ class GuildUser extends Model
 
     public function getJoinedAgoAttribute(): string
     {
-        if (empty($this->created_at)) {
+        if (empty($this->accepted_at)) {
             return 'N/A';
         }
-        $days = (int) $this->created_at->diffInDays(now());
+        $days = (int) $this->accepted_at->diffInDays(now());
         if ($days === 0) {
             return 'Ma';
         }
@@ -138,12 +138,12 @@ class GuildUser extends Model
 
     public function punishments(): HasMany
     {
-        return $this->hasMany(Punishment::class, 'guild_user_id', 'id')->withTrashed();
+        return $this->hasMany(Punishment::class, 'guild_user_id', 'id');
     }
 
     public function activePunishments(): HasMany
     {
-        return $this->hasMany(Punishment::class, 'guild_user_id', 'id')
+        return $this->punishments()
             ->where(function ($query) {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
