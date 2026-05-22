@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'success_acton' => 'Sikeres művelet.',
+    'success_action' => 'Sikeres művelet.',
     'error_action' => 'Sikertelen művelet.',
     'no_permission' => 'Nincs jogosultságod!',
     'error_no_permission' => 'Nincs jogosultságod!',
