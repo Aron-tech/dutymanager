@@ -50,12 +50,12 @@ class Holiday extends Model
         ]);
 
         $guild = $guild_user->guild()->installed()->with('guildSettings')->first();
-        $holiday_config = $guild->guildSettings->getFeatureSettings(FeatureEnum::HOLIDAY, 'holiday_config', []);
+        $holiday_config = $guild->guildSettings->getFeatureSettings(FeatureEnum::HOLIDAY, null, []);
         if (! empty($holiday_config)) {
             $role_id = $holiday_config['holiday_role_id'] ?? null;
             $channel_id = $holiday_config['announcement_channel_id'] ?? null;
             if (! empty($role_id)) {
-                DiscordFetchService::addRoleToMember($guild_user->guild_id, $guild_user->user_id, $role_id);
+                DiscordFetchService::addRoleToMember($guild->id, $guild_user->user_id, $role_id);
             }
             if (! empty($channel_id)) {
                 $embed = DiscordEmbedFactory::create('holiday', [
@@ -66,7 +66,7 @@ class Holiday extends Model
                     'guild_icon_url' => $guild->icon ? "https://cdn.discordapp.com/icons/{$guild->id}/{$guild->icon}.png" : null,
                 ]);
 
-                DiscordFetchService::sendMessage($guild_user->guild_id, $channel_id, null, [$embed]);
+                DiscordFetchService::sendMessage($guild->id, $channel_id, null, [$embed]);
             }
         }
 

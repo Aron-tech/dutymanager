@@ -223,6 +223,19 @@ return [
                         'min_value' => 1,
                         'required' => true,
                     ],
+                    [
+                        'name' => 'reason',
+                        'description' => 'holiday.holiday_start_reason_command_description',
+                        'type' => 3,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'delay_days',
+                        'description' => 'holiday.holiday_start_delay_days_command_description',
+                        'type' => 4,
+                        'min_value' => 1,
+                        'required' => false,
+                    ],
                 ],
             ],
             [

@@ -135,23 +135,27 @@ class HolidayService
         }
     }
 
-    public function delete(Holiday $holiday, ?Guild $guild = null): bool
+    public function delete(Holiday $holiday, ?Guild $guild = null, ?string $causer_id = null): bool
     {
         $guild ??= SelectedGuildService::get();
+        $causer_id ??= auth()->id();
         $holiday_id_array = [$holiday->id];
         $holiday_role_id = $guild->guildSettings->getFeatureSettings(FeatureEnum::HOLIDAY, 'holiday_role_id', null);
+        $is_active = $holiday->ended_at > now();
 
-        return DB::transaction(function () use ($holiday, $holiday_id_array, $guild, $holiday_role_id) {
+        $is_deleted = DB::transaction(function () use ($holiday, $holiday_id_array, $guild, $causer_id) {
             $is_deleted = $holiday->delete();
 
-            if (! empty($holiday_role_id)) {
-                DiscordFetchService::removeRoleFromMember($guild->id, $holiday->user_id, $holiday_role_id);
-            }
-
-            ActivityLog::make($guild->id, auth()->id(), $holiday->user_id, ActionTypeEnum::CANCEL_HOLIDAY, $holiday_id_array);
+            ActivityLog::make($guild->id, $causer_id, $holiday->user_id, ActionTypeEnum::CANCEL_HOLIDAY, $holiday_id_array);
 
             return $is_deleted;
         });
+
+        if ($is_deleted && $is_active && $holiday_role_id) {
+            DiscordFetchService::removeRoleFromMember($guild->id, $holiday->user_id, $holiday_role_id);
+        }
+
+        return $is_deleted;
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Console\Commands\Bot;
 
 use App\Actions\Bot\HandleDutyInteraction;
 use App\Actions\Bot\HandleGuildUserInteraction;
+use App\Actions\Bot\HandleHolidayInteraction;
 use App\Concerns\DiscordBotTrait;
 use App\Models\Guild;
 use Discord\Discord;
@@ -84,6 +85,7 @@ class DiscordBotCommand extends Command
                 'duty' => HandleDutyInteraction::class,
                 'info' => HandleGuildUserInteraction::class,
                 'user' => HandleGuildUserInteraction::class,
+                'holiday' => HandleHolidayInteraction::class,
             ];
 
             if (isset($handlers[$command_name])) {
