@@ -28,6 +28,9 @@ enum ActionTypeEnum: string
 
     case ADD_DUTY_TO_GUILD_USER = 'add_duty_to_guild_user';
     case UPDATE_DUTY_TO_GUILD_USER = 'update_duty_to_guild_user';
+    case CLEAR_DUTIES_IN_GUILD = 'clear_duties_in_guild';
+    case RESET_DUTIES_IN_GUILD = 'reset_duties_in_guild';
+    case FORCE_CANCEL_DUTIES = 'force_cancel_duties';
     case CANCELED_DUTY_FROM_GUILD_USER = 'canceled_duty_from_guild_user';
     case DELETE_DUTY_FROM_GUILD_USER = 'delete_duty_from_guild_user';
 

@@ -7,10 +7,12 @@ use App\Concerns\DiscordCommandTrait;
 use App\Concerns\DiscordEmbedTrait;
 use App\Enums\DutyActionEnum;
 use App\Enums\DutyStatusEnum;
+use App\Enums\ActionTypeEnum;
 use App\Enums\FeatureEnum;
 use App\Enums\PermissionEnum;
 use App\Models\Duty;
 use App\Models\GuildUser;
+use App\Models\ActivityLog;
 use App\Services\DiscordFetchService;
 use App\Services\DutyService;
 use Discord\Discord;
@@ -163,7 +165,9 @@ class HandleDutyInteraction
             }
 
             $updated_duties_count = DB::transaction(function () {
-                return $this->guild->guildDuties()->whereNotNull('finished_at')->where('status', DutyStatusEnum::CURRENT_PERIOD)->update(['status' => DutyStatusEnum::ALL_PERIOD]);
+                $updated_duties_count = $this->guild->guildDuties()->whereNotNull('finished_at')->where('status', DutyStatusEnum::CURRENT_PERIOD)->update(['status' => DutyStatusEnum::ALL_PERIOD]);
+                ActivityLog::make($this->guild->id, $this->user->id, null, ActionTypeEnum::RESET_DUTIES_IN_GUILD, ['transfered_duties_count' => $updated_duties_count]);
+                return $updated_duties_count;
             });
 
             $this->respondSimpleEmbed($interaction, '🚨 '.__('duty.success_duty_update_status', ['count' => $updated_duties_count]), '00FF00');
@@ -190,7 +194,9 @@ class HandleDutyInteraction
             $status = DutyStatusEnum::from($this->active_options->get('name', 'status')?->value) ?? DutyStatusEnum::ALL_PERIOD;
 
             $deleted_duties_count = DB::transaction(function () use ($status) {
-                return $this->target_guild_user->duties()->whereNotNull('finished_at')->where('status', '<=', $status)->delete();
+                $deleted_duties_count = $this->target_guild_user->duties()->whereNotNull('finished_at')->where('status', '<=', $status)->delete();
+                ActivityLog::make($this->guild->id, $this->user->id, $this->target_user_id, ActionTypeEnum::RESET_DUTIES_IN_GUILD, ['delete_duties_count' => $deleted_duties_count]);
+                return $deleted_duties_count;
             });
 
             $fields[] = $this->makeEmbedField(__('guild_user.user'), '<@'.$this->target_user_id.'>');
@@ -212,7 +218,9 @@ class HandleDutyInteraction
             $status = DutyStatusEnum::from($this->active_options->get('name', 'status')?->value) ?? DutyStatusEnum::ALL_PERIOD;
 
             $deleted_duties_count = DB::transaction(function () use ($status) {
-                return $this->guild->guildDuties()->whereNotNull('finished_at')->where('status', '<=', $status)->delete();
+                $deleted_duties_count = $this->guild->guildDuties()->whereNotNull('finished_at')->where('status', '<=', $status)->delete();
+                ActivityLog::make($this->guild->id, $this->user->id, null, ActionTypeEnum::RESET_DUTIES_IN_GUILD, ['deleted_duties_count' => $deleted_duties_count]);
+                return $deleted_duties_count;
             });
 
             $this->respondSimpleEmbed($interaction, '🚨 '.__('duty.success_duty_update_status', ['count' => $deleted_duties_count]), '00FF00');
@@ -246,8 +254,13 @@ class HandleDutyInteraction
                 return;
             }
 
-            DB::transaction(function () use ($active_duty, $guild_user) {
+            DB::transaction(function () use ($active_duty, $guild_user, $is_force) {
                 if (DeleteActiveDutyAction::run($active_duty, $this->user->id, $guild_user, $this->guild->guildSettings)) {
+                    if ($is_force) {
+                        ActivityLog::make($guild_user->guild_id, $this->user->id, $guild_user->user_id, ActionTypeEnum::FORCE_CANCEL_DUTIES, [$active_duty->toArray()]);
+                    } else {
+                        ActivityLog::make($guild_user->guild_id, $guild_user->user_id, null, ActionTypeEnum::CANCELED_DUTY_FROM_GUILD_USER, [$active_duty->toArray()]);
+                    }
                     $active_duty->delete();
                 } else {
                     throw new \Exception('Duty deletion failed logic.');
