@@ -40,6 +40,7 @@ class HandleDutyInteraction
             'toggle' => $this->handleDutyToggleCommand($interaction),
             'cancel' => $this->handleCancelCommand($interaction, $this->guild_user),
             'fcancel' => $this->handleCancelCommand($interaction, $this->target_guild_user, true),
+            'top-list' => $this->handleDutyTopListCommand($interaction),
             'add' => $this->handleAddOrRemoveDutyCommand($interaction),
             'remove' => $this->handleAddOrRemoveDutyCommand($interaction, true),
             'delete' => $this->handleDutyDeleteCommand($interaction),
@@ -104,7 +105,7 @@ class HandleDutyInteraction
                 $rows = '';
 
                 foreach ($users_with_duties as $user) {
-                    $discordUser = $user->user_id; // vagy Discord mention
+                    $discordUser = $user->user_id;
                     $icName = str_pad($user->ic_name, 12);
 
                     $current = str_pad(Duty::standardFormat($user->current_period_sum), 12);

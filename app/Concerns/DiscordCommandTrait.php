@@ -128,11 +128,10 @@ trait DiscordCommandTrait
 
     protected function hasPermission(DiscordInteraction $interaction, ?PermissionEnum $permission = null): bool
     {
-        if (empty($this->guild) || empty($this->user) || empty($this->guild_user)) {
-            return false;
-        }
+        $missing_context = empty($this->guild) || empty($this->user) || empty($this->guild_user);
+        $no_permission = $permission && Gate::forUser($this->user)->denies($permission->value);
 
-        if ($permission && Gate::forUser($this->user)->denies($permission->value)) {
+        if ($missing_context || $no_permission) {
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_no_permission'), 'FF0000');
 
             return false;
