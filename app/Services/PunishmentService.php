@@ -131,12 +131,7 @@ class PunishmentService
         $created_by = auth()->user();
 
         return DB::transaction(function () use ($data, $guild, $guild_user, $type_enum, $expires_at, $created_by) {
-
-            $punishment = Punishment::make($guild_user, null, $guild, $type_enum, $data['level'], $data['reason'], $expires_at, $created_by);
-
-            ActivityLog::make($guild->id, $created_by->id, $guild_user->user_id, ActionTypeEnum::ADD_PUNISHMENT_TO_GUILD_USER, $punishment->toArray());
-
-            return $punishment;
+            return Punishment::make($guild_user, null, $guild, $type_enum, $data['level'], $data['reason'], $expires_at, $created_by);
         });
 
     }
