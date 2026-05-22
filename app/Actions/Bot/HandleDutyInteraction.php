@@ -13,6 +13,7 @@ use App\Enums\PermissionEnum;
 use App\Models\ActivityLog;
 use App\Models\Duty;
 use App\Models\GuildUser;
+use App\Services\DiscordEmbedFactory;
 use App\Services\DiscordFetchService;
 use App\Services\DutyService;
 use Discord\Discord;
@@ -84,9 +85,10 @@ class HandleDutyInteraction
             }
 
             $limit = $this->active_options->get('name', 'limit')?->value ?? 10;
-            $limit = max(1, min((int) $limit, 50));
+            $limit = max(1, min((int) $limit, 100));
 
             $order_by = $this->active_options->get('name', 'order_by')?->value ?? 'current_period_sum';
+            $not_use_ephemeral = $this->active_options->get('name', 'show')?->value ?? false;
 
             $users_with_duties = $this->guild->acceptedGuildUsers()
                 ->select(['id', 'guild_id', 'user_id', 'ic_name'])
@@ -100,7 +102,7 @@ class HandleDutyInteraction
                 ->limit($limit)
                 ->get();
 
-            $description = '';
+            $lines = [];
             $rank = 1;
 
             foreach ($users_with_duties as $user) {
@@ -110,18 +112,51 @@ class HandleDutyInteraction
                 $current = Duty::standardFormat($user->current_period_sum ?? 0);
                 $total = Duty::standardFormat($user->all_period_sum ?? 0);
 
-                $description .= "**{$rank}.** {$discord_user} ({$ic_name})\n";
-                $description .= '└ '.__('duty.current_duties_sum').": **{$current}** | ".__('duty.all_duties_sum').": **{$total}**\n\n";
+                $line = "**{$rank}.** {$discord_user} ({$ic_name})\n";
+                $line .= '└ '.__('duty.current_duties_sum').": **{$current}** | ".__('duty.all_duties_sum').": **{$total}**\n";
 
+                $lines[] = $line;
                 $rank++;
             }
 
-            if (empty($description)) {
-                $description = __('app.no_data');
+            if (empty($lines)) {
+                $lines[] = __('app.no_data');
             }
 
-            $data = $this->buildEmbedData('📊 '.__('duty.duty_toplist_command_title'), '0000FF', $description);
-            $this->respondEphemeralEmbed($interaction, 'normal', $data);
+            $description_chunks = $this->chunkTextLines($lines);
+            $embeds = [];
+            $total_chunks = count($description_chunks);
+
+            foreach ($description_chunks as $index => $chunk) {
+                $title = '📊 '.__('duty.duty_toplist_command_title');
+
+                if ($total_chunks > 1) {
+                    $title .= ' ('.($index + 1).'/'.$total_chunks.')';
+                }
+
+                $data = $this->buildEmbedData($title, '0000FF', $chunk);
+
+                if ($this->guild) {
+                    $data['guild_name'] ??= $this->guild->name;
+                    $data['guild_icon_url'] ??= $this->guild->icon ? "https://cdn.discordapp.com/icons/{$this->guild->id}/{$this->guild->icon}.png" : null;
+                }
+
+                $embeds[] = DiscordEmbedFactory::create('normal', $data);
+            }
+
+            if ($not_use_ephemeral) {
+                if (! $this->validateAccess($interaction, PermissionEnum::VIEW_DUTIES)) {
+                    return;
+                }
+
+                foreach ($embeds as $embed_item) {
+                    DiscordFetchService::sendMessage($this->guild->id, $interaction->channel_id, null, [$embed_item]);
+                }
+
+                $this->respondSimpleEmbed($interaction, '✅ '.__('app.success_action'), '00FF00');
+            } else {
+                $this->respondEphemeral($interaction, $embeds);
+            }
 
         } catch (\Throwable $e) {
             Log::error('Hiba a duty toplista lekérdezésekor: '.$e->getMessage());

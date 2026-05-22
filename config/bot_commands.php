@@ -70,7 +70,13 @@ return [
                         'description' => 'duty.duty_toplist_command_limit_description',
                         'type' => 4,
                         'min_value' => 1,
-                        'max_value' => 50,
+                        'max_value' => 100,
+                        'required' => false,
+                    ],
+                    [
+                        'name' => 'show',
+                        'description' => 'duty.duty_toplist_command_show_description',
+                        'type' => 5,
                         'required' => false,
                     ],
                     [
