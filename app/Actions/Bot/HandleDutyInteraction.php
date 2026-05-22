@@ -5,14 +5,14 @@ namespace App\Actions\Bot;
 use App\Actions\DeleteActiveDutyAction;
 use App\Concerns\DiscordCommandTrait;
 use App\Concerns\DiscordEmbedTrait;
+use App\Enums\ActionTypeEnum;
 use App\Enums\DutyActionEnum;
 use App\Enums\DutyStatusEnum;
-use App\Enums\ActionTypeEnum;
 use App\Enums\FeatureEnum;
 use App\Enums\PermissionEnum;
+use App\Models\ActivityLog;
 use App\Models\Duty;
 use App\Models\GuildUser;
-use App\Models\ActivityLog;
 use App\Services\DiscordFetchService;
 use App\Services\DutyService;
 use Discord\Discord;
@@ -84,8 +84,8 @@ class HandleDutyInteraction
             }
 
             $limit = $this->active_options->get('name', 'limit')?->value ?? 10;
-            $limit = $limit > 50 ? 50 : $limit;
-            $limit = $limit < 1 ? 1 : $limit;
+            $limit = min($limit, 50);
+            $limit = max($limit, 1);
 
             $order_by = $this->active_options->get('name', 'order_by')?->value ?? 'current_period_sum';
 
@@ -101,25 +101,25 @@ class HandleDutyInteraction
                 ->limit($limit)
                 ->get();
 
-                $header = "User        | IC Name     | Current      | Total\n";
-                $header .= str_repeat("-", 55) . "\n";
+            $header = "User        | IC Name     | Current      | Total\n";
+            $header .= str_repeat('-', 55)."\n";
 
-                $rows = '';
+            $rows = '';
 
-                foreach ($users_with_duties as $user) {
-                    $discordUser = $user->user_id;
-                    $icName = str_pad($user->ic_name, 12);
+            foreach ($users_with_duties as $user) {
+                $discordUser = $user->user_id;
+                $icName = str_pad($user->ic_name, 12);
 
-                    $current = str_pad(Duty::standardFormat($user->current_period_sum), 12);
-                    $total = Duty::standardFormat($user->all_period_sum);
+                $current = str_pad(Duty::standardFormat($user->current_period_sum), 12);
+                $total = Duty::standardFormat($user->all_period_sum);
 
-                    $rows .= "{$discordUser} | {$icName} | {$current} | {$total}\n";
-                }
+                $rows .= "{$discordUser} | {$icName} | {$current} | {$total}\n";
+            }
 
-                $value = "```" . $header . $rows . "```";
-                $fields[] = $this->makeEmbedField('', $value, false);
-                $data = $this->buildEmbedData('📊 Duty Top List', '0000FF', '', $fields);
-                $this->respondEphemeralEmbed($interaction, 'normal', $data);
+            $value = '```'.$header.$rows.'```';
+            $fields[] = $this->makeEmbedField('', $value, false);
+            $data = $this->buildEmbedData('📊 Duty Top List', '0000FF', '', $fields);
+            $this->respondEphemeralEmbed($interaction, 'normal', $data);
         } catch (\Throwable $e) {
             Log::error('Hiba a duty hozzáadásakor: '.$e->getMessage());
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
@@ -166,7 +166,8 @@ class HandleDutyInteraction
 
             $updated_duties_count = DB::transaction(function () {
                 $updated_duties_count = $this->guild->guildDuties()->whereNotNull('finished_at')->where('status', DutyStatusEnum::CURRENT_PERIOD)->update(['status' => DutyStatusEnum::ALL_PERIOD]);
-                ActivityLog::make($this->guild->id, $this->user->id, null, ActionTypeEnum::RESET_DUTIES_IN_GUILD, ['transfered_duties_count' => $updated_duties_count]);
+                ActivityLog::make($this->guild->id, $this->user->id, null, ActionTypeEnum::RESET_DUTIES_IN_GUILD, ['transferred_duties_count' => $updated_duties_count]);
+
                 return $updated_duties_count;
             });
 
@@ -196,6 +197,7 @@ class HandleDutyInteraction
             $deleted_duties_count = DB::transaction(function () use ($status) {
                 $deleted_duties_count = $this->target_guild_user->duties()->whereNotNull('finished_at')->where('status', '<=', $status)->delete();
                 ActivityLog::make($this->guild->id, $this->user->id, $this->target_user_id, ActionTypeEnum::RESET_DUTIES_IN_GUILD, ['delete_duties_count' => $deleted_duties_count]);
+
                 return $deleted_duties_count;
             });
 
@@ -220,6 +222,7 @@ class HandleDutyInteraction
             $deleted_duties_count = DB::transaction(function () use ($status) {
                 $deleted_duties_count = $this->guild->guildDuties()->whereNotNull('finished_at')->where('status', '<=', $status)->delete();
                 ActivityLog::make($this->guild->id, $this->user->id, null, ActionTypeEnum::RESET_DUTIES_IN_GUILD, ['deleted_duties_count' => $deleted_duties_count]);
+
                 return $deleted_duties_count;
             });
 
