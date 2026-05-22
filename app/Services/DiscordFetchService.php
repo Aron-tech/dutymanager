@@ -392,9 +392,10 @@ class DiscordFetchService
         ]);
     }
 
-    public static function sendMessage(string $channel_id, ?string $content = null, array $embeds = [], array $components = []): bool
+    public static function sendMessage(string $guild_id, string $channel_id, ?string $content = null, array $embeds = [], array $components = []): bool
     {
         return self::dispatchToBot('send_message', [
+            'guild_id' => $guild_id,
             'channel_id' => $channel_id,
             'content' => $content,
             'embeds' => $embeds,

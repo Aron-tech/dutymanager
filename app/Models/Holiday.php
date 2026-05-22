@@ -66,7 +66,7 @@ class Holiday extends Model
                     'guild_icon_url' => $guild->icon ? "https://cdn.discordapp.com/icons/{$guild->id}/{$guild->icon}.png" : null,
                 ]);
 
-                DiscordFetchService::sendMessage($channel_id, null, [$embed]);
+                DiscordFetchService::sendMessage($guild_user->guild_id, $channel_id, null, [$embed]);
             }
         }
 

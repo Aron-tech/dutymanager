@@ -145,8 +145,13 @@ trait DiscordCommandTrait
         $builder = MessageBuilder::new();
 
         if (is_array($messageOrEmbed)) {
-            $embed = new Embed($this->discord, $messageOrEmbed);
-            $builder->addEmbed($embed);
+            if (isset($messageOrEmbed[0]) && is_array($messageOrEmbed[0])) {
+                foreach ($messageOrEmbed as $embedData) {
+                    $builder->addEmbed(new Embed($this->discord, $embedData));
+                }
+            } else {
+                $builder->addEmbed(new Embed($this->discord, $messageOrEmbed));
+            }
         } else {
             $builder->setContent($messageOrEmbed);
         }

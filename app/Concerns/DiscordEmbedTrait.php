@@ -23,4 +23,24 @@ trait DiscordEmbedTrait
             'codeBlock' => $codeBlock,
         ];
     }
+
+    protected function chunkTextLines(array $lines, int $max_length = 3200): array
+    {
+        $chunks = [];
+        $current_chunk = '';
+
+        foreach ($lines as $line) {
+            if (strlen($current_chunk) + strlen($line) > $max_length) {
+                $chunks[] = trim($current_chunk);
+                $current_chunk = '';
+            }
+            $current_chunk .= $line."\n";
+        }
+
+        if (! empty($current_chunk)) {
+            $chunks[] = trim($current_chunk);
+        }
+
+        return $chunks;
+    }
 }

@@ -95,7 +95,7 @@ class ChangeGuildUserRankAction
                     'guild_icon_url' => $guild->icon ? "https://cdn.discordapp.com/icons/{$guild->id}/{$guild->icon}.png" : null,
                 ]);
 
-                DiscordFetchService::sendMessage($announcement_channel_id, null, [$embed]);
+                DiscordFetchService::sendMessage($guild->id, $announcement_channel_id, null, [$embed]);
             }
 
             if ($old_rank_id) {

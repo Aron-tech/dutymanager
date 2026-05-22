@@ -66,7 +66,7 @@ class Punishment extends Model
             ]);
 
             if ($channel_id) {
-                DiscordFetchService::sendMessage($channel_id, null, [$embed]);
+                DiscordFetchService::sendMessage($guild_id, $channel_id, null, [$embed]);
             }
         }
 

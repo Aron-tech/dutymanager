@@ -37,11 +37,6 @@ trait DiscordBotTrait
         });
     }
 
-    /**
-     * @param Discord $discord
-     * @param $guild
-     * @return PromiseInterface
-     */
     public function registerGuildCommands(Discord $discord, $guild): PromiseInterface
     {
         $command_data = config('bot_commands', []);
@@ -164,18 +159,34 @@ trait DiscordBotTrait
                     break;
 
                 case 'send_message':
-                    $channel = $discord->getChannel($task['channel_id']);
-                    if ($channel) {
-                        $builder = MessageBuilder::new();
-                        if ($task['content'] ?? null) {
-                            $builder->setContent($task['content']);
+                    $guildId = $task['guild_id'] ?? null;
+                    $channelId = $task['channel_id'] ?? null;
+                    $guild = $guildId ? $discord->guilds->get('id', $guildId) : null;
+
+                    $proceed = function ($guild) use ($discord, $channelId, $task) {
+                        $channel = $guild ? $guild->channels->get('id', $channelId) : $discord->getChannel($channelId);
+
+                        if ($channel) {
+                            $builder = MessageBuilder::new();
+                            if ($task['content'] ?? null) {
+                                $builder->setContent($task['content']);
+                            }
+                            foreach ($task['embeds'] ?? [] as $embedData) {
+                                $builder->addEmbed(new Embed($discord, $embedData));
+                            }
+                            $channel->sendMessage($builder);
+                        } else {
+                            $this->error("Csatorna nem található: {$channelId}");
                         }
-                        foreach ($task['embeds'] ?? [] as $embedData) {
-                            $builder->addEmbed(new Embed($discord, $embedData));
-                        }
-                        $channel->sendMessage($builder);
+                    };
+
+                    if (! $guild && $guildId) {
+                        $discord->guilds->fetch($guildId)->then(
+                            fn ($guild) => $proceed($guild),
+                            fn () => $proceed(null)
+                        );
                     } else {
-                        $this->error('Csatorna nem található: '.($task['channel_id'] ?? 'null'));
+                        $proceed($guild);
                     }
                     break;
 
@@ -187,10 +198,6 @@ trait DiscordBotTrait
         }
     }
 
-    /**
-     * @param Guild $guild
-     * @return array
-     */
     public function listRoleWhitelist(Guild $guild): array
     {
         $guild_settings = $guild->guildSettings;
@@ -209,10 +216,6 @@ trait DiscordBotTrait
     }
 
     /**
-     * @param string $guild_id
-     * @param string $user_id
-     * @param array $role_ids
-     * @return void
      * @throws Throwable
      */
     public function updateRoles(string $guild_id, string $user_id, array $role_ids): void
