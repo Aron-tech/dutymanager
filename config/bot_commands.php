@@ -61,6 +61,37 @@ return [
                 ],
             ],
             [
+                'name' => 'top-list',
+                'description' => 'duty.duty_top_list_command_description',
+                'type' => 1,
+                'options' => [
+                    [
+                        'name' => 'limit',
+                        'description' => 'duty.duty_top_list_command_limit_description',
+                        'type' => 4,
+                        'min_value' => 1,
+                        'max_value' => 50,
+                        'required' => false,
+                    ],
+                    [
+                        'name' => 'order_by',
+                        'description' => 'duty.duty_top_list_command_order_by_description',
+                        'type' => 3,
+                        'required' => false,
+                        'choices' => [
+                            [
+                                'name' => 'duty.order_by_current_period_sum',
+                                'value' => 'current_period_sum',
+                            ],
+                            [
+                                'name' => 'duty.order_by_all_period_sum',
+                                'value' => 'all_period_sum',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
                 'name' => 'add',
                 'description' => 'duty.duty_add_command_description',
                 'type' => 1,

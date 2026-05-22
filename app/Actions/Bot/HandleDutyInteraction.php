@@ -16,6 +16,7 @@ use App\Services\DutyService;
 use Discord\Discord;
 use Discord\Parts\Interactions\Interaction as DiscordInteraction;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class HandleDutyInteraction
@@ -72,6 +73,56 @@ class HandleDutyInteraction
         }
     }
 
+    public function handleDutyTopListCommand(DiscordInteraction $interaction): void
+    {
+        try {
+            if (! $this->hasPermission($interaction)) {
+                return;
+            }
+
+            $limit = $this->active_options->get('name', 'limit')?->value ?? 10;
+            $limit = $limit > 50 ? 50 : $limit;
+            $limit = $limit < 1 ? 1 : $limit;
+
+            $order_by = $this->active_options->get('name', 'order_by')?->value ?? 'current_period_sum';
+
+            $users_with_duties = $this->guild->acceptedGuildUsers()
+                ->select(['id', 'guild_id', 'user_id', 'ic_name'])
+                ->withSum(['duties as current_period_sum' => function ($query) {
+                    $query->where('status', '<=', DutyStatusEnum::CURRENT_PERIOD);
+                }], 'value')
+                ->withSum(['duties as all_period_sum' => function ($query) {
+                    $query->where('status', '<=', DutyStatusEnum::ALL_PERIOD);
+                }], 'value')
+                ->orderByDesc($order_by)
+                ->limit($limit)
+                ->get();
+
+                $header = "User        | IC Name     | Current      | Total\n";
+                $header .= str_repeat("-", 55) . "\n";
+
+                $rows = '';
+
+                foreach ($users_with_duties as $user) {
+                    $discordUser = $user->user_id; // vagy Discord mention
+                    $icName = str_pad($user->ic_name, 12);
+
+                    $current = str_pad(Duty::standardFormat($user->current_period_sum), 12);
+                    $total = Duty::standardFormat($user->all_period_sum);
+
+                    $rows .= "{$discordUser} | {$icName} | {$current} | {$total}\n";
+                }
+
+                $value = "```" . $header . $rows . "```";
+                $fields[] = $this->makeEmbedField('', $value, false);
+                $data = $this->buildEmbedData('📊 Duty Top List', '0000FF', '', $fields);
+                $this->respondEphemeralEmbed($interaction, 'normal', $data);
+        } catch (\Throwable $e) {
+            Log::error('Hiba a duty hozzáadásakor: '.$e->getMessage());
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
+        }
+    }
+
     public function handleAddOrRemoveDutyCommand(DiscordInteraction $interaction, bool $is_remove = false): void
     {
         try {
@@ -98,7 +149,7 @@ class HandleDutyInteraction
             $data = $this->buildEmbedData('🚨 '.$title, '00FF00', '', $fields);
             $this->respondEphemeralEmbed($interaction, 'normal', $data);
         } catch (\Throwable $e) {
-            \Log::error('Hiba a duty hozzáadásakor: '.$e->getMessage());
+            Log::error('Hiba a duty hozzáadásakor: '.$e->getMessage());
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
         }
     }
@@ -117,7 +168,7 @@ class HandleDutyInteraction
             $this->respondSimpleEmbed($interaction, '🚨 '.__('duty.success_duty_update_status', ['count' => $updated_duties_count]), '00FF00');
 
         } catch (\Throwable $e) {
-            \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
+            Log::error('Hiba a duty törlésekor: '.$e->getMessage());
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
         }
     }
@@ -145,7 +196,7 @@ class HandleDutyInteraction
             $data = $this->buildEmbedData('🚨 '.__('duty.success_duties_delete_from_user', ['count' => $deleted_duties_count]), '00FF00', '', $fields);
             $this->respondEphemeralEmbed($interaction, 'normal', $data);
         } catch (\Throwable $e) {
-            \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
+            Log::error('Hiba a duty törlésekor: '.$e->getMessage());
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
         }
     }
@@ -166,7 +217,7 @@ class HandleDutyInteraction
             $this->respondSimpleEmbed($interaction, '🚨 '.__('duty.success_duty_update_status', ['count' => $deleted_duties_count]), '00FF00');
 
         } catch (\Throwable $e) {
-            \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
+            Log::error('Hiba a duty törlésekor: '.$e->getMessage());
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
         }
     }
@@ -207,7 +258,7 @@ class HandleDutyInteraction
             $data = $this->buildEmbedData('🚨 '.$title, '00FF00', '', $fields);
             $this->respondEphemeralEmbed($interaction, 'normal', $data);
         } catch (\Throwable $e) {
-            \Log::error('Hiba a duty törlésekor: '.$e->getMessage());
+            Log::error('Hiba a duty törlésekor: '.$e->getMessage());
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
         }
     }

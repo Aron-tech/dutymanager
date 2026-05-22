@@ -16,6 +16,8 @@ return [
     'success_duties_delete_from_user' => 'Sikeresen töröltél :count szolgálati időt a felhasználótól!',
     'success_duty_delete' => 'Sikeresen törölted a szolgálati időt!',
     'current_duties_sum' => 'Aktuális összes szolgálati idő',
+    'order_by_current_period_sum' => 'Aktuális szolgálati idő szerinti rendezés',
+    'order_by_all_period_sum' => 'Összes szolgálati idő szerinti rendezés',
     'all_duties_sum' => 'Összes szolgálati idő',
     'duty_value' => 'Szolgálatba voltál',
     'not_on_duty' => 'Nem vagy szolgálatban!',
