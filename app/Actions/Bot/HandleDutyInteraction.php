@@ -42,7 +42,7 @@ class HandleDutyInteraction
             'toggle' => $this->handleDutyToggleCommand($interaction),
             'cancel' => $this->handleCancelCommand($interaction, $this->guild_user),
             'fcancel' => $this->handleCancelCommand($interaction, $this->target_guild_user, true),
-            'top-list' => $this->handleDutyTopListCommand($interaction),
+            'toplist' => $this->handleDutyToplistCommand($interaction),
             'add' => $this->handleAddOrRemoveDutyCommand($interaction),
             'remove' => $this->handleAddOrRemoveDutyCommand($interaction, true),
             'delete' => $this->handleDutyDeleteCommand($interaction),
@@ -76,7 +76,7 @@ class HandleDutyInteraction
         }
     }
 
-    public function handleDutyTopListCommand(DiscordInteraction $interaction): void
+    public function handleDutyToplistCommand(DiscordInteraction $interaction): void
     {
         try {
             if (! $this->validateAccess($interaction)) {
@@ -84,8 +84,7 @@ class HandleDutyInteraction
             }
 
             $limit = $this->active_options->get('name', 'limit')?->value ?? 10;
-            $limit = min($limit, 50);
-            $limit = max($limit, 1);
+            $limit = max(1, min((int) $limit, 50));
 
             $order_by = $this->active_options->get('name', 'order_by')?->value ?? 'current_period_sum';
 
@@ -101,27 +100,31 @@ class HandleDutyInteraction
                 ->limit($limit)
                 ->get();
 
-            $header = "User        | IC Name     | Current      | Total\n";
-            $header .= str_repeat('-', 55)."\n";
-
-            $rows = '';
+            $description = '';
+            $rank = 1;
 
             foreach ($users_with_duties as $user) {
-                $discordUser = $user->user_id;
-                $icName = str_pad($user->ic_name, 12);
+                $discord_user = "<@{$user->user_id}>";
+                $ic_name = $user->ic_name;
 
-                $current = str_pad(Duty::standardFormat($user->current_period_sum), 12);
-                $total = Duty::standardFormat($user->all_period_sum);
+                $current = Duty::standardFormat($user->current_period_sum ?? 0);
+                $total = Duty::standardFormat($user->all_period_sum ?? 0);
 
-                $rows .= "{$discordUser} | {$icName} | {$current} | {$total}\n";
+                $description .= "**{$rank}.** {$discord_user} ({$ic_name})\n";
+                $description .= '└ '.__('duty.current_duties_sum').": **{$current}** | ".__('duty.all_duties_sum').": **{$total}**\n\n";
+
+                $rank++;
             }
 
-            $value = '```'.$header.$rows.'```';
-            $fields[] = $this->makeEmbedField('', $value, false);
-            $data = $this->buildEmbedData('📊 Duty Top List', '0000FF', '', $fields);
+            if (empty($description)) {
+                $description = __('app.no_data');
+            }
+
+            $data = $this->buildEmbedData('📊 '.__('duty.duty_toplist_command_title'), '0000FF', $description);
             $this->respondEphemeralEmbed($interaction, 'normal', $data);
+
         } catch (\Throwable $e) {
-            Log::error('Hiba a duty hozzáadásakor: '.$e->getMessage());
+            Log::error('Hiba a duty toplista lekérdezésekor: '.$e->getMessage());
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
         }
     }

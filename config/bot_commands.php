@@ -61,13 +61,13 @@ return [
                 ],
             ],
             [
-                'name' => 'top-list',
-                'description' => 'duty.duty_top_list_command_description',
+                'name' => 'toplist',
+                'description' => 'duty.duty_toplist_command_description',
                 'type' => 1,
                 'options' => [
                     [
                         'name' => 'limit',
-                        'description' => 'duty.duty_top_list_command_limit_description',
+                        'description' => 'duty.duty_toplist_command_limit_description',
                         'type' => 4,
                         'min_value' => 1,
                         'max_value' => 50,
@@ -75,7 +75,7 @@ return [
                     ],
                     [
                         'name' => 'order_by',
-                        'description' => 'duty.duty_top_list_command_order_by_description',
+                        'description' => 'duty.duty_toplist_command_order_by_description',
                         'type' => 3,
                         'required' => false,
                         'choices' => [

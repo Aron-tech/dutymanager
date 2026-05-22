@@ -39,6 +39,10 @@ return [
     'duty_delete_command_description' => 'Szolgálati idő törlése',
     'duty_delete_command_user_description' => 'A felhasználó, akinek a szolgálati idejét törlöd',
     'duty_delete_command_status_description' => 'A törlendő szolgálati idő típusa',
+    'duty_toplist_command_description' => 'Szolgálati toplista lekérdezése',
+    'duty_toplist_command_limit_description' => 'Toplistán megjelenített felhasználók száma',
+    'duty_toplist_command_order_by_descroption' => 'Toplista rendezése típus alapján',
+    'duty_toplist_command_title' => 'Szolgálati toplista',
     'not_in_duty' => 'Nem vagy szolgálatban!',
     'not_in_duty_user' => 'A felhasználó nincs szolgálatban!',
 ];
