@@ -69,6 +69,9 @@ enum PermissionEnum: string
     // Szerver szintű jogok
     case EDIT_SETTINGS = 'edit_settings';
 
+    // Extra jogosultságok
+    case FORCE_CANCEL_HOLIDAY = 'force_cancel_holiday';
+
     // Alap jogosultságok
     case GET_USER_INFO = 'get_user_info';
     case TOGGLE_DUTY = 'toggle_duty';

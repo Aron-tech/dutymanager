@@ -37,7 +37,11 @@ class HolidayController extends Controller
 
     public function delete(Holiday $holiday): RedirectResponse
     {
-        if (auth()->user()->cannot(PermissionEnum::CANCEL_HOLIDAY)) {
+        $auth_user = auth()->user();
+
+        if ($auth_user->cannot(PermissionEnum::CANCEL_HOLIDAY) && $holiday->user_id === $auth_user->id) {
+            abort(403, __('app.error.no_permission'));
+        } elseif (! $auth_user->cannot(PermissionEnum::FORCE_CANCEL_HOLIDAY)) {
             abort(403, __('app.error.no_permission'));
         }
 
@@ -54,7 +58,7 @@ class HolidayController extends Controller
 
     public function bulkDelete(BulkDeleteHolidayRequest $request): RedirectResponse
     {
-        if (auth()->user()->cannot(PermissionEnum::CANCEL_HOLIDAY)) {
+        if (auth()->user()->cannot(PermissionEnum::FORCE_CANCEL_HOLIDAY)) {
             abort(403, __('app.error.no_permission'));
         }
 

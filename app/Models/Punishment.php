@@ -38,7 +38,7 @@ class Punishment extends Model
             return null;
         }
 
-        $guild_user = $guild_user ?: GuildUser::where('guild_id', $guild_id)->where('user_id', $target_user->id)->first();
+        $guild_user ??= GuildUser::where('guild_id', $guild_id)->where('user_id', $target_user->id)->first();
 
         if (in_array($type, [PunishmentTypeEnum::VERBAL_WARNING, PunishmentTypeEnum::WARNING])) {
             $level += Punishment::active()->where('user_id', $target_user_id)->where('guild_id', $guild_id)->where('type', $type)->max('level') ?? 0;
