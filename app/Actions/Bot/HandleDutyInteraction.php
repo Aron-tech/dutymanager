@@ -52,7 +52,7 @@ class HandleDutyInteraction
 
     public function handleDutyToggleCommand(DiscordInteraction $interaction): void
     {
-        if (! $this->hasPermission($interaction, PermissionEnum::TOGGLE_DUTY)) {
+        if (! $this->validateAccess($interaction, PermissionEnum::TOGGLE_DUTY)) {
             return;
         }
 
@@ -77,7 +77,7 @@ class HandleDutyInteraction
     public function handleDutyTopListCommand(DiscordInteraction $interaction): void
     {
         try {
-            if (! $this->hasPermission($interaction)) {
+            if (! $this->validateAccess($interaction)) {
                 return;
             }
 
@@ -127,7 +127,7 @@ class HandleDutyInteraction
     public function handleAddOrRemoveDutyCommand(DiscordInteraction $interaction, bool $is_remove = false): void
     {
         try {
-            if (! $this->hasPermission($interaction, PermissionEnum::ADD_DUTIES)) {
+            if (! $this->validateAccess($interaction, PermissionEnum::ADD_DUTIES)) {
                 return;
             }
 
@@ -158,7 +158,7 @@ class HandleDutyInteraction
     public function handleDutyResetCommand(DiscordInteraction $interaction): void
     {
         try {
-            if (! $this->hasPermission($interaction, PermissionEnum::EDIT_DUTIES)) {
+            if (! $this->validateAccess($interaction, PermissionEnum::EDIT_DUTIES)) {
                 return;
             }
 
@@ -177,7 +177,7 @@ class HandleDutyInteraction
     public function handleDutyDeleteCommand(DiscordInteraction $interaction): void
     {
         try {
-            if (! $this->hasPermission($interaction, PermissionEnum::DELETE_DUTIES)) {
+            if (! $this->validateAccess($interaction, PermissionEnum::DELETE_DUTIES)) {
                 return;
             }
 
@@ -205,7 +205,7 @@ class HandleDutyInteraction
     public function handleDutyClearCommand(DiscordInteraction $interaction): void
     {
         try {
-            if (! $this->hasPermission($interaction, PermissionEnum::DELETE_DUTIES)) {
+            if (! $this->validateAccess($interaction, PermissionEnum::DELETE_DUTIES)) {
                 return;
             }
 
@@ -227,7 +227,7 @@ class HandleDutyInteraction
     {
         try {
             $required_permission = $is_force ? PermissionEnum::FORCE_CANCEL_DUTIES : PermissionEnum::TOGGLE_DUTY;
-            if (! $this->hasPermission($interaction, $required_permission)) {
+            if (! $this->validateAccess($interaction, $required_permission)) {
                 return;
             }
 

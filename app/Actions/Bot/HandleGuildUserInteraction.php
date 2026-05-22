@@ -46,7 +46,7 @@ class HandleGuildUserInteraction
         try {
             $required_permission = $is_admin ? PermissionEnum::VIEW_GUILD_USERS : PermissionEnum::GET_USER_INFO;
 
-            if (! $this->hasPermission($interaction, $required_permission)) {
+            if (! $this->validateAccess($interaction, $required_permission)) {
                 return;
             }
 

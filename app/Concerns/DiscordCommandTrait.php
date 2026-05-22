@@ -126,7 +126,7 @@ trait DiscordCommandTrait
         return $user_id;
     }
 
-    protected function hasPermission(DiscordInteraction $interaction, ?PermissionEnum $permission = null): bool
+    protected function validateAccess(DiscordInteraction $interaction, ?PermissionEnum $permission = null): bool
     {
         $missing_context = empty($this->guild) || empty($this->user) || empty($this->guild_user);
         $no_permission = $permission && Gate::forUser($this->user)->denies($permission->value);
