@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Concerns\ServiceTrait;
 use App\Enums\ActionTypeEnum;
+use App\Enums\FeatureEnum;
 use App\Enums\PermissionEnum;
 use App\Enums\PunishmentTypeEnum;
 use App\Models\ActivityLog;
@@ -139,18 +140,30 @@ class PunishmentService
     /**
      * @throws \Throwable
      */
-    public function delete(Punishment $punishment): bool
+    public function delete(Punishment $punishment, ?string $causer_id): bool
     {
         $guild = SelectedGuildService::get();
-        $deleted_id = $punishment->id;
+        $deleted_punishment = clone $punishment;
+        $deleted_id = $deleted_punishment->id;
+        $causer_id ??= auth()->id();
 
-        return DB::transaction(function () use ($punishment, $deleted_id, $guild) {
+        $is_deleted = DB::transaction(function () use ($punishment, $deleted_id, $guild, $causer_id) {
             $is_deleted = $punishment->delete();
 
-            ActivityLog::make($guild->id, auth()->id(), null, ActionTypeEnum::DELETE_PUNISHMENT_FROM_GUILD_USER, [$deleted_id]);
+            ActivityLog::make($guild->id, $causer_id, null, ActionTypeEnum::DELETE_PUNISHMENT_FROM_GUILD_USER, [$deleted_id]);
 
             return $is_deleted;
         });
+
+        if ($is_deleted && $deleted_punishment->type === PunishmentTypeEnum::WARNING && $deleted_punishment->expires_at > now()) {
+            $warning_roles = $guild->guildSettings->getFeatureSettings(FeatureEnum::WARN, 'warning_roles', []);
+            $index = $deleted_punishment->level - 1;
+            if (isset($warning_roles[$index])) {
+                DiscordFetchService::removeRoleFromMember($guild->id, $deleted_punishment->user_id, $warning_roles[$index]);
+            }
+        }
+
+        return $is_deleted;
     }
 
     /**

@@ -28,6 +28,13 @@ class HandleGuildUserInteraction
         if (! $this->validateGuild($interaction)) {
             return;
         }
+
+        if ($interaction->type === 3 && $interaction->data->custom_id === 'btn_duty_info') {
+            $this->handleUserInfoCommand($interaction, $this->guild_user);
+
+            return;
+        }
+
         if (empty($this->sub_command_name)) {
             match ($this->command_name) {
                 'info' => $this->handleUserInfoCommand($interaction, $this->guild_user),

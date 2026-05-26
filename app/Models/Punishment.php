@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 #[Fillable(['user_id', 'guild_id', 'guild_user_id', 'type', 'level', 'reason', 'expires_at', 'created_by', 'is_expired'])]
 class Punishment extends Model
@@ -30,59 +31,57 @@ class Punishment extends Model
     public static function make(?GuildUser $guild_user, ?User $target_user, Guild $guild, PunishmentTypeEnum $type, ?int $level, string $reason, ?string $expires_at, ?User $created_by): ?Punishment
     {
         $guild_id = $guild->id;
-        $target_user_id = $guild_user?->user_id ?: ($target_user?->id);
-        $created_by ??= auth()->user();
+        $target_user_id = $guild_user?->user_id ?? $target_user?->id;
         $level = $level ?: 1;
 
-        if (empty($guild_id)) {
+        if (empty($guild_id) || empty($target_user_id)) {
             return null;
         }
 
-        $guild_user ??= GuildUser::where('guild_id', $guild_id)->where('user_id', $target_user->id)->first();
+        $guild_user ??= GuildUser::where('guild_id', $guild_id)->where('user_id', $target_user_id)->first();
 
         if (in_array($type, [PunishmentTypeEnum::VERBAL_WARNING, PunishmentTypeEnum::WARNING])) {
-            $level += Punishment::active()->where('user_id', $target_user_id)->where('guild_id', $guild_id)->where('type', $type)->max('level') ?? 0;
-        }
-
-        if ($type === PunishmentTypeEnum::WARNING) {
-            $warning_roles = $guild->guildSettings->getFeatureSettings(FeatureEnum::WARN, 'warning_roles', []);
-            $warning_roles_count = count($warning_roles);
-            $new_warning_index = $level - 1;
-            if ($new_warning_index < $warning_roles_count) {
-                DiscordFetchService::addRoleToMember($guild_id, $target_user_id, $warning_roles[$new_warning_index]);
-            } else {
-                DiscordFetchService::addRoleToMember($guild_id, $target_user_id, $warning_roles[$warning_roles_count - 1]);
-                $level = $warning_roles_count;
-            }
-            $channel_id = $guild->guildSettings->getFeatureSettings(FeatureEnum::WARN, 'announcement_channel_id', null);
-
-            $embed = DiscordEmbedFactory::create('warning', [
-                'user_id' => $guild_user->user_id,
-                'level' => $level,
-                'reason' => $reason,
-                'actor' => '<@'.$created_by->id.'>',
-                'guild_name' => $guild->name,
-                'guild_icon_url' => $guild->icon ? "https://cdn.discordapp.com/icons/{$guild->id}/{$guild->icon}.png" : null,
-            ]);
-
-            if ($channel_id) {
-                DiscordFetchService::sendMessage($guild_id, $channel_id, null, [$embed]);
-            }
+            $level += self::active()->where('user_id', $target_user_id)->where('guild_id', $guild_id)->where('type', $type)->max('level') ?? 0;
         }
 
         $punishment = self::create([
             'user_id' => $target_user_id,
             'guild_id' => $guild_id,
-            'guild_user_id' => $guild_user->id,
+            'guild_user_id' => $guild_user?->id,
             'type' => $type,
             'level' => $level,
             'reason' => $reason,
-            'expires_at' => $expires_at ?: null,
-            'created_by' => $created_by?->id ?: auth()->id(),
+            'expires_at' => $expires_at,
+            'created_by' => $created_by?->id ?? auth()->id(),
             'is_expired' => false,
         ]);
 
-        ActivityLog::make($guild_id, $created_by?->id, $target_user_id, ActionTypeEnum::ADD_PUNISHMENT_TO_GUILD_USER, $punishment->toArray());
+        if ($punishment && $type === PunishmentTypeEnum::WARNING) {
+            DB::afterCommit(function () use ($guild, $guild_id, $target_user_id, $level, $reason, $created_by) {
+                $warning_roles = $guild->guildSettings->getFeatureSettings(FeatureEnum::WARN, 'warning_roles', []);
+                $new_warning_index = min($level - 1, count($warning_roles) - 1);
+
+                if (isset($warning_roles[$new_warning_index])) {
+                    DiscordFetchService::addRoleToMember($guild_id, $target_user_id, $warning_roles[$new_warning_index]);
+                }
+
+                $channel_id = $guild->guildSettings->getFeatureSettings(FeatureEnum::WARN, 'announcement_channel_id', null);
+                if ($channel_id) {
+                    $embed = DiscordEmbedFactory::create('warning', [
+                        'user_id' => $target_user_id,
+                        'level' => $level,
+                        'reason' => $reason,
+                        'actor' => '<@'.($created_by?->id ?? auth()->id()).'>',
+                        'guild_name' => $guild->name,
+                        'guild_icon_url' => $guild->icon ? "https://cdn.discordapp.com/icons/{$guild->id}/{$guild->icon}.png" : null,
+                    ]);
+
+                    DiscordFetchService::sendMessage($guild_id, $channel_id, null, [$embed]);
+                }
+            });
+        }
+
+        ActivityLog::make($guild_id, $created_by?->id ?? auth()->id(), $target_user_id, ActionTypeEnum::ADD_PUNISHMENT_TO_GUILD_USER, $punishment->toArray());
 
         return $punishment;
     }

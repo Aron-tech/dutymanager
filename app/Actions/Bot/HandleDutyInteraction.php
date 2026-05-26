@@ -15,6 +15,7 @@ use App\Models\Duty;
 use App\Models\GuildUser;
 use App\Services\DiscordEmbedFactory;
 use App\Services\DiscordFetchService;
+use App\Services\DutyMonitorService;
 use App\Services\DutyService;
 use Discord\Discord;
 use Discord\Parts\Interactions\Interaction as DiscordInteraction;
@@ -39,6 +40,19 @@ class HandleDutyInteraction
         }
         $this->duty_role = $this->guild->guildSettings->getFeatureSettings(FeatureEnum::DUTY, 'duty_role_id', null);
 
+        // --- GOMB (COMPONENT) KEZELÉS ---
+        if ($interaction->type === 3) {
+            match ($interaction->data->custom_id) {
+                'btn_duty_start' => $this->handleButtonStart($interaction),
+                'btn_duty_stop' => $this->handleButtonStop($interaction),
+                'btn_duty_cancel' => $this->handleCancelCommand($interaction, $this->guild_user, false, true),
+                default => $this->respondSimpleEmbed($interaction, '❌ '.__('app.unknow_command'), 'FF0000'),
+            };
+
+            return;
+        }
+
+        // --- SLASH PARANCS KEZELÉS ---
         match ($this->sub_command_name) {
             'toggle' => $this->handleDutyToggleCommand($interaction),
             'cancel' => $this->handleCancelCommand($interaction, $this->guild_user),
@@ -53,7 +67,27 @@ class HandleDutyInteraction
         };
     }
 
-    public function handleDutyToggleCommand(DiscordInteraction $interaction): void
+    public function handleButtonStart(DiscordInteraction $interaction): void
+    {
+        if ($this->guild_user->hasActiveDuty()) {
+            $this->respondSimpleEmbed($interaction, '❌ '.__('duty.already_on_duty'), 'FF0000');
+
+            return;
+        }
+        $this->handleDutyToggleCommand($interaction, true);
+    }
+
+    public function handleButtonStop(DiscordInteraction $interaction): void
+    {
+        if (! $this->guild_user->hasActiveDuty()) {
+            $this->respondSimpleEmbed($interaction, '❌ '.__('duty.not_in_duty'), 'FF0000');
+
+            return;
+        }
+        $this->handleDutyToggleCommand($interaction, true);
+    }
+
+    public function handleDutyToggleCommand(DiscordInteraction $interaction, bool $update_panel = false): void
     {
         if (! $this->validateAccess($interaction, PermissionEnum::TOGGLE_DUTY)) {
             return;
@@ -64,14 +98,22 @@ class HandleDutyInteraction
         if ($result['duty_action'] === DutyActionEnum::ON_DUTY) {
             DiscordFetchService::addRoleToMember($this->guild->id, $this->user->id, $this->duty_role);
             $this->respondSimpleEmbed($interaction, '🚨 '.__('duty.success_duty_on'), '00FF00');
+
+            if ($update_panel) {
+                DutyMonitorService::runPeriodicUpdate($this->discord, $this->guild->id);
+            }
         } elseif ($result['duty_action'] === DutyActionEnum::OFF_DUTY) {
             $current_duties_sum = $this->guild_user->getDutiesValue();
             DiscordFetchService::removeRoleFromMember($this->guild->id, $this->user->id, $this->duty_role);
             $fields[] = $this->makeEmbedField('🕒 '.__('duty.duty_value'), Duty::standardFormat($result['duty_model']->value), false);
             $fields[] = $this->makeEmbedField('⏱️ '.__('duty.current_duties_sum'), Duty::standardFormat($current_duties_sum), false);
             $fields[] = $this->makeEmbedField('📅 '.__('guild_user.user_in_rank'), $this->guild_user->rank_changed_ago, false);
-            $data = $this->buildEmbedData('🚨 '.__('duty.success_duty_off'), 'FF0000', fields: $fields);
+            $data = $this->buildEmbedData('🚨 '.__('duty.success_duty_off'), 'FF0000', '', $fields);
             $this->respondEphemeralEmbed($interaction, 'normal', $data);
+
+            if ($update_panel) {
+                DutyMonitorService::runPeriodicUpdate($this->discord, $this->guild->id);
+            }
         } else {
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
         }
@@ -272,7 +314,7 @@ class HandleDutyInteraction
         }
     }
 
-    protected function handleCancelCommand(DiscordInteraction $interaction, ?GuildUser $guild_user, $is_force = false): void
+    protected function handleCancelCommand(DiscordInteraction $interaction, ?GuildUser $guild_user, $is_force = false, bool $update_panel = false): void
     {
         try {
             $required_permission = $is_force ? PermissionEnum::FORCE_CANCEL_DUTIES : PermissionEnum::TOGGLE_DUTY;
@@ -312,6 +354,11 @@ class HandleDutyInteraction
             $fields = $is_force ? [$this->makeEmbedField(__('guild_user.user'), '<@'.$guild_user->user_id.'>')] : [];
             $data = $this->buildEmbedData('🚨 '.$title, '00FF00', '', $fields);
             $this->respondEphemeralEmbed($interaction, 'normal', $data);
+
+            if ($update_panel) {
+                DutyMonitorService::runPeriodicUpdate($this->discord, $this->guild->id);
+            }
+
         } catch (\Throwable $e) {
             Log::error('Hiba a duty törlésekor: '.$e->getMessage());
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');

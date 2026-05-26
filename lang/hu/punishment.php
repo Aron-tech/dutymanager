@@ -5,4 +5,5 @@ return [
     'success_add_warning' => 'Sikeresen kiosztottál egy figyelmeztetést a felhasználónak.',
     'success_add_verbal_warning' => 'Sikeresen figyelmeztetted szóba a felhasználót',
     'success_add_punishment' => 'Sikeresen kiosztottál egy büntetést a felhasználónak',
+    'error_no_active_punishment' => 'A felhasználó nem rendelkezik aktív büntetéssel',
 ];

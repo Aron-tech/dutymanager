@@ -86,11 +86,12 @@ class HandleHolidayInteraction
             }
 
             $is_success = $this->service->delete($active_holiday, $this->guild, $this->user?->id);
-
-            if ($is_success) {
+            if ($is_admin && $is_success) {
                 $fields[] = $this->makeEmbedField(__('guild_user.user'), '<@'.$active_holiday->user_id.'>');
                 $data = $this->buildEmbedData(__('holiday.success_force_cancel'), '00FF00', '', $fields);
                 $this->respondEphemeralEmbed($interaction, 'normal', $data);
+            } elseif ($is_success) {
+                $this->respondSimpleEmbed($interaction, '✅ '.__('holiday.success_cancel_holiday'), '00FF00');
             } else {
                 $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
             }

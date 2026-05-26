@@ -207,6 +207,158 @@ return [
         ],
     ],
     [
+        'name' => 'punishment',
+        'description' => 'punishment.punishment_commands_description',
+        'type' => 1,
+        'options' => [
+            [
+                'name' => 'verbal_warning',
+                'description' => 'punishment.verbal_warning_command_description',
+                'type' => 1,
+                'options' => [
+                    [
+                        'name' => 'user',
+                        'description' => 'punishment.punishment_user_description',
+                        'type' => 6,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'reason',
+                        'description' => 'punishment.punishment_reason_description',
+                        'type' => 3,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'days',
+                        'description' => 'punishment.punishment_days_description',
+                        'type' => 4,
+                        'min_value' => 1,
+                        'required' => false,
+                    ],
+                    [
+                        'name' => 'level',
+                        'description' => 'punishment.punishment_level_description',
+                        'type' => 4,
+                        'min_value' => 1,
+                        'required' => false,
+                    ],
+                ],
+            ],
+            [
+                'name' => 'warn',
+                'description' => 'punishment.warn_command_description',
+                'type' => 1,
+                'options' => [
+                    [
+                        'name' => 'user',
+                        'description' => 'punishment.punishment_user_description',
+                        'type' => 6,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'reason',
+                        'description' => 'punishment.punishment_reason_description',
+                        'type' => 3,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'days',
+                        'description' => 'punishment.punishment_days_description',
+                        'type' => 4,
+                        'min_value' => 1,
+                        'required' => false,
+                    ],
+                    [
+                        'name' => 'level',
+                        'description' => 'punishment.warn_level_description',
+                        'type' => 4,
+                        'min_value' => 1,
+                        'required' => false,
+                    ],
+                ],
+            ],
+            [
+                'name' => 'blacklist',
+                'description' => 'punishment.blacklist_command_description',
+                'type' => 1,
+                'options' => [
+                    [
+                        'name' => 'user',
+                        'description' => 'punishment.punishment_user_description',
+                        'type' => 6,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'reason',
+                        'description' => 'punishment.punishment_reason_description',
+                        'type' => 3,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'days',
+                        'description' => 'punishment.punishment_days_description',
+                        'type' => 4,
+                        'min_value' => 1,
+                        'required' => false,
+                    ],
+                ],
+            ],
+            [
+                'name' => 'removeverbal_warning',
+                'description' => 'punishment.remove_verbal_warning_command_description',
+                'type' => 1,
+                'options' => [
+                    [
+                        'name' => 'user',
+                        'description' => 'punishment.punishment_user_description',
+                        'type' => 6,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'level',
+                        'description' => 'punishment.warn_level_description',
+                        'type' => 4,
+                        'required' => false,
+                        'min_value' => 1,
+                    ],
+                ],
+            ],
+            [
+                'name' => 'removewarn',
+                'description' => 'punishment.remove_warn_command_description',
+                'type' => 1,
+                'options' => [
+                    [
+                        'name' => 'user',
+                        'description' => 'punishment.punishment_user_description',
+                        'type' => 6,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'level',
+                        'description' => 'punishment.warn_level_description',
+                        'type' => 4,
+                        'required' => false,
+                        'min_value' => 1,
+                    ],
+                ],
+            ],
+            [
+                'name' => 'removeblacklist',
+                'description' => 'punishment.remove_blacklist_command_description',
+                'type' => 1,
+                'options' => [
+                    [
+                        'name' => 'user',
+                        'description' => 'punishment.punishment_user_description',
+                        'type' => 6,
+                        'required' => true,
+                    ],
+                ],
+            ],
+        ],
+    ],
+    [
         'name' => 'holiday',
         'description' => 'holiday.holiday_commands_description',
         'type' => 1,

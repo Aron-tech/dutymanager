@@ -30,12 +30,15 @@ class HandlePunishmentInteraction
             'verbal_warning' => $this->handleAddPunishment($interaction, PunishmentTypeEnum::VERBAL_WARNING),
             'warn' => $this->handleAddPunishment($interaction, PunishmentTypeEnum::WARNING),
             'blacklist' => $this->handleAddPunishment($interaction, PunishmentTypeEnum::BLACKLIST),
+            'removeverbal_warning' => $this->handleRemovePunishment($interaction, PunishmentTypeEnum::VERBAL_WARNING),
+            'removewarn' => $this->handleRemovePunishment($interaction, PunishmentTypeEnum::WARNING),
+            'removeblacklist' => $this->handleRemovePunishment($interaction, PunishmentTypeEnum::BLACKLIST),
             default => $this->respondSimpleEmbed($interaction, '❌ '.__('app.unknow_command'), 'FF0000'),
         };
 
     }
 
-    private function handleAddPunishment(DiscordInteraction $interaction, PunishmentTypeEnum $type): void
+    protected function handleAddPunishment(DiscordInteraction $interaction, PunishmentTypeEnum $type): void
     {
         try {
             switch ($type) {
@@ -56,7 +59,7 @@ class HandlePunishmentInteraction
                     $required_permission = PermissionEnum::ADD_PUNISHMENTS;
             }
 
-            if (! $this->validateAccess($interaction, $required_permission) || ! $this->validateAccess($interaction, PermissionEnum::ADD_PUNISHMENTS)) {
+            if (! $this->validateAccess($interaction, $required_permission) && ! $this->validateAccess($interaction, PermissionEnum::ADD_PUNISHMENTS)) {
                 return;
             }
 
@@ -80,6 +83,66 @@ class HandlePunishmentInteraction
 
         } catch (\Throwable $e) {
             Log::error('Hiba a büntetés létrehozásakor: '.$e->getMessage());
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
+        }
+    }
+
+    protected function handleRemovePunishment(DiscordInteraction $interaction, PunishmentTypeEnum $type): void
+    {
+        try {
+            switch ($type) {
+                case PunishmentTypeEnum::VERBAL_WARNING:
+                    $required_permission = PermissionEnum::DELETE_VERBAL_WARNING;
+                    $title = __('punishment.success_delete_verbal_warning');
+                    break;
+                case PunishmentTypeEnum::WARNING:
+                    $required_permission = PermissionEnum::DELETE_WARNING;
+                    $title = __('punishment.success_delete_warning');
+                    break;
+                case PunishmentTypeEnum::BLACKLIST:
+                    $required_permission = PermissionEnum::DELETE_BLACKLIST;
+                    $title = __('punishment.success_delete_blacklist');
+                    break;
+                default:
+                    $title = __('punishment.success_delete_punishment');
+                    $required_permission = PermissionEnum::DELETE_PUNISHMENTS;
+            }
+
+            if (! $this->validateAccess($interaction, $required_permission) && ! $this->validateAccess($interaction, PermissionEnum::DELETE_PUNISHMENTS)) {
+                return;
+            }
+
+            if (! $this->target_guild_user) {
+                $this->respondSimpleEmbed($interaction, ('guild_user.error_not_found_user'), 'FF0000');
+                return;
+            }
+
+            $level = $this->active_options->get('name', 'level')?->value ?? null;
+            //$reason = $this->active_options->get('name', 'reason')?->value ?? null;
+
+            $query = $this->target_guild_user->activePunishments();
+            if ($level && $type !== PunishmentTypeEnum::BLACKLIST) {
+                $query->where('level', $level);
+            }
+            $active_punishment = $query->first();
+
+            if (! $active_punishment) {
+                $this->respondSimpleEmbed($interaction, __('punishment.error_no_active_punishment'), 'FF0000');
+                return;
+            }
+
+            $is_success = $this->service->delete($active_punishment, $this->user->id);
+
+            if ($is_success) {
+                $fields[] = $this->makeEmbedField(__('guild_user.user'), '<@'.$this->target_user_id.'>');
+                $data = $this->buildEmbedData('⚠️ '.$title, '00FF00', '', $fields);
+                $this->respondEphemeralEmbed($interaction, 'normal', $data);
+            } else {
+                $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
+            }
+
+        } catch (\Throwable $e) {
+            Log::error('Hiba a büntetés törlésekor: '.$e->getMessage());
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
         }
     }

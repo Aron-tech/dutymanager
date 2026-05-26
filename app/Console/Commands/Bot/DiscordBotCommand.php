@@ -2,11 +2,13 @@
 
 namespace App\Console\Commands\Bot;
 
+use App\Actions\Bot\HandleDefaultInteraction;
 use App\Actions\Bot\HandleDutyInteraction;
 use App\Actions\Bot\HandleGuildUserInteraction;
 use App\Actions\Bot\HandleHolidayInteraction;
 use App\Concerns\DiscordBotTrait;
 use App\Models\Guild;
+use App\Services\DutyMonitorService;
 use Discord\Discord;
 use Discord\Exceptions\IntentException;
 use Discord\Parts\Interactions\Interaction as DiscordInteraction;
@@ -25,6 +27,7 @@ class DiscordBotCommand extends Command
     use DiscordBotTrait;
 
     protected bool $dev_mode = false;
+
     protected ?string $dev_guild_id = null;
 
     /**
@@ -37,6 +40,7 @@ class DiscordBotCommand extends Command
 
         if ($this->dev_mode && empty($this->dev_guild_id)) {
             $this->error('Hiba: A dev mode aktív, de a services.discord.dev_guild_id nincs beállítva!');
+
             return;
         }
 
@@ -59,6 +63,7 @@ class DiscordBotCommand extends Command
                 if ($this->dev_guild_id === (string) $guild->id) {
                     $this->syncGuildCommands($bot, $guild);
                 }
+
                 return;
             }
 
@@ -66,12 +71,30 @@ class DiscordBotCommand extends Command
         });
 
         $bot->on(Event::INTERACTION_CREATE, function (DiscordInteraction $interaction) use ($bot) {
+
+            if ($interaction->type === 3) {
+                if ($this->dev_mode && $this->dev_guild_id !== (string) $interaction->guild_id) {
+                    return;
+                }
+
+                $custom_id = $interaction->data->custom_id;
+
+                if (str_starts_with($custom_id, 'btn_duty_info')) {
+                    (new HandleGuildUserInteraction)->handle($bot, $interaction);
+                } elseif (str_starts_with($custom_id, 'btn_duty_')) {
+                    (new HandleDutyInteraction)->handle($bot, $interaction);
+                }
+
+                return;
+            }
+
             if ($interaction->type !== 2) {
                 return;
             }
 
             if ($this->dev_mode && $this->dev_guild_id !== (string) $interaction->guild_id) {
                 $this->info('Kivétel: '.$this->dev_guild_id.' Aktuális: '.$interaction->guild_id);
+
                 return;
             }
 
@@ -86,14 +109,15 @@ class DiscordBotCommand extends Command
                 'info' => HandleGuildUserInteraction::class,
                 'user' => HandleGuildUserInteraction::class,
                 'holiday' => HandleHolidayInteraction::class,
+                'default' => HandleDefaultInteraction::class,
             ];
 
             if (isset($handlers[$command_name])) {
                 $handlerClass = $handlers[$command_name];
                 (new $handlerClass)->handle($bot, $interaction);
             } else {
-                $firstHandlerClass = reset($handlers);
-                (new $firstHandlerClass)->handle($bot, $interaction);
+                $defaultHandler = $handlers['default'];
+                (new $defaultHandler)->handle($bot, $interaction);
             }
         });
 
@@ -110,6 +134,7 @@ class DiscordBotCommand extends Command
 
             $whitelist = Cache::remember($cache_key, now()->addHour(), function () use ($member) {
                 $guild = Guild::where('id', $member->guild_id)->with(['guildRoles', 'guildSettings'])->installed()->first();
+
                 return $guild ? $this->listRoleWhitelist($guild) : [];
             });
 
@@ -135,6 +160,8 @@ class DiscordBotCommand extends Command
                 $this->updateRoles($member->guild_id, $member->id, $roles_to_save);
             }
         });
+
+        DutyMonitorService::register($bot);
 
         $bot->run();
     }

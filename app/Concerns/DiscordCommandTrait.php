@@ -8,6 +8,10 @@ use App\Models\Guild;
 use App\Models\GuildUser;
 use App\Models\User;
 use App\Services\DiscordEmbedFactory;
+use App\Services\DutyService;
+use App\Services\GuildUserService;
+use App\Services\HolidayService;
+use App\Services\PunishmentService;
 use App\Services\SelectedGuildService;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
@@ -19,10 +23,12 @@ use Illuminate\Support\Facades\Gate;
 trait DiscordCommandTrait
 {
     protected string $command_name;
+
     protected ?string $sub_command_name = null;
+
     protected mixed $active_options = null;
 
-    protected mixed $service;
+    protected GuildUserService|DutyService|PunishmentService|HolidayService $service;
 
     protected ?Guild $guild = null;
 
@@ -38,8 +44,8 @@ trait DiscordCommandTrait
 
     protected function init(Discord $discord, DiscordInteraction $interaction, mixed $service, array $data = []): void
     {
-        $this->command_name = $interaction->data->name;
-        $this->active_options = $interaction->data->options;
+        $this->command_name = $interaction->data->name ?? $interaction->data->custom_id ?? null;
+        $this->active_options = $interaction->type === 3 ? null : $interaction->data->options;
 
         if ($this->active_options !== null && $this->active_options->count() > 0) {
             $first_option = $this->active_options->first();

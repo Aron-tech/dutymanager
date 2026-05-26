@@ -11,9 +11,10 @@ use Discord\Parts\Embed\Embed;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
-
 use Throwable;
+
 use function React\Promise\all;
 
 trait DiscordBotTrait
@@ -90,99 +91,143 @@ trait DiscordBotTrait
         return new DiscordCommand($discord, $data);
     }
 
+    /**
+     * Megbízható tag lekérdezés cache validációval.
+     * @throws \Exception
+     */
+    protected function getValidMember(\Discord\Parts\Guild\Guild $guild, string $user_id, bool $force_fetch = false): PromiseInterface
+    {
+        if ($force_fetch) {
+            return $guild->members->fetch($user_id, true);
+        }
+
+        $member = $guild->members->get('id', $user_id);
+
+        if ($member) {
+            try {
+                $member->roles;
+                return \React\Promise\resolve($member);
+            } catch (Throwable) {
+                return $guild->members->fetch($user_id, true);
+            }
+        }
+
+        return $guild->members->fetch($user_id);
+    }
+
+    /**
+     * Profi újrapróbálkozó mechanizmus ReactPHP EventLoop delay-el.
+     */
+    protected function executeWithRetry(Discord $discord, int $max_attempts, callable $operation, float $delay_seconds = 1.0, int $current_attempt = 1): PromiseInterface
+    {
+        return \React\Promise\resolve(null)->then(function () use ($operation, $current_attempt) {
+            return $operation($current_attempt);
+        })->catch(function (Throwable $e) use ($discord, $max_attempts, $operation, $delay_seconds, $current_attempt) {
+            if ($current_attempt >= $max_attempts) {
+                return \React\Promise\reject($e);
+            }
+
+            $deferred = new Deferred;
+
+            $discord->getLoop()->addTimer($delay_seconds, function () use ($deferred, $discord, $max_attempts, $operation, $delay_seconds, $current_attempt) {
+                $this->executeWithRetry($discord, $max_attempts, $operation, $delay_seconds, $current_attempt + 1)
+                    ->then([$deferred, 'resolve'], [$deferred, 'reject']);
+            });
+
+            return $deferred->promise();
+        });
+    }
+
+    /**
+     * Fő feladat feldolgozó.
+     */
     public function processTask(array $task, Discord $discord): void
     {
-        $guild = ($task['guild_id'] ?? null) ? $discord->guilds->get('id', $task['guild_id']) : null;
-        if (! $guild) {
-            $this->error('Guild nem található a cache-ben: '.($task['guild_id'] ?? 'null'));
+        $guild_id = $task['guild_id'] ?? null;
+        $guild = $guild_id ? $discord->guilds->get('id', $guild_id) : null;
+        $action = $task['action'] ?? null;
+        $user_id = $task['user_id'] ?? null;
+
+        if (! $guild && $guild_id && $action !== 'send_message') {
+            $this->error("Guild nem található a cache-ben: {$guild_id}");
 
             return;
         }
 
-        $getMember = function ($guild, $userId) {
-            $member = $guild->members->get('id', $userId);
-
-            return $member ? \React\Promise\resolve($member) : $guild->members->fetch($userId);
-        };
-
         try {
-            switch ($task['action']) {
+            switch ($action) {
                 case 'add_role':
-                    $getMember($guild, $task['user_id'])->then(
-                        fn ($member) => $member->addRole($task['role_id'])->then(
-                            fn () => $this->info("Rang ráadva: {$task['user_id']}"),
-                            fn ($e) => $this->error('Rang adási hiba: '.$e->getMessage())
-                        ),
-                        fn ($e) => $this->error('Tag nem található: '.$e->getMessage())
-                    );
-                    break;
-
                 case 'remove_role':
-                    $getMember($guild, $task['user_id'])->then(
-                        fn ($member) => $member->removeRole($task['role_id'])->then(
-                            fn () => $this->info("Rang levéve: {$task['user_id']}"),
-                            fn ($e) => $this->error('Rang levételi hiba: '.$e->getMessage())
-                        ),
-                        fn ($e) => $this->error('Tag nem található: '.$e->getMessage())
+                    $role_id = $task['role_id'];
+
+                    $this->executeWithRetry($discord, 3, function (int $attempt) use ($guild, $user_id, $role_id, $action) {
+                        $force_fetch = $attempt > 1; // 2. és 3. alkalommal erőszakolt API lekérés
+
+                        return $this->getValidMember($guild, $user_id, $force_fetch)->then(function ($member) use ($role_id, $action) {
+                            return $action === 'add_role'
+                                ? $member->addRole($role_id)
+                                : $member->removeRole($role_id);
+                        });
+                    }, 1.5)->then( // 1.5 másodperc várakozás a próbálkozások között
+                        fn () => $this->info("Rang művelet ({$action}) sikeres: {$user_id}"),
+                        fn ($e) => $this->error("Rang művelet sikertelen 3 próba után: {$e->getMessage()}")
                     );
                     break;
 
                 case 'kick':
-                    $getMember($guild, $task['user_id'])->then(
+                    $this->getValidMember($guild, $user_id)->then(
                         fn ($member) => $member->kick($task['reason'] ?? ''),
-                        fn ($e) => $this->error('Kick hiba: '.$e->getMessage())
+                        fn ($e) => $this->error("Kick hiba: {$e->getMessage()}")
                     );
                     break;
 
                 case 'ban':
-                    $guild->bans->ban($task['user_id'], [
+                    $guild->bans->ban($user_id, [
                         'reason' => $task['reason'] ?? '',
                         'delete_message_seconds' => $task['delete_message_seconds'] ?? 0,
                     ])->then(
-                        fn () => $this->info("Felhasználó bannolva: {$task['user_id']}"),
-                        fn ($e) => $this->error('Ban hiba: '.$e->getMessage())
+                        fn () => $this->info("Felhasználó bannolva: {$user_id}"),
+                        fn ($e) => $this->error("Ban hiba: {$e->getMessage()}")
                     );
                     break;
 
                 case 'unban':
-                    $guild->bans->unban($task['user_id'], $task['reason'] ?? '')->then(
-                        fn () => $this->info("Felhasználó unbannolva: {$task['user_id']}"),
-                        fn ($e) => $this->error('Unban hiba: '.$e->getMessage())
+                    $guild->bans->unban($user_id, $task['reason'] ?? '')->then(
+                        fn () => $this->info("Felhasználó unbannolva: {$user_id}"),
+                        fn ($e) => $this->error("Unban hiba: {$e->getMessage()}")
                     );
                     break;
 
                 case 'timeout':
-                    $getMember($guild, $task['user_id'])->then(
+                    $this->getValidMember($guild, $user_id)->then(
                         fn ($member) => $member->timeout($task['until'] ? new \DateTime($task['until']) : null, $task['reason'] ?? ''),
-                        fn ($e) => $this->error('Timeout hiba: '.$e->getMessage())
+                        fn ($e) => $this->error("Timeout hiba: {$e->getMessage()}")
                     );
                     break;
 
                 case 'send_message':
-                    $guildId = $task['guild_id'] ?? null;
-                    $channelId = $task['channel_id'] ?? null;
-                    $guild = $guildId ? $discord->guilds->get('id', $guildId) : null;
+                    $channel_id = $task['channel_id'] ?? null;
 
-                    $proceed = function ($guild) use ($discord, $channelId, $task) {
-                        $channel = $guild ? $guild->channels->get('id', $channelId) : $discord->getChannel($channelId);
+                    $proceed = function ($guild) use ($discord, $channel_id, $task) {
+                        $channel = $guild ? $guild->channels->get('id', $channel_id) : $discord->getChannel($channel_id);
 
                         if ($channel) {
                             $builder = MessageBuilder::new();
                             if ($task['content'] ?? null) {
                                 $builder->setContent($task['content']);
                             }
-                            foreach ($task['embeds'] ?? [] as $embedData) {
-                                $builder->addEmbed(new Embed($discord, $embedData));
+                            foreach ($task['embeds'] ?? [] as $embed_data) {
+                                $builder->addEmbed(new Embed($discord, $embed_data));
                             }
                             $channel->sendMessage($builder);
                         } else {
-                            $this->error("Csatorna nem található: {$channelId}");
+                            $this->error("Csatorna nem található: {$channel_id}");
                         }
                     };
 
-                    if (! $guild && $guildId) {
-                        $discord->guilds->fetch($guildId)->then(
-                            fn ($guild) => $proceed($guild),
+                    if (! $guild && $guild_id) {
+                        $discord->guilds->fetch($guild_id)->then(
+                            fn ($fetched_guild) => $proceed($fetched_guild),
                             fn () => $proceed(null)
                         );
                     } else {
@@ -191,10 +236,10 @@ trait DiscordBotTrait
                     break;
 
                 default:
-                    $this->error('Ismeretlen Discord feladat: '.($task['action'] ?? 'null'));
+                    $this->error("Ismeretlen Discord feladat: {$action}");
             }
-        } catch (\Exception $e) {
-            $this->error("Kritikus hiba a feladat végrehajtásakor ({$task['action']}): ".$e->getMessage());
+        } catch (Throwable $e) {
+            $this->error("Kritikus hiba a feladat végrehajtásakor ({$action}): {$e->getMessage()}");
         }
     }
 
