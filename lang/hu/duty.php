@@ -62,4 +62,5 @@ return [
     'panel_info_desc' => 'Jelenlegi státusz megtekintése',
     'panel_currently_on_duty' => 'Jelenleg szolgálatban',
     'panel_updated' => 'Duty Management System • Frissítve',
+    'voice_on_duty' => 'Szolgálatban: :count fő',
 ];

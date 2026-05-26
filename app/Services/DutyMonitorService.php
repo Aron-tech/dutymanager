@@ -34,7 +34,7 @@ class DutyMonitorService
 
     public static function runPeriodicUpdate(Discord $discord, ?string $specific_guild_id = null): void
     {
-        $query = Guild::where('is_installed', true)->with('guildSettings');
+        $query = Guild::installed()->with('guildSettings');
         if ($specific_guild_id) {
             $query->where('id', $specific_guild_id);
         }
@@ -58,12 +58,11 @@ class DutyMonitorService
 
             $active_count = $active_duties->count();
 
-            // Voice Channel Update
             $active_voice_id = $guild->guildSettings->getFeatureSettings(FeatureEnum::DUTY, 'active_duty_channel_id', null);
             if ($active_voice_id) {
                 $voice_channel = $discord_guild->channels->get('id', $active_voice_id);
                 if ($voice_channel && $voice_channel->type === 2) {
-                    $new_name = "Szolgálatban: {$active_count} fő";
+                    $new_name = '🛡️ '.__('duty.voice_on_duty', ['count' => $active_count]);
                     if ($voice_channel->name !== $new_name) {
                         $voice_channel->name = $new_name;
                         $voice_channel->save()->catch(fn ($e) => Log::error("Hiba a csatornanév módosításakor: {$e->getMessage()}"));
@@ -95,7 +94,7 @@ class DutyMonitorService
             $lines[] = '❌ '.__('duty.panel_no_active');
         } else {
             foreach ($active_duties as $duty) {
-                $started = $duty->started_at->format('H:i');
+                $started = $duty->started_at->format('Y. m. d. H:i');
                 $lines[] = "• <@{$duty->user_id}> - *".__('duty.panel_planned_start', ['time' => $started]).'*';
             }
         }
@@ -163,26 +162,6 @@ class DutyMonitorService
         }
     }
 
-    private static function chunkLines(array $lines, int $max_length = 3000): array
-    {
-        $chunks = [];
-        $current_chunk = '';
-
-        foreach ($lines as $line) {
-            if (strlen($current_chunk) + strlen($line) > $max_length) {
-                $chunks[] = trim($current_chunk);
-                $current_chunk = '';
-            }
-            $current_chunk .= $line."\n";
-        }
-
-        if (! empty($current_chunk)) {
-            $chunks[] = trim($current_chunk);
-        }
-
-        return $chunks;
-    }
-
     private static function handleVoiceStateUpdate($state, $discord, $oldstate): void
     {
         $guild_id = $state->guild_id ?? $oldstate->guild_id;
@@ -237,5 +216,25 @@ class DutyMonitorService
         if ($update_panel) {
             self::runPeriodicUpdate($discord, $guild_id);
         }
+    }
+
+    private static function chunkLines(array $lines, int $max_length = 3000): array
+    {
+        $chunks = [];
+        $current_chunk = '';
+
+        foreach ($lines as $line) {
+            if (strlen($current_chunk) + strlen($line) > $max_length) {
+                $chunks[] = trim($current_chunk);
+                $current_chunk = '';
+            }
+            $current_chunk .= $line."\n";
+        }
+
+        if (! empty($current_chunk)) {
+            $chunks[] = trim($current_chunk);
+        }
+
+        return $chunks;
     }
 }
