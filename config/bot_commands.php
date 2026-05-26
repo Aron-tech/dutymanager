@@ -2,6 +2,11 @@
 
 return [
     [
+        'name' => 'install',
+        'description' => 'app.install_command_description',
+        'type' => 1,
+    ],
+    [
         'name' => 'info',
         'description' => 'guild_user.info_command_description',
         'type' => 1,
@@ -26,6 +31,36 @@ return [
                         'name' => 'discord_id',
                         'description' => 'guild_user.discord_id_description',
                         'type' => 3,
+                        'required' => false,
+                    ],
+                ],
+            ],
+            [
+                'name' => 'sync',
+                'description' => 'guild_user.user_sync_command_description',
+                'type' => 1,
+            ],
+            [
+                'name' => 'delete',
+                'description' => 'guild_user.user_delete_command_description',
+                'type' => 1,
+                'options' => [
+                    [
+                        'name' => 'user',
+                        'description' => 'guild_user.user_option_description',
+                        'type' => 6,
+                        'required' => false,
+                    ],
+                    [
+                        'name' => 'discord_id',
+                        'description' => 'guild_user.user_option_description',
+                        'type' => 3,
+                        'required' => false,
+                    ],
+                    [
+                        'name' => 'kick',
+                        'description' => 'guild_user.user_delete_command_kick_description',
+                        'type' => 5,
                         'required' => false,
                     ],
                 ],

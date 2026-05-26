@@ -43,6 +43,7 @@ class HandleGuildUserInteraction
         } else {
             match ($this->sub_command_name) {
                 'info' => $this->handleUserInfoCommand($interaction, $this->target_guild_user, $this->target_user_id, true),
+                'delete' => $this->handleUserDeleteCommand($interaction),
                 default => $this->respondSimpleEmbed($interaction, '❌ '.__('app.unknow_command'), 'FF0000'),
             };
         }
@@ -88,5 +89,20 @@ class HandleGuildUserInteraction
 
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
         }
+    }
+
+    public function handleUserDeleteCommand(DiscordInteraction $interaction): void
+    {
+        if (! $this->validateAccess($interaction, PermissionEnum::DELETE_GUILD_USERS)) {
+            return;
+        }
+
+        if (! $this->target_guild_user) {
+            $this->respondSimpleEmbed($interaction, __('app.error_action'), 'FF0000');
+
+            return;
+        }
+
+
     }
 }

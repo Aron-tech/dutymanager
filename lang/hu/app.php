@@ -11,4 +11,8 @@ return [
     'unknow_command' => 'Ismeretlen parancs.',
     'error_not_found_user' => 'A felhasználó nincs hozzáadva a szerverhez!',
     'no_data' => 'Nincs megjeleníthető adat.',
+    'install_command_description' => 'A bot beállításai után használd a parancsot.',
+    'error_guild_not_installed' => 'A szerver nincsen telepítve!',
+    'success_guild_installation' => 'Sikeresen telepítetted a szervert!',
+    'already_guild_installed' => 'Már telepítve van a szerver!',
 ];
