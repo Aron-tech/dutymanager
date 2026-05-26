@@ -13,6 +13,7 @@ use App\Services\GuildUserService;
 use App\Services\HolidayService;
 use App\Services\PunishmentService;
 use App\Services\SelectedGuildService;
+use App\Services\GuildService;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use Discord\Parts\Embed\Embed;
@@ -28,7 +29,7 @@ trait DiscordCommandTrait
 
     protected mixed $active_options = null;
 
-    protected GuildUserService|DutyService|PunishmentService|HolidayService $service;
+    protected GuildService|GuildUserService|DutyService|PunishmentService|HolidayService $service;
 
     protected ?Guild $guild = null;
 
@@ -139,6 +140,19 @@ trait DiscordCommandTrait
 
         if ($missing_context || $no_permission) {
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_no_permission'), 'FF0000');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function validateGuildSettings(DiscordInteraction $interaction): bool
+    {
+        $is_invalid = ! $this->guild || ! $this->guild->guildSettings?->is_complete || empty($this->guild->guildSettings?->features);
+
+        if ($is_invalid) {
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_guild_not_installed'), 'FF0000');
 
             return false;
         }
