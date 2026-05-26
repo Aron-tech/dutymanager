@@ -95,7 +95,7 @@ class DutyMonitorService
         } else {
             foreach ($active_duties as $duty) {
                 $started = $duty->started_at->format('Y. m. d. H:i');
-                $lines[] = "• <@{$duty->user_id}> - *".__('duty.panel_planned_start', ['time' => $started]).'*';
+                $lines[] = "• <@{$duty->user_id}> - *".__('duty.panel_start', ['datetime' => $started]).'*';
             }
         }
 

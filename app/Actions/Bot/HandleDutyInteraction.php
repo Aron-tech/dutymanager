@@ -40,7 +40,6 @@ class HandleDutyInteraction
         }
         $this->duty_role = $this->guild->guildSettings->getFeatureSettings(FeatureEnum::DUTY, 'duty_role_id', null);
 
-        // --- GOMB (COMPONENT) KEZELÉS ---
         if ($interaction->type === 3) {
             match ($interaction->data->custom_id) {
                 'btn_duty_start' => $this->handleButtonStart($interaction),
@@ -52,7 +51,6 @@ class HandleDutyInteraction
             return;
         }
 
-        // --- SLASH PARANCS KEZELÉS ---
         match ($this->sub_command_name) {
             'toggle' => $this->handleDutyToggleCommand($interaction),
             'cancel' => $this->handleCancelCommand($interaction, $this->guild_user),

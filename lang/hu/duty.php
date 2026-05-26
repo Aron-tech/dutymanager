@@ -53,7 +53,7 @@ return [
     'panel_btn_cancel' => 'Kilépés mentés nélkül',
     'panel_btn_info' => 'Adatok lekérdezése',
     'panel_no_active' => 'Senki nincs szolgálatban',
-    'panel_planned_start' => 'Tervezett kezdés: :time',
+    'panel_start' => 'Szolgálatba lépés: :datetime',
     'panel_start_label' => 'Szolgálatba lépés',
     'panel_start_desc' => 'Szolgálat megkezdése',
     'panel_stop_label' => 'Szolgálatból kilépés',
@@ -63,4 +63,5 @@ return [
     'panel_currently_on_duty' => 'Jelenleg szolgálatban',
     'panel_updated' => 'Duty Management System • Frissítve',
     'voice_on_duty' => 'Szolgálatban: :count fő',
+
 ];
