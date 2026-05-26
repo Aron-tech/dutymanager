@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\DataTrait;
 use App\Enums\DutyStatusEnum;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Cache;
 #[Hidden(['lang_code'])]
 class Guild extends Model
 {
-    use SoftDeletes;
+    use DataTrait, SoftDeletes;
 
     public const string ROLE_WHITELIST_CACHE_PREFIX = 'guild_role_whitelist:';
 
@@ -34,9 +35,14 @@ class Guild extends Model
     {
         return [
             'is_installed' => 'bool',
+            'data' => 'array',
         ];
     }
 
+    /**
+     * @param string $guild_id
+     * @return void
+     */
     public static function deleteRoleWhitelistCache(string $guild_id): void
     {
         Cache::forget(self::ROLE_WHITELIST_CACHE_PREFIX.$guild_id);
@@ -74,6 +80,9 @@ class Guild extends Model
         return $this->hasManyThrough(User::class, GuildUser::class);
     }
 
+    /**
+     * @return HasMany
+     */
     public function duties(): HasMany
     {
         return $this->hasMany(Duty::class, 'id', 'guild_id');
