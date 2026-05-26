@@ -72,6 +72,12 @@ class GuildSettings extends Model
         return $fallback;
     }
 
+    /**
+     * @param FeatureEnum $feature
+     * @param string|null $settings_name
+     * @param mixed $settings_value
+     * @return void
+     */
     public function setFeatureSettings(FeatureEnum $feature, ?string $settings_name, mixed $settings_value): void
     {
         $settings = $this->feature_settings ?? [];
