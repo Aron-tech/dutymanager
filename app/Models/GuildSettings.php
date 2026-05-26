@@ -74,10 +74,17 @@ class GuildSettings extends Model
 
     public function setFeatureSettings(FeatureEnum $feature, ?string $settings_name, mixed $settings_value): void
     {
+        $settings = $this->feature_settings ?? [];
+
         if (is_null($settings_name)) {
-            $this->feature_settings[$feature->value] = $settings_value;
+            $settings[$feature->value] = $settings_value;
         } else {
-            $this->feature_settings[$feature->value][$settings_name] = $settings_value;
+            if (! isset($settings[$feature->value]) || ! is_array($settings[$feature->value])) {
+                $settings[$feature->value] = [];
+            }
+            $settings[$feature->value][$settings_name] = $settings_value;
         }
+
+        $this->feature_settings = $settings;
     }
 }
