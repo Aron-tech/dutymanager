@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Concerns\DataTrait;
 use App\Enums\DutyActionEnum;
 use App\Enums\FeatureEnum;
 use App\Models\Duty;
@@ -12,11 +13,12 @@ use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use Discord\Parts\Embed\Embed;
 use Discord\WebSockets\Event;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class DutyMonitorService
 {
+    use DataTrait;
+
     public static function register(Discord $discord): void
     {
         $discord->on('ready', function (Discord $discord) {
@@ -140,14 +142,12 @@ class DutyMonitorService
         }
         $builder->addComponent($actionRow);
 
-        $last_msg_id = $guild->guildSettings->getFeatureSettings(FeatureEnum::DUTY, 'last_duty_panel_message_id', null);
+        $last_msg_id = $guild->getData('last_duty_panel_message_id');
 
         $sendNewMessage = function () use ($channel, $builder, $guild) {
             $channel->sendMessage($builder)->then(function ($message) use ($guild) {
-                $guild->guildSettings->setFeatureSettings(FeatureEnum::DUTY, 'last_duty_panel_message_id', $message->id);
-                DB::table('guild_settings')
-                    ->where('id', $guild->guildSettings->id)
-                    ->update(['feature_settings' => json_encode($guild->guildSettings->feature_settings)]);
+                $guild->setData('last_duty_panel_message_id', $message->id);
+                $guild->save();
             })->catch(fn ($e) => Log::error("Hiba a panel küldésekor: {$e->getMessage()}"));
         };
 
@@ -169,7 +169,7 @@ class DutyMonitorService
             return;
         }
 
-        $guild = Guild::where('id', $guild_id)->with('guildSettings')->first();
+        $guild = Guild::installed()->where('id', $guild_id)->with('guildSettings')->first();
         if (! $guild || ! $guild->guildSettings || ! $guild->guildSettings->isEnabledFeature(FeatureEnum::DUTY)) {
             return;
         }
