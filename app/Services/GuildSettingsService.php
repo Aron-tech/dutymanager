@@ -8,6 +8,9 @@ use App\Models\GuildSettings;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Str;
 use Throwable;
 
 readonly class GuildSettingsService
@@ -21,15 +24,31 @@ readonly class GuildSettingsService
      */
     public function updateSettings(GuildSettings $guild_settings, array $enabled_features, array $settings): void
     {
-        DB::transaction(function () use ($guild_settings, $enabled_features, $settings): void {
+        $old_user_details_config = $guild_settings->user_details_config;
+
+        DB::transaction(function () use ($guild_settings, $enabled_features, $settings, $old_user_details_config): void {
             $feature_settings = $guild_settings->feature_settings ?? [];
 
+            $userDetailsConfig = [];
             if (isset($settings['user_details']['config']) && is_array($settings['user_details']['config'])) {
-                $guild_settings->user_details_config = $settings['user_details']['config'];
+                $userDetailsConfig = $settings['user_details']['config'];
                 unset($settings['user_details']['config']);
             } elseif (isset($settings['user_details'])) {
-                $guild_settings->user_details_config = $settings['user_details'];
+                $userDetailsConfig = $settings['user_details'];
             }
+
+            // Generate key and sort for canonical representation
+            if (is_array($userDetailsConfig)) {
+                foreach ($userDetailsConfig as &$config) {
+                    if (isset($config['name']) && !isset($config['key'])) {
+                        $config['key'] = Str::slug($config['name'], '_');
+                    }
+                }
+                // Sort by key to ensure canonical representation
+                $userDetailsConfig = collect($userDetailsConfig)->sortBy('key')->values()->all();
+            }
+
+            $guild_settings->user_details_config = $userDetailsConfig;
 
             if (isset($settings['general'])) {
                 $this->syncGuildRoles($guild_settings->guild, $settings['general']);
@@ -54,6 +73,23 @@ readonly class GuildSettingsService
             $guild_settings->feature_settings = $feature_settings;
 
             $guild_settings->save();
+
+            // Sort old config as well for accurate comparison
+            $old_user_details_config_sorted = is_array($old_user_details_config) ? collect($old_user_details_config)->sortBy('key')->values()->all() : [];
+
+            if ($old_user_details_config_sorted !== $guild_settings->user_details_config) {
+                try {
+                    Redis::rpush('discord_bot_tasks', json_encode([
+                        'action' => 'sync_user_add_command',
+                        'guild_id' => $guild_settings->guild_id,
+                    ]));
+                } catch (Throwable $e) {
+                    Log::error('Failed to dispatch sync_user_add_command job to Redis.', [
+                        'guild_id' => $guild_settings->guild_id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
         });
     }
 

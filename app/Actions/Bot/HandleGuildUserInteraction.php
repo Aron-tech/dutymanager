@@ -2,8 +2,10 @@
 
 namespace App\Actions\Bot;
 
+use App\Actions\DeleteGuildUserAction;
 use App\Concerns\DiscordCommandTrait;
 use App\Concerns\DiscordEmbedTrait;
+use App\Concerns\ValidatesDynamicUserDetailsTrait;
 use App\Enums\DutyStatusEnum;
 use App\Enums\FeatureEnum;
 use App\Enums\PermissionEnum;
@@ -13,11 +15,13 @@ use App\Services\GuildUserService;
 use Discord\Discord;
 use Discord\Parts\Interactions\Interaction as DiscordInteraction;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class HandleGuildUserInteraction
 {
-    use AsAction, DiscordCommandTrait, DiscordEmbedTrait;
+    use AsAction, DiscordCommandTrait, DiscordEmbedTrait, ValidatesDynamicUserDetailsTrait;
 
     /**
      * Execute the console command.
@@ -43,9 +47,80 @@ class HandleGuildUserInteraction
         } else {
             match ($this->sub_command_name) {
                 'info' => $this->handleUserInfoCommand($interaction, $this->target_guild_user, $this->target_user_id, true),
+                'add' => $this->handleUserAddCommand($interaction),
                 'delete' => $this->handleUserDeleteCommand($interaction),
                 default => $this->respondSimpleEmbed($interaction, '❌ '.__('app.unknow_command'), 'FF0000'),
             };
+        }
+    }
+
+    protected function handleUserAddCommand(DiscordInteraction $interaction): void
+    {
+        if (! $this->validateAccess($interaction, PermissionEnum::ADD_GUILD_USERS)) {
+            return;
+        }
+
+        if (! $this->target_user_id) {
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_missing_user'), 'FF0000');
+
+            return;
+        }
+
+        if ($this->target_guild_user) {
+            $this->respondSimpleEmbed($interaction, '❌ '.__('guild_user.already_exists_user', ['user' => '<@'.$this->target_user_id.'>']), 'FF0000');
+
+            return;
+        }
+
+        $details = [];
+        $userDetailsConfig = $this->guild->guildSettings?->user_details_config ?? [];
+
+        foreach ($userDetailsConfig as $config) {
+            $optionName = $config['key'] ?? str_replace(' ', '_', strtolower($config['name']));
+            $option = $this->active_options->get('name', $optionName);
+            if ($option) {
+                $details[$config['name']] = $option->value;
+            }
+        }
+
+        $rules = $this->getDynamicDetailsRules($this->guild);
+        $validator = Validator::make(['details' => $details], $rules, $this->getDynamicDetailsMessages());
+
+        try {
+            $validatedData = $validator->validate();
+        } catch (ValidationException $e) {
+            $errors = $e->validator->errors()->all();
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.validation_error')."\n".implode("\n", $errors), 'FF0000');
+
+            return;
+        }
+
+        try {
+            $discordUser = null;
+
+            if ($interaction->data->resolved && $interaction->data->resolved->users) {
+                $discordUser = $interaction->data->resolved->users->get('id', $this->target_user_id);
+            }
+
+            $userName = $discordUser ? $discordUser->username : 'Ismeretlen';
+            $icNameOption = $this->active_options->get('name', 'ic_name');
+            $icName = $icNameOption ? $icNameOption->value : ($discordUser ? ($discordUser->global_name ?? $discordUser->username) : 'Ismeretlen');
+
+            $data = [
+                'guild' => $this->guild,
+                'user_id' => $this->target_user_id,
+                'name' => $userName,
+                'added_by' => $this->user,
+                'ic_name' => $icName,
+                'details' => $validatedData['details'] ?? [],
+            ];
+
+            $guild_user = $this->service->joinUserToGuild($data);
+
+            $this->respondSimpleEmbed($interaction, '✅ '.__('guild_user.success_added_discord_member'), '00FF00');
+        } catch (\Throwable $e) {
+            Log::error('Hiba a user hozzáadásakor: '.$e->getMessage(), ['exception' => $e]);
+            $this->respondSimpleEmbed($interaction, '❌ '.$e->getMessage(), 'FF0000');
         }
     }
 
@@ -103,6 +178,11 @@ class HandleGuildUserInteraction
             return;
         }
 
+        $should_kick = $this->active_options->has('name', 'kick') ? $this->active_options->get('name', 'kick')->value : false;
+
+        DeleteGuildUserAction::run($this->target_guild_user, $this->user->id, $should_kick);
+
+        $this->respondSimpleEmbed($interaction, __('guild_user.success_deleted_user', ['user' => $this->target_guild_user->user->name]));
 
     }
 }

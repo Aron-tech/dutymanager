@@ -28,5 +28,6 @@ return [
     'user_info_command_title' => 'Felhasználói információk',
     'user' => 'Felhasználó',
     'ic_name' => 'IC név',
+    'success_added_discord_member' => 'Sikeresen hozzáadtad a felhasználót a szerverhez!',
 
 ];

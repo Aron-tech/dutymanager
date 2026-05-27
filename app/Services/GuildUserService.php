@@ -147,7 +147,7 @@ class GuildUserService
                 ]
             );
 
-            $added_by = auth()->user();
+            $added_by = $data['added_by'] ?? auth()->user();
 
             $assigned_user = GuildUser::where('user_id', $data['user_id'])->where('guild_id', $guild->id)->with(['user:id,name'])->first();
 

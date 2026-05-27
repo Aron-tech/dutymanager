@@ -5,10 +5,11 @@ namespace App\Concerns;
 use App\Enums\FeatureEnum;
 use App\Models\Guild;
 use App\Models\GuildUser;
+use App\Services\CommandRegistrationService;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use Discord\Parts\Embed\Embed;
-use Discord\Parts\Interactions\Command\Command as DiscordCommand;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use React\Promise\Deferred;
@@ -40,59 +41,40 @@ trait DiscordBotTrait
 
     public function registerGuildCommands(Discord $discord, $guild): PromiseInterface
     {
-        $command_data = config('bot_commands', []);
+        // Eager load guildSettings to ensure it's available
+        $dbGuild = Guild::with('guildSettings')->find($guild->id);
+        if (! $dbGuild) {
+            return \React\Promise\reject(new \Exception("Guild not found in database: {$guild->id}"));
+        }
+
+        $commandService = new CommandRegistrationService($discord);
+        $command_data = $commandService->getGuildCommands($dbGuild);
         $promises = [];
 
         foreach ($command_data as $data) {
-            $formatted = $this->commandFormatter($discord, $data);
+            if (empty($data)) {
+                continue;
+            } // Skip if a command definition is empty
+            $formatted = $commandService->commandFormatter($discord, $data);
             $promises[] = $guild->commands->save($formatted)->then(
                 fn ($cmd) => $this->info("Sikeres regisztráció: {$guild->name} -> /{$cmd->name}"),
-                fn ($e) => $this->error("Hiba a(z) {$data['name']} parancsnál ({$guild->name}): {$e->getMessage()}")
+                function ($e) use ($data, $guild) {
+                    $this->error("Hiba a(z) {$data['name']} parancsnál ({$guild->name}): {$e->getMessage()}");
+                    // Log detailed error for debugging
+                    Log::error("Command registration failed for '{$data['name']}' on guild '{$guild->name}'", [
+                        'error' => $e->getMessage(),
+                        'context' => $e->getContext(),
+                    ]);
+                }
             );
         }
 
         return all($promises);
     }
 
-    private function commandFormatter(Discord $discord, array $data): ?DiscordCommand
-    {
-        $translateOption = function (array $option) use (&$translateOption) {
-            if (isset($option['description']) && $option['description']) {
-                $option['description'] = __($option['description']);
-            }
-
-            if (isset($option['choices']) && is_array($option['choices'])) {
-                foreach ($option['choices'] as $key => $choice) {
-                    if (isset($choice['name']) && $choice['name']) {
-                        $option['choices'][$key]['name'] = __($choice['name']);
-                    }
-                }
-            }
-
-            if (isset($option['options']) && is_array($option['options'])) {
-                foreach ($option['options'] as $key => $sub_option) {
-                    $option['options'][$key] = $translateOption($sub_option);
-                }
-            }
-
-            return $option;
-        };
-
-        if (isset($data['description']) && $data['description']) {
-            $data['description'] = __($data['description']);
-        }
-
-        if (isset($data['options']) && is_array($data['options'])) {
-            foreach ($data['options'] as $key => $option) {
-                $data['options'][$key] = $translateOption($option);
-            }
-        }
-
-        return new DiscordCommand($discord, $data);
-    }
-
     /**
      * Megbízható tag lekérdezés cache validációval.
+     *
      * @throws \Exception
      */
     protected function getValidMember(\Discord\Parts\Guild\Guild $guild, string $user_id, bool $force_fetch = false): PromiseInterface
@@ -106,6 +88,7 @@ trait DiscordBotTrait
         if ($member) {
             try {
                 $member->roles;
+
                 return \React\Promise\resolve($member);
             } catch (Throwable) {
                 return $guild->members->fetch($user_id, true);
@@ -148,7 +131,7 @@ trait DiscordBotTrait
         $action = $task['action'] ?? null;
         $user_id = $task['user_id'] ?? null;
 
-        if (! $guild && $guild_id && $action !== 'send_message') {
+        if (! $guild && $guild_id && ! in_array($action, ['send_message', 'sync_user_add_command'])) {
             $this->error("Guild nem található a cache-ben: {$guild_id}");
 
             return;
@@ -235,6 +218,25 @@ trait DiscordBotTrait
                     }
                     break;
 
+                case 'sync_user_add_command':
+                    $processCommandSync = function ($discordGuild) use ($discord) {
+                        $dbGuild = Guild::with('guildSettings')->find($discordGuild->id);
+                        if ($dbGuild) {
+                            (new CommandRegistrationService($discord))->syncUserAddCommand($discordGuild, $dbGuild)
+                                ->then(
+                                    fn () => $this->info("User add command synced for guild: {$discordGuild->name}"),
+                                    fn (Throwable $e) => $this->error("Failed to sync user add command for guild: {$discordGuild->name}. Reason: {$e->getMessage()}")
+                                );
+                        }
+                    };
+
+                    if ($guild) {
+                        $processCommandSync($guild);
+                    } elseif ($guild_id) {
+                        $discord->guilds->fetch($guild_id)->then($processCommandSync);
+                    }
+                    break;
+
                 default:
                     $this->error("Ismeretlen Discord feladat: {$action}");
             }
@@ -284,11 +286,59 @@ trait DiscordBotTrait
             DB::rollBack();
 
             Log::error('Hiba a rangok frissítésekor: '.$e->getMessage(), [
-                'guild_id' => $guild->id ?? null,
-                'user_id' => $data['user_id'] ?? null,
+                'guild_id' => $guild_id ?? null,
+                'user_id' => $user_id ?? null,
                 'exception' => $e,
             ]);
         }
+    }
+
+    protected function handleRoleSync($member, $old_member = null): void
+    {
+        if ($this->dev_mode && $this->dev_guild_id !== (string) $member->guild_id) {
+            return;
+        }
+
+        $cache_key = Guild::ROLE_WHITELIST_CACHE_PREFIX.$member->guild_id;
+        $whitelist = Cache::remember($cache_key, now()->addHour(), function () use ($member) {
+            $guild = Guild::where('id', $member->guild_id)->with(['guildRoles', 'guildSettings'])->installed()->first();
+
+            return $guild ? $this->listRoleWhitelist($guild) : [];
+        });
+
+        if (empty($whitelist)) {
+            return;
+        }
+
+        $new_role_ids = array_values($member->roles->keys());
+        $roles_to_save = array_values(array_intersect($new_role_ids, $whitelist));
+        $current_saved_roles = $this->getSavedRolesFromDb($member->guild_id, $member->id);
+        sort($roles_to_save);
+        sort($current_saved_roles);
+        if ($roles_to_save === $current_saved_roles) {
+            return;
+        }
+
+        if ($this->dev_mode) {
+            $this->info("Rangszinkronizáció végrehajtása (Eltérés észlelve): {$member->user->username}");
+        }
+        $this->updateRoles($member->guild_id, $member->id, $roles_to_save);
+    }
+
+    protected function getSavedRolesFromDb(string $guild_id, string $user_id): array
+    {
+        $guild_user = GuildUser::query()
+            ->where('guild_id', $guild_id)
+            ->where('user_id', $user_id)
+            ->first();
+
+        if (! $guild_user || empty($guild_user->cached_roles)) {
+            return [];
+        }
+
+        $roles = json_decode($guild_user->cached_roles, true);
+
+        return is_array($roles) ? $roles : [];
     }
 
     public function findGuild(Discord $discord, string $guildId): ?\Discord\Parts\Guild\Guild
