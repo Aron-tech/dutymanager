@@ -92,17 +92,17 @@ export default function Selector({
             <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-8 p-6 lg:p-10">
                 <div className="flex flex-col gap-2">
                     <h1 className="text-3xl font-bold tracking-tight">
-                        {__('guilds.selector.heading')}
+                        {__('app.guild_selector_title')}
                     </h1>
                     <p className="text-muted-foreground">
-                        {__('guilds.selector.subheading')}
+                        {__('app.guild_selector_description')}
                     </p>
                 </div>
 
                 <div>
                     <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
                         <Server className="h-5 w-5 text-primary" />
-                        {__('guilds.selector.my_servers_title')}
+                        {__('app.guild_selector_my_servers_title')}
                     </h2>
 
                     {my_servers.length === 0 ? (

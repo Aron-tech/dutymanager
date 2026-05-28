@@ -15,4 +15,9 @@ return [
     'error_guild_not_installed' => 'A szerver nincsen telepítve!',
     'success_guild_installation' => 'Sikeresen telepítetted a szervert!',
     'already_guild_installed' => 'Már telepítve van a szerver!',
+    'guild_status_installed' => 'Telepítve',
+    'guild_action_add' => 'Hozzáadás',
+    'guild_selector_title' => 'Szerver választó',
+    'guild_selector_description' => 'Válasszon szervert amelyt kezelni szeretné.',
+    'guild_selector_my_servers_title' => 'Szervereim',
 ];
