@@ -21,6 +21,9 @@ Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
 Route::inertia('/docs', 'docs', [])->name('docs');
+Route::inertia('/contact', 'contact', [])->name('contact');
+Route::inertia('/terms', 'terms', [])->name('terms');
+Route::inertia('/privacy', 'privacy', [])->name('privacy');
 
 Route::get('/login/discord', [DiscordController::class, 'redirectToDiscord'])->name('login.discord');
 Route::get('/login/callback', [DiscordController::class, 'handleDiscordCallback']);
