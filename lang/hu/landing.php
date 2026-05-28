@@ -1,0 +1,86 @@
+<?php
+
+return [
+    'meta' => [
+        'title' => 'DutyManager v3 – Discord személyzetkezelés',
+    ],
+    'hero' => [
+        'badge' => 'v3.0 Stabil – már elérhető',
+        'title_part_1' => 'Parancsolj a',
+        'title_highlight' => 'Discord személyzetednek',
+        'subtitle' => 'A DutyManager v3 követi a szolgálati időt, kezeli a tagok nyilvántartását, végrehajtja a büntetéseket és kezeli a személyzet szabadságait – mindezt natív slash parancsokkal és egy szinkronizált webes irányítópulttal.',
+    ],
+    'buttons' => [
+        'add_to_discord' => 'Hozzáadás a Discordhoz',
+        'read_docs' => 'Dokumentáció olvasása',
+        'add_for_free' => 'Ingyenes hozzáadás',
+        'get_premium' => 'Prémium beszerzése a Discordon',
+        'contact_us' => 'Kapcsolatfelvétel',
+    ],
+    'stats' => [
+        'servers' => 'Discord szerver',
+        'users' => 'Regisztrált felhasználó',
+        'subscriptions' => 'Aktív előfizetés',
+    ],
+    'features' => [
+        'eyebrow' => 'Funkciók',
+        'title' => 'Minden, amire a személyzetednek szüksége van',
+        'subtitle' => 'Célirányos eszközök olyan közösségeknek, amelyek komolyan veszik a menedzsmentet.',
+        'duty_tracking' => [
+            'title' => 'Szolgálatkövetés',
+            'description' => 'A tagok egyetlen slash paranccsal kapcsolhatják be a szolgálati állapotot, miközben a pontos időösszegek automatikusan épülnek.',
+        ],
+        'member_management' => [
+            'title' => 'Tagkezelés',
+            'description' => 'Részletes tagnyilvántartás, rangok és szinkronizálás fenntartása közvetlenül a Discordról vagy a webes irányítópultról.',
+        ],
+        'punishment_system' => [
+            'title' => 'Büntetési rendszer',
+            'description' => 'Többszintű szóbeli figyelmeztetések, hivatalos figyelmeztetések és feketelisták kiadása opcionális lejárattal és súlyossági szintekkel.',
+        ],
+        'holiday_management' => [
+            'title' => 'Szabadságkezelés',
+            'description' => 'Hagyja, hogy a személyzet regisztrálja a jóváhagyott szabadidőt, így automatikusan kizárásra kerülnek az aktivitási követelményekből.',
+        ],
+        'slash_commands' => [
+            'title' => 'Natív Slash parancsok',
+            'description' => 'Minden művelet gyors, automatikusan kiegészített Discord slash parancsokon keresztül fut, amelyeket a csapatod már ért.',
+        ],
+        'web_dashboard' => [
+            'title' => 'Webes irányítópult',
+            'description' => 'Tekintse át a szolgálati ranglistákat, büntetéseket és szabadságokat egy szinkronizált böngésző irányítópultról.',
+        ],
+    ],
+    'pricing' => [
+        'eyebrow' => 'Árképzés',
+        'title' => 'Egyszerű, átlátható csomagok',
+        'disclaimer' => 'A prémium előfizetéseket kizárólag a Discord szerverünkön keresztül lehet megvásárolni.',
+        'free' => [
+            'title' => 'Ingyenes',
+            'subtitle' => 'A személyzetkezelés megkezdéséhez.',
+            'period' => 'örökre',
+            'feature_1' => 'Szolgálat be- és kikapcsolása és időkövetés',
+            'feature_2' => 'Tagnyilvántartás és szinkronizálás',
+            'feature_3' => 'Alapvető büntetési parancsok',
+            'feature_4' => 'Szabadság regisztráció',
+            'feature_5' => 'Közösségi támogatás',
+        ],
+        'premium' => [
+            'title' => 'Prémium',
+            'badge' => 'Legnépszerűbb',
+            'subtitle' => 'Nagy forgalmú, bejáratott közösségeknek.',
+            'price' => 'Frissítés',
+            'feature_1' => 'Minden az Ingyenesben',
+            'feature_2' => 'Haladó szolgálati ranglisták és időszakok',
+            'feature_3' => 'Teljes büntetési szintek és lejárat',
+            'feature_4' => 'Elsőbbségi parancsfeldolgozás',
+            'feature_5' => 'Prémium webes irányítópult analitika',
+            'feature_6' => 'Elsőbbségi Discord támogatás',
+        ],
+    ],
+    'cta' => [
+        'title' => 'Készen állsz a szerverkezelés szintjének emelésére?',
+        'subtitle_part_1' => 'Hívd meg a DutyManager v3-at kevesebb mint egy perc alatt, és futtasd a',
+        'subtitle_part_2' => 'parancsot a kezdéshez.',
+    ],
+];

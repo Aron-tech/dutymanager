@@ -6,6 +6,8 @@ use App\Enums\GlobalRoleEnum;
 use App\Enums\PermissionEnum;
 use App\Services\SelectedGuildService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\File;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
 
@@ -61,6 +63,20 @@ class HandleInertiaRequests extends Middleware
             }
         }
 
+        $locale = App::getLocale();
+        $translations = [];
+        $path = lang_path($locale);
+
+        if (File::isDirectory($path)) {
+            $files = File::allFiles($path);
+            foreach ($files as $file) {
+                if ($file->getExtension() === 'php') {
+                    $key = $file->getFilenameWithoutExtension();
+                    $translations[$key] = require $file->getRealPath();
+                }
+            }
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -79,6 +95,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
+            'translations' => $translations,
         ];
     }
 }

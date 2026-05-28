@@ -1,0 +1,86 @@
+<?php
+
+return [
+    'meta' => [
+        'title' => 'DutyManager v3 — Discord Staff Management',
+    ],
+    'hero' => [
+        'badge' => 'v3.0 Stable — now available',
+        'title_part_1' => 'Command Your',
+        'title_highlight' => 'Discord Staff',
+        'subtitle' => 'DutyManager v3 tracks on-duty time, manages member records, enforces punishments, and handles staff holidays — all from native slash commands and a synchronized web dashboard.',
+    ],
+    'buttons' => [
+        'add_to_discord' => 'Add to Discord',
+        'read_docs' => 'Read the Docs',
+        'add_for_free' => 'Add for Free',
+        'get_premium' => 'Get Premium on Discord',
+        'contact_us' => 'Contact Us',
+    ],
+    'stats' => [
+        'servers' => 'Discord Servers',
+        'users' => 'Registered Users',
+        'subscriptions' => 'Active Subscriptions',
+    ],
+    'features' => [
+        'eyebrow' => 'Features',
+        'title' => 'Everything your staff team needs',
+        'subtitle' => 'Purpose-built tools for communities that take their management seriously.',
+        'duty_tracking' => [
+            'title' => 'Duty Tracking',
+            'description' => 'Members toggle on-duty status with a single slash command while accurate time totals build automatically.',
+        ],
+        'member_management' => [
+            'title' => 'Member Management',
+            'description' => 'Maintain detailed member records, ranks, and synchronization directly from Discord or the web dashboard.',
+        ],
+        'punishment_system' => [
+            'title' => 'Punishment System',
+            'description' => 'Issue tiered verbal warnings, formal warnings, and blacklists with optional expiry and severity levels.',
+        ],
+        'holiday_management' => [
+            'title' => 'Holiday Management',
+            'description' => 'Let staff register approved time off so they are automatically excluded from activity requirements.',
+        ],
+        'slash_commands' => [
+            'title' => 'Native Slash Commands',
+            'description' => 'Every action runs through fast, autocompleted Discord slash commands your team already understands.',
+        ],
+        'web_dashboard' => [
+            'title' => 'Web Dashboard',
+            'description' => 'Review duty leaderboards, punishments, and holidays from a synchronized browser dashboard.',
+        ],
+    ],
+    'pricing' => [
+        'eyebrow' => 'Pricing',
+        'title' => 'Simple, transparent plans',
+        'disclaimer' => 'Premium subscriptions can exclusively be purchased via our Discord server.',
+        'free' => [
+            'title' => 'Free',
+            'subtitle' => 'For getting started with staff management.',
+            'period' => 'forever',
+            'feature_1' => 'Duty toggle & time tracking',
+            'feature_2' => 'Member records & sync',
+            'feature_3' => 'Basic punishment commands',
+            'feature_4' => 'Holiday registration',
+            'feature_5' => 'Community support',
+        ],
+        'premium' => [
+            'title' => 'Premium',
+            'badge' => 'Most Popular',
+            'subtitle' => 'For established, high-volume communities.',
+            'price' => 'Upgrade',
+            'feature_1' => 'Everything in Free',
+            'feature_2' => 'Advanced duty leaderboards & periods',
+            'feature_3' => 'Full punishment tiers & expiry',
+            'feature_4' => 'Priority command processing',
+            'feature_5' => 'Premium web dashboard analytics',
+            'feature_6' => 'Priority Discord support',
+        ],
+    ],
+    'cta' => [
+        'title' => 'Ready to level up your server management?',
+        'subtitle_part_1' => 'Invite DutyManager v3 in under a minute and run',
+        'subtitle_part_2' => 'to get started.',
+    ],
+];

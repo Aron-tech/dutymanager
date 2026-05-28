@@ -1,110 +1,124 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import MainLayout from '@/layouts/main-layout';
 import LegalPage from '@/components/site/legal-page';
 
+interface SharedPageProps {
+    translations: Record<string, any>;
+    [key: string]: any;
+}
+
 export default function Privacy() {
+    const { props } = usePage<SharedPageProps>();
+
+    const __ = (key: string, replace: Record<string, string | number> = {}): string => {
+        const parts = key.split('.');
+        let translation: any = props.translations;
+
+        for (const part of parts) {
+            if (translation && translation[part] !== undefined) {
+                translation = translation[part];
+            } else {
+                translation = key;
+                break;
+            }
+        }
+
+        if (typeof translation !== 'string') {
+            return key;
+        }
+
+        Object.keys(replace).forEach((token) => {
+            translation = translation.replace(`:${token}`, String(replace[token]));
+        });
+
+        return translation;
+    };
+
     return (
         <MainLayout>
-            <Head title="Privacy Policy — DutyManager v3" />
+            <Head title={__('legal.privacy.meta.title')} />
 
-            <LegalPage title="Privacy Policy" last_updated="May 28, 2026">
+            <LegalPage title={__('legal.privacy.header.title')} last_updated="May 28, 2026">
                 <p>
-                    This Privacy Policy explains what data the DutyManager v3 Discord bot and its web dashboard (the
-                    &quot;Service&quot;) collect, how it is used, and the choices you have. By using the Service, you consent to
-                    the practices described below.
+                    {__('legal.privacy.intro')}
                 </p>
 
-                <h2>1. Data We Collect</h2>
-                <p>To provide its features, the Service stores the following categories of data:</p>
+                <h2>{__('legal.privacy.section_1.title')}</h2>
+                <p>{__('legal.privacy.section_1.intro')}</p>
                 <ul>
-                    <li><strong>Discord identifiers:</strong> server (guild) IDs, channel IDs, role IDs, and user IDs.</li>
-                    <li><strong>Member records:</strong> usernames, nicknames, assigned ranks, and related metadata required for management features.</li>
-                    <li><strong>Duty data:</strong> on-duty sessions and accumulated time totals per period.</li>
-                    <li><strong>Punishment data:</strong> verbal warnings, warnings, and blacklists, including reasons, levels, and expiry.</li>
-                    <li><strong>Holiday data:</strong> registered time-off periods and reasons.</li>
-                    <li><strong>Configuration:</strong> per-server settings and enabled features.</li>
+                    <li><strong>{__('legal.privacy.section_1.list_item_1.term')}:</strong> {__('legal.privacy.section_1.list_item_1.description')}</li>
+                    <li><strong>{__('legal.privacy.section_1.list_item_2.term')}:</strong> {__('legal.privacy.section_1.list_item_2.description')}</li>
+                    <li><strong>{__('legal.privacy.section_1.list_item_3.term')}:</strong> {__('legal.privacy.section_1.list_item_3.description')}</li>
+                    <li><strong>{__('legal.privacy.section_1.list_item_4.term')}:</strong> {__('legal.privacy.section_1.list_item_4.description')}</li>
+                    <li><strong>{__('legal.privacy.section_1.list_item_5.term')}:</strong> {__('legal.privacy.section_1.list_item_5.description')}</li>
+                    <li><strong>{__('legal.privacy.section_1.list_item_6.term')}:</strong> {__('legal.privacy.section_1.list_item_6.description')}</li>
                 </ul>
                 <p>
-                    We do not intentionally collect sensitive personal information, and we do not sell your data to third parties.
+                    {__('legal.privacy.section_1.outro')}
                 </p>
 
-                <h2>2. Message Caching</h2>
+                <h2>{__('legal.privacy.section_2.title')}</h2>
                 <p>
-                    The Service primarily operates through slash commands and interactions rather than reading general chat
-                    messages. When required to process a command, the bot may temporarily hold message or interaction content in
-                    memory (a transient cache). This cache is short-lived, is used only to fulfill the requested action, and is not
-                    written to long-term storage unless a feature you use explicitly requires it (for example, logging an action you
-                    performed).
+                    {__('legal.privacy.section_2.content')}
                 </p>
 
-                <h2>3. How We Use Data</h2>
+                <h2>{__('legal.privacy.section_3.title')}</h2>
                 <ul>
-                    <li>To operate and provide the bot&apos;s commands and dashboard features.</li>
-                    <li>To maintain duty totals, punishments, holidays, and server configuration.</li>
-                    <li>To synchronize data between Discord and the web dashboard.</li>
-                    <li>To diagnose issues, prevent abuse, and improve reliability of the Service.</li>
+                    <li>{__('legal.privacy.section_3.list_item_1')}</li>
+                    <li>{__('legal.privacy.section_3.list_item_2')}</li>
+                    <li>{__('legal.privacy.section_3.list_item_3')}</li>
+                    <li>{__('legal.privacy.section_3.list_item_4')}</li>
                 </ul>
 
-                <h2>4. Legal Basis and Discord API</h2>
+                <h2>{__('legal.privacy.section_4.title')}</h2>
                 <p>
-                    The Service accesses data through the Discord API and complies with the{' '}
-                    <a href="https://discord.com/developers/docs/policies-and-agreements/developer-terms-of-service" target="_blank" rel="noreferrer">Discord Developer Terms of Service</a>{' '}
-                    and <a href="https://discord.com/developers/docs/policies-and-agreements/developer-policy" target="_blank" rel="noreferrer">Developer Policy</a>.
-                    We process Discord data only to provide the features you and your server administrators enable.
+                    {__('legal.privacy.section_4.content_part_1')}{' '}
+                    <a href="https://discord.com/developers/docs/policies-and-agreements/developer-terms-of-service" target="_blank" rel="noreferrer">{__('legal.privacy.section_4.link_1')}</a>{' '}
+                    {__('legal.privacy.section_4.content_part_2')}{' '}
+                    <a href="https://discord.com/developers/docs/policies-and-agreements/developer-policy" target="_blank" rel="noreferrer">{__('legal.privacy.section_4.link_2')}</a>.
+                    {__('legal.privacy.section_4.content_part_3')}
                 </p>
 
-                <h2>5. Data Retention</h2>
+                <h2>{__('legal.privacy.section_5.title')}</h2>
                 <p>
-                    We retain stored data for as long as the bot remains in your server and the data is needed to provide the
-                    Service. When the bot is removed from a server, or upon a valid deletion request, associated server data is
-                    deleted or anonymized within a reasonable period, except where retention is required by law or for legitimate
-                    operational purposes such as abuse prevention.
+                    {__('legal.privacy.section_5.content')}
                 </p>
 
-                <h2>6. Data Sharing</h2>
+                <h2>{__('legal.privacy.section_6.title')}</h2>
                 <p>
-                    We do not sell personal data. We may share limited data with infrastructure providers (such as hosting and
-                    database providers) strictly to operate the Service, and where required by law or to protect our rights, users,
-                    or the public.
+                    {__('legal.privacy.section_6.content')}
                 </p>
 
-                <h2>7. Security</h2>
+                <h2>{__('legal.privacy.section_7.title')}</h2>
                 <p>
-                    We take reasonable technical and organizational measures to protect stored data against unauthorized access,
-                    alteration, or destruction. However, no method of transmission or storage is completely secure, and we cannot
-                    guarantee absolute security.
+                    {__('legal.privacy.section_7.content')}
                 </p>
 
-                <h2>8. Your Rights</h2>
+                <h2>{__('legal.privacy.section_8.title')}</h2>
                 <p>
-                    Depending on your jurisdiction, you may have the right to access, correct, or request deletion of data
-                    associated with you. Server administrators can remove data by deleting member records via the bot&apos;s
-                    commands or by removing the bot. To make a data request, contact us through the channels below.
+                    {__('legal.privacy.section_8.content')}
                 </p>
 
-                <h2>9. Children&apos;s Privacy</h2>
+                <h2>{__('legal.privacy.section_9.title')}</h2>
                 <p>
-                    The Service is not directed to individuals below Discord&apos;s minimum age requirement. We do not knowingly
-                    collect data from such individuals. If you believe a minor has provided data, please contact us so we can
-                    remove it.
+                    {__('legal.privacy.section_9.content')}
                 </p>
 
-                <h2>10. Changes to This Policy</h2>
+                <h2>{__('legal.privacy.section_10.title')}</h2>
                 <p>
-                    We may update this Privacy Policy from time to time. Material changes will be communicated through our Discord
-                    server or the Service. Continued use after changes take effect constitutes acceptance of the revised policy.
+                    {__('legal.privacy.section_10.content')}
                 </p>
 
-                <h2>11. Contact</h2>
+                <h2>{__('legal.privacy.section_11.title')}</h2>
                 <p>
-                    For privacy questions or data requests, reach us on our{' '}
-                    <a href="https://discord.gg/JyPa9dhwhx" target="_blank" rel="noreferrer">Discord support server</a> or by email
-                    at <a href="mailto:support@dutymanager.app">support@dutymanager.app</a>.
+                    {__('legal.privacy.section_11.content_part_1')}{' '}
+                    <a href="https://discord.gg/JyPa9dhwhx" target="_blank" rel="noreferrer">{__('legal.privacy.section_11.link_1')}</a>{' '}
+                    {__('legal.privacy.section_11.content_part_2')}{' '}
+                    <a href="mailto:support@dutymanager.app">support@dutymanager.app</a>.
                 </p>
 
                 <p className="!text-white/40 !text-sm">
-                    DutyManager v3 is not affiliated with, endorsed, or sponsored by Discord Inc. &quot;Discord&quot; is a
-                    trademark of Discord Inc.
+                    {__('legal.disclaimer')}
                 </p>
             </LegalPage>
         </MainLayout>

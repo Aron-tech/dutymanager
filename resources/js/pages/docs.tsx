@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { Search, Hash } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import MainLayout from '@/layouts/main-layout';
@@ -6,7 +6,38 @@ import { doc_groups, doc_sections } from '@/data/docs-content';
 
 const openSearch = () => window.dispatchEvent(new Event('open-docs-search'));
 
+interface SharedPageProps {
+    translations: Record<string, any>;
+    [key: string]: any;
+}
+
 export default function Docs() {
+    const { props } = usePage<SharedPageProps>();
+
+    const __ = (key: string, replace: Record<string, string | number> = {}): string => {
+        const parts = key.split('.');
+        let translation: any = props.translations;
+
+        for (const part of parts) {
+            if (translation && translation[part] !== undefined) {
+                translation = translation[part];
+            } else {
+                translation = key;
+                break;
+            }
+        }
+
+        if (typeof translation !== 'string') {
+            return key;
+        }
+
+        Object.keys(replace).forEach((token) => {
+            translation = translation.replace(`:${token}`, String(replace[token]));
+        });
+
+        return translation;
+    };
+
     const [active_id, setActiveId] = useState(doc_sections[0]?.id ?? '');
 
     // Scrollspy: highlight the section currently in view.
@@ -51,7 +82,7 @@ export default function Docs() {
 
     return (
         <MainLayout>
-            <Head title="Documentation — DutyManager v3" />
+            <Head title={__('docs.meta.title')} />
 
             <div className="mx-auto flex w-full max-w-7xl gap-8 px-4 pt-24 pb-20 sm:px-6 lg:px-8">
                 {/* LEFT SIDEBAR */}
@@ -62,7 +93,7 @@ export default function Docs() {
                         className="mb-6 flex w-full items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/40 transition-colors hover:border-white/20 hover:text-white/70"
                     >
                         <Search className="h-3.5 w-3.5" />
-                        <span>Search</span>
+                        <span>{__('docs.search.button')}</span>
                         <kbd className="ml-auto rounded border border-white/10 bg-white/5 px-1.5 font-mono text-[10px] text-white/50">⌘K</kbd>
                     </button>
 
@@ -98,12 +129,16 @@ export default function Docs() {
                 {/* CENTER CONTENT */}
                 <main className="min-w-0 flex-1">
                     <div className="mb-10">
-                        <span className="font-mono text-xs font-semibold uppercase tracking-widest text-[#4B9BFF]">Documentation</span>
-                        <h1 className="mt-2 text-4xl font-extrabold tracking-tight text-white">DutyManager v3</h1>
+                        <span className="font-mono text-xs font-semibold uppercase tracking-widest text-[#4B9BFF]">
+                            {__('docs.header.eyebrow')}
+                        </span>
+                        <h1 className="mt-2 text-4xl font-extrabold tracking-tight text-white">{__('docs.header.title')}</h1>
                         <p className="mt-3 max-w-2xl text-pretty text-white/60">
-                            The complete command reference and setup guide. Press{' '}
-                            <kbd className="rounded border border-white/10 bg-white/5 px-1.5 font-mono text-xs text-white/70">⌘K</kbd>{' '}
-                            (or <kbd className="rounded border border-white/10 bg-white/5 px-1.5 font-mono text-xs text-white/70">Ctrl K</kbd>) to search.
+                            {__('docs.header.subtitle_part_1')}
+                            <kbd className="mx-1 rounded border border-white/10 bg-white/5 px-1.5 font-mono text-xs text-white/70">⌘K</kbd>
+                            {__('docs.header.subtitle_part_2')}
+                            <kbd className="mx-1 rounded border border-white/10 bg-white/5 px-1.5 font-mono text-xs text-white/70">Ctrl K</kbd>
+                            {__('docs.header.subtitle_part_3')}
                         </p>
                     </div>
 
@@ -148,10 +183,10 @@ export default function Docs() {
                                                             <table className="w-full min-w-[480px] border-collapse text-left text-sm">
                                                                 <thead>
                                                                     <tr className="border-b border-white/10 text-[11px] uppercase tracking-wider text-white/40">
-                                                                        <th className="py-2 pr-4 font-semibold">Option</th>
-                                                                        <th className="py-2 pr-4 font-semibold">Type</th>
-                                                                        <th className="py-2 pr-4 font-semibold">Required</th>
-                                                                        <th className="py-2 font-semibold">Description</th>
+                                                                        <th className="py-2 pr-4 font-semibold">{__('docs.table.option')}</th>
+                                                                        <th className="py-2 pr-4 font-semibold">{__('docs.table.type')}</th>
+                                                                        <th className="py-2 pr-4 font-semibold">{__('docs.table.required')}</th>
+                                                                        <th className="py-2 font-semibold">{__('docs.table.description')}</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
@@ -164,11 +199,11 @@ export default function Docs() {
                                                                             <td className="py-2.5 pr-4">
                                                                                 {option.required ? (
                                                                                     <span className="rounded-md bg-[#FF2A2A]/15 px-2 py-0.5 text-xs font-medium text-[#FF4B4B]">
-                                                                                        Required
+                                                                                        {__('docs.table.required_yes')}
                                                                                     </span>
                                                                                 ) : (
                                                                                     <span className="rounded-md bg-white/5 px-2 py-0.5 text-xs font-medium text-white/40">
-                                                                                        Optional
+                                                                                        {__('docs.table.required_no')}
                                                                                     </span>
                                                                                 )}
                                                                             </td>
@@ -191,7 +226,9 @@ export default function Docs() {
 
                 {/* RIGHT TABLE OF CONTENTS */}
                 <aside className="sticky top-24 hidden h-[calc(100vh-7rem)] w-52 shrink-0 overflow-y-auto xl:block">
-                    <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-white/40">On this page</h3>
+                    <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-white/40">
+                        {__('docs.toc.title')}
+                    </h3>
                     <nav className="flex flex-col gap-1 border-l border-white/10">
                         {doc_sections.map((section) => (
                             <button
