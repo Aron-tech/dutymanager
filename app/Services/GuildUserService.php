@@ -19,7 +19,6 @@ use App\Models\ActivityLog;
 use App\Models\Guild;
 use App\Models\GuildUser;
 use App\Models\Image;
-use App\Models\Punishment;
 use App\Models\User;
 use Exception;
 use Illuminate\Bus\Batch;
@@ -119,7 +118,7 @@ class GuildUserService
                 $query->orderBy('active_holiday_count', $direction)->orderBy('active_punishments_count', $direction);
                 break;
             case 'rank':
-                $query->orderBy(DB::raw("CAST(JSON_UNQUOTE(JSON_EXTRACT(JSON_KEYS(data, '$.rank_role'), '$[0]')) AS UNSIGNED)"), $direction);
+                $query->orderBy('data->rank_role_index', $direction);
                 break;
             default:
                 if (str_starts_with($sort, 'detail_')) {

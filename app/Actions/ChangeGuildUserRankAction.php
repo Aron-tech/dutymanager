@@ -77,10 +77,11 @@ class ChangeGuildUserRankAction
             $rank_history = ['old' => $old_rank_id, 'new' => $new_rank_id];
             $guild_roles = $guild->getData('roles');
 
-            DB::transaction(function () use ($guild_roles, $new_rank_id, $guild_user, $action, $archive_duties_on_promotion, $rank_history, $auth_id) {
+            DB::transaction(function () use ($new_rank_index, $guild_roles, $new_rank_id, $guild_user, $action, $archive_duties_on_promotion, $rank_history, $auth_id) {
                 $guild_user->rank_changed_at = now();
                 if ($guild_roles && isset($guild_roles[$new_rank_id])) {
                     $guild_user->setData('rank_role', [$new_rank_id => $guild_roles[$new_rank_id]]);
+                    $guild_user->setData('rank_role_index', $new_rank_index);
                 }
                 $guild_user->save();
 
