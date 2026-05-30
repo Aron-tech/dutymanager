@@ -58,9 +58,15 @@ class ChangeGuildUserRankAction
                 throw new Exception('No rank roles configured for this guild.');
             }
 
-            $current_rank_data = $guild_user->getRankData($guild_settings);
-            $current_index = $current_rank_data['index'] ?? -1;
-            $old_rank_id = $current_rank_data['rank_id'] ?? null;
+            $current_index = $guild_user->getData('rank_role_index');
+            $old_rank_id = array_key_first($guild_user->getData('rank_role', []));
+
+            if ($current_index === null || $old_rank_id === null) {
+                $rank_data = $guild_user->getRankData($guild_settings);
+
+                $current_index ??= $rank_data['index'] ?? -1;
+                $old_rank_id ??= $rank_data['rank_id'] ?? null;
+            }
 
             $new_rank_index = $action === 'promote'
                 ? min($current_index + $level, $max_index)
