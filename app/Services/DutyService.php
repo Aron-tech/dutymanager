@@ -224,22 +224,19 @@ class DutyService
     }
 
     /**
+     * @param Guild $guild
+     * @param $causer_id
+     * @return int
      * @throws Throwable
      */
-    public function resetDutiesForGuild(Guild $guild): int
+    public function resetDutiesForGuild(Guild $guild, $causer_id = null): int
     {
-        DB::beginTransaction();
+        return DB::transaction(function () use ($guild, $causer_id) {
+            $updated_count = $guild->duties()->finishedDuties()->where('status', DutyStatusEnum::CURRENT_PERIOD)->update(['status' => DutyStatusEnum::ALL_PERIOD]);
 
-        try {
-            $updated_count = $guild->duties()->whereNotNull('finished_at')->where('status', DutyStatusEnum::CURRENT_PERIOD)->update(['status' => DutyStatusEnum::ALL_PERIOD]);
-
-            DB::commit();
+            ActivityLog::make($guild->id, $causer_id, null, ActionTypeEnum::RESET_DUTIES_IN_GUILD, ['transferred_duties_count' => $updated_count]);
 
             return $updated_count;
-        } catch (Throwable $exception) {
-            DB::rollBack();
-            Log::error('Failed reset duties: '.$exception->getMessage());
-            throw $exception;
-        }
+        });
     }
 }

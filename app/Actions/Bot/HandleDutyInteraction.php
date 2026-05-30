@@ -235,24 +235,21 @@ class HandleDutyInteraction
         }
     }
 
+    /**
+     * @param DiscordInteraction $interaction
+     * @return void
+     */
     public function handleDutyResetCommand(DiscordInteraction $interaction): void
     {
+        if (! $this->validateAccess($interaction, PermissionEnum::EDIT_DUTIES)) {
+            return;
+        }
+
         try {
-            if (! $this->validateAccess($interaction, PermissionEnum::EDIT_DUTIES)) {
-                return;
-            }
-
-            $updated_duties_count = DB::transaction(function () {
-                $updated_duties_count = $this->guild->guildDuties()->whereNotNull('finished_at')->where('status', DutyStatusEnum::CURRENT_PERIOD)->update(['status' => DutyStatusEnum::ALL_PERIOD]);
-                ActivityLog::make($this->guild->id, $this->user->id, null, ActionTypeEnum::RESET_DUTIES_IN_GUILD, ['transferred_duties_count' => $updated_duties_count]);
-
-                return $updated_duties_count;
-            });
+            $updated_duties_count = $this->service->resetDutiesForGuild($this->guild, $this->user->id);
 
             $this->respondSimpleEmbed($interaction, '🚨 '.__('duty.success_duty_update_status', ['count' => $updated_duties_count]), '00FF00');
-
         } catch (\Throwable $e) {
-            Log::error('Hiba a duty törlésekor: '.$e->getMessage());
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
         }
     }
@@ -273,7 +270,7 @@ class HandleDutyInteraction
             $status = DutyStatusEnum::from($this->active_options->get('name', 'status')?->value) ?? DutyStatusEnum::ALL_PERIOD;
 
             $deleted_duties_count = DB::transaction(function () use ($status) {
-                $deleted_duties_count = $this->target_guild_user->duties()->whereNotNull('finished_at')->where('status', '<=', $status)->delete();
+                $deleted_duties_count = $this->target_guild_user->duties()->finishedDuties()->where('status', '<=', $status)->delete();
                 ActivityLog::make($this->guild->id, $this->user->id, $this->target_user_id, ActionTypeEnum::RESET_DUTIES_IN_GUILD, ['delete_duties_count' => $deleted_duties_count]);
 
                 return $deleted_duties_count;

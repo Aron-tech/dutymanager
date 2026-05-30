@@ -166,18 +166,20 @@ class DutyController extends Controller
     }
 
     /**
-     * @throws Throwable
+     * @return RedirectResponse
      */
     public function reset()
     {
-        if (auth()->user()->cannot(PermissionEnum::EDIT_DUTIES)) {
+        $auth = auth()->user();
+
+        if ($auth->cannot(PermissionEnum::EDIT_DUTIES)) {
             abort(403, __('app.error.no_permission'));
         }
 
         $guild = SelectedGuildService::get();
 
         try {
-            $updated_duties_count = $this->service->resetDutiesForGuild($guild);
+            $updated_duties_count = $this->service->resetDutiesForGuild($guild, $auth->id);
 
             if ($updated_duties_count > 0) {
                 return back()->with('success', __('duty.success_duty_update_status'));
