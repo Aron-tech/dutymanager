@@ -293,7 +293,10 @@ trait DiscordBotTrait
         }
     }
 
-    protected function handleRoleSync($member, $old_member = null): void
+    /**
+     * @throws Throwable
+     */
+    protected function handleRoleSync($member): void
     {
         if ($this->dev_mode && $this->dev_guild_id !== (string) $member->guild_id) {
             return;
@@ -313,8 +316,10 @@ trait DiscordBotTrait
         $new_role_ids = array_values($member->roles->keys());
         $roles_to_save = array_values(array_intersect($new_role_ids, $whitelist));
         $current_saved_roles = $this->getSavedRolesFromDb($member->guild_id, $member->id);
+
         sort($roles_to_save);
         sort($current_saved_roles);
+
         if ($roles_to_save === $current_saved_roles) {
             return;
         }
@@ -322,6 +327,7 @@ trait DiscordBotTrait
         if ($this->dev_mode) {
             $this->info("Rangszinkronizáció végrehajtása (Eltérés észlelve): {$member->user->username}");
         }
+
         $this->updateRoles($member->guild_id, $member->id, $roles_to_save);
     }
 
@@ -330,15 +336,73 @@ trait DiscordBotTrait
         $guild_user = GuildUser::query()
             ->where('guild_id', $guild_id)
             ->where('user_id', $user_id)
+            ->select(['guild_id', 'user_id', 'cached_roles'])
             ->first();
 
         if (! $guild_user || empty($guild_user->cached_roles)) {
             return [];
         }
 
-        $roles = json_decode($guild_user->cached_roles, true);
+        return is_array($guild_user->cached_roles) ? $guild_user->cached_roles : [];
+    }
 
-        return is_array($roles) ? $roles : [];
+    protected function syncAllGuildRolesToData($guild): void
+    {
+        $guild_model = Guild::where('id', $guild->id)->installed()->first();
+        if (! $guild_model) {
+            return;
+        }
+
+        $guild->roles->freshen()->then(function ($roles) use ($guild_model) {
+            $role_data = [];
+            foreach ($roles as $role) {
+                $role_data[(string) $role->id] = $role->name;
+            }
+
+            $guild_model->setData('roles', $role_data);
+            $guild_model->save();
+            $this->info('Rangok szinkronizálva: '.count($role_data).' db.');
+        });
+    }
+
+    protected function handleGuildRoleCreate($role): void
+    {
+        if ($this->dev_mode && $this->dev_guild_id !== (string) $role->guild_id) {
+            return;
+        }
+
+        $guild_model = Guild::where('id', $role->guild_id)->installed()->first();
+
+        if (! $guild_model) {
+            return;
+        }
+
+        $current_roles = $guild_model->getData('roles') ?? [];
+        $current_roles[(string) $role->id] = $role->name;
+
+        $guild_model->setData('roles', $current_roles);
+        $guild_model->save();
+    }
+
+    protected function handleGuildRoleDelete($role): void
+    {
+        if ($this->dev_mode && $this->dev_guild_id !== (string) $role->guild_id) {
+            return;
+        }
+
+        $guild_model = Guild::where('id', $role->guild_id)->installed()->first();
+
+        if (! $guild_model) {
+            return;
+        }
+
+        $current_roles = $guild_model->getData('roles') ?? [];
+
+        if (isset($current_roles[(string) $role->id])) {
+            unset($current_roles[(string) $role->id]);
+            $guild_model->setData('roles', $current_roles);
+            $guild_model->save();
+        }
     }
 
     public function findGuild(Discord $discord, string $guildId): ?\Discord\Parts\Guild\Guild

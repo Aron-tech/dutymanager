@@ -2,6 +2,7 @@
 
 namespace App\Actions\Bot;
 
+use App\Actions\ChangeGuildUserRankAction;
 use App\Actions\DeleteGuildUserAction;
 use App\Concerns\DiscordCommandTrait;
 use App\Concerns\DiscordEmbedTrait;
@@ -48,6 +49,7 @@ class HandleGuildUserInteraction
             match ($this->sub_command_name) {
                 'info' => $this->handleUserInfoCommand($interaction, $this->target_guild_user, $this->target_user_id, true),
                 'add' => $this->handleUserAddCommand($interaction),
+                'promote' => $this->handlePromoteCommand($interaction),
                 'delete' => $this->handleUserDeleteCommand($interaction),
                 default => $this->respondSimpleEmbed($interaction, '❌ '.__('app.unknow_command'), 'FF0000'),
             };
@@ -163,6 +165,31 @@ class HandleGuildUserInteraction
             Log::error('Hiba a user info lekérésekor: '.$e->getMessage(), ['user_id' => $guild_user?->user_id, 'exception' => $e]);
 
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.error_action'), 'FF0000');
+        }
+    }
+
+    public function handlePromoteCommand(DiscordInteraction $interaction): void
+    {
+        if (! $this->validateFeature($interaction, FeatureEnum::RANK)) {
+            return;
+        }
+
+        if (! $this->validateAccess($interaction, PermissionEnum::PROMOTE_GUILD_USER)) {
+            return;
+        }
+
+        if (! $this->target_guild_user) {
+            $this->respondSimpleEmbed($interaction, __('guild_user.error_not_found_user'), 'FF0000');
+
+            return;
+        }
+
+        $level = $this->active_options->get('name', 'level')?->value ?? 1;
+
+        if (ChangeGuildUserRankAction::run($this->target_guild_user, $this->guild, 'promote', $level, $this->user->id)) {
+            $this->respondSimpleEmbed($interaction, __('guild_user.success_promote_user', ['user' => $this->target_guild_user->user->name]), '00FF00');
+        } else {
+            $this->respondSimpleEmbed($interaction, __('guild_user.error_action'), 'FF0000');
         }
     }
 

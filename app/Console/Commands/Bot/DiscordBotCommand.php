@@ -44,7 +44,7 @@ class DiscordBotCommand extends Command
 
         $bot = new Discord([
             'token' => config('services.discord.token'),
-            'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS,
+            'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS | Intents::GUILDS,
         ]);
 
         $bot->on('init', function (Discord $discord) use ($bot) {
@@ -66,6 +66,20 @@ class DiscordBotCommand extends Command
             }
 
             $this->syncGuildCommands($bot, $guild);
+        });
+
+        $bot->on('ready', function (Discord $discord) {
+            foreach ($discord->guilds as $guild) {
+                $this->syncAllGuildRolesToData($guild);
+            }
+        });
+
+        $bot->on(Event::GUILD_ROLE_CREATE, function ($role) {
+            $this->handleGuildRoleCreate($role);
+        });
+
+        $bot->on(Event::GUILD_ROLE_DELETE, function ($role) {
+            $this->handleGuildRoleDelete($role);
         });
 
         $bot->on(Event::INTERACTION_CREATE, function (DiscordInteraction $interaction) use ($bot) {
@@ -127,7 +141,7 @@ class DiscordBotCommand extends Command
             if (! $old_member) {
                 return;
             }
-            $this->handleRoleSync($member, $old_member);
+            $this->handleRoleSync($member);
         });
 
         DutyMonitorService::register($bot);

@@ -2,6 +2,9 @@
 
 namespace App\Concerns;
 
+use App\Models\Guild;
+use App\Models\Item;
+use App\Services\DutyMonitorService;
 use Illuminate\Support\Arr;
 
 trait DataTrait
@@ -17,7 +20,7 @@ trait DataTrait
     /**
      * @param string $json_key
      * @param mixed $value
-     * @return DataTrait
+     * @return Guild|DataTrait|Item|DutyMonitorService
      */
     public function setData(string $json_key, mixed $value): self
     {

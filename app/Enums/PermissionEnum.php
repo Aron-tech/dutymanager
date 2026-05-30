@@ -20,7 +20,7 @@ enum PermissionEnum: string
     case DELETE_GUILD_USERS = 'delete_guild_users';
 
     // Rang kezelés
-    case PROMOTION_GUILD_USER = 'promotion_guild_user';
+    case PROMOTE_GUILD_USER = 'promote_guild_user';
     case DEMOTE_GUILD_USER = 'demote_guild_user';
 
     // Szolgálat kezelése

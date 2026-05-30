@@ -290,7 +290,7 @@ class GuildUserController extends Controller
             abort(422, __('app.feature_not_enabled'));
         }
 
-        if (($data['action'] === 'promote' && $auth_user->cannot(PermissionEnum::PROMOTION_GUILD_USER)) || ($data['action'] === 'demote' && $auth_user->cannot(PermissionEnum::DEMOTE_GUILD_USER))) {
+        if (($data['action'] === 'promote' && $auth_user->cannot(PermissionEnum::PROMOTE_GUILD_USER)) || ($data['action'] === 'demote' && $auth_user->cannot(PermissionEnum::DEMOTE_GUILD_USER))) {
             abort(403, __('app.error_no_permission'));
         }
 

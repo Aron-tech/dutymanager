@@ -41,6 +41,46 @@ return [
                 'type' => 1,
             ],
             [
+                'name' => 'promote',
+                'description' => 'guild_user.user_promote_command_description',
+                'type' => 1,
+                'options' => [
+                    [
+                        'name' => 'user',
+                        'description' => 'guild_user.user_option_description',
+                        'type' => 6,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'level',
+                        'description' => 'guild_user.user_command_level_description',
+                        'type' => 4,
+                        'min_value' => 1,
+                        'required' => false,
+                    ],
+                ],
+            ],
+            [
+                'name' => 'demote',
+                'description' => 'guild_user.user_demote_command_description',
+                'type' => 1,
+                'options' => [
+                    [
+                        'name' => 'user',
+                        'description' => 'guild_user.user_option_description',
+                        'type' => 6,
+                        'required' => true,
+                    ],
+                    [
+                        'name' => 'level',
+                        'description' => 'guild_user.user_command_level_description',
+                        'type' => 4,
+                        'min_value' => 1,
+                        'required' => false,
+                    ],
+                ],
+            ],
+            [
                 'name' => 'delete',
                 'description' => 'guild_user.user_delete_command_description',
                 'type' => 1,

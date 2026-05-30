@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
 
-#[Fillable(['id', 'name', 'icon', 'owner_id', 'lang_code', 'is_installed'])]
+#[Fillable(['id', 'name', 'icon', 'owner_id', 'lang_code', 'is_installed', 'data'])]
 #[Hidden(['lang_code'])]
 class Guild extends Model
 {
