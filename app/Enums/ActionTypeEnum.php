@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum ActionTypeEnum: string
 {
+    case INSTALL_BOT = 'install_bot';
     case FIRST_LOGIN_TO_WEBSITE = 'first_login_to_website';
     case ADD_USER_TO_GUILD = 'add_user_to_guild';
     case ADD_USER_TO_GUILD_WITH_RESTORE = 'add_user_to_guild_with_restore';
