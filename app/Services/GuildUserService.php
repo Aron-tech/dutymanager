@@ -51,6 +51,8 @@ class GuildUserService
             'unattached_guild_users' => $unattached_guild_users,
             'filters' => $data,
             'rank_roles' => $rank_roles,
+            'has_rank_system' => $guild_settings->isEnabledFeature(FeatureEnum::RANK),
+            'all_ranks' => $guild->getData('roles'),
         ];
     }
 
@@ -115,6 +117,9 @@ class GuildUserService
                 break;
             case 'statuses':
                 $query->orderBy('active_holiday_count', $direction)->orderBy('active_punishments_count', $direction);
+                break;
+            case 'rank':
+                $query->orderBy(DB::raw("CAST(JSON_UNQUOTE(JSON_EXTRACT(JSON_KEYS(data, '$.rank_role'), '$[0]')) AS UNSIGNED)"), $direction);
                 break;
             default:
                 if (str_starts_with($sort, 'detail_')) {

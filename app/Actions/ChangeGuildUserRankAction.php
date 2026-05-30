@@ -73,10 +73,15 @@ class ChangeGuildUserRankAction
             $archive_duties_on_promotion = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'archive_duties_on_promotion', false);
             $announcement_channel_id = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'announcement_channel_id', null);
 
-            $rank_history = ['old' => $old_rank_id, 'new' => $rank_roles[$new_rank_index]];
+            $new_rank_id = $rank_roles[$new_rank_index];
+            $rank_history = ['old' => $old_rank_id, 'new' => $new_rank_id];
+            $guild_roles = $guild->getData('roles');
 
-            DB::transaction(function () use ($guild_user, $action, $archive_duties_on_promotion, $rank_history, $auth_id) {
+            DB::transaction(function () use ($guild_roles, $new_rank_id, $guild_user, $action, $archive_duties_on_promotion, $rank_history, $auth_id) {
                 $guild_user->rank_changed_at = now();
+                if ($guild_roles && isset($guild_roles[$new_rank_id])) {
+                    $guild_user->setData('rank_role', [$new_rank_id => $guild_roles[$new_rank_id]]);
+                }
                 $guild_user->save();
 
                 if ($archive_duties_on_promotion) {
@@ -89,7 +94,7 @@ class ChangeGuildUserRankAction
             if ($has_premium && $announcement_channel_id) {
                 $embed = DiscordEmbedFactory::create($action, [
                     'user_id' => $guild_user->user_id,
-                    'rank' => '<@&'.$rank_roles[$new_rank_index].'>',
+                    'rank' => '<@&'.$new_rank_id.'>',
                     'actor' => '<@'.$auth_id.'>',
                     'guild_name' => $guild->name,
                     'guild_icon_url' => $guild->icon ? "https://cdn.discordapp.com/icons/{$guild->id}/{$guild->icon}.png" : null,
@@ -101,7 +106,7 @@ class ChangeGuildUserRankAction
             if ($old_rank_id) {
                 DiscordFetchService::removeRoleFromMember($guild_user->guild_id, $guild_user->user_id, $old_rank_id);
             }
-            DiscordFetchService::addRoleToMember($guild_user->guild_id, $guild_user->user_id, $rank_roles[$new_rank_index]);
+            DiscordFetchService::addRoleToMember($guild_user->guild_id, $guild_user->user_id, $new_rank_id);
 
             return true;
 

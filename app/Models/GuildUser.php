@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\DataTrait;
 use App\Enums\ActionTypeEnum;
 use App\Enums\DutyActionEnum;
 use App\Enums\DutyStatusEnum;
@@ -18,10 +19,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Cache;
 
-#[Fillable(['user_id', 'guild_id', 'ic_name', 'details', 'is_request', 'accepted_at', 'added_by', 'cached_roles', 'rank_changed_at'])]
+#[Fillable(['user_id', 'guild_id', 'ic_name', 'details', 'is_request', 'accepted_at', 'added_by', 'cached_roles', 'rank_changed_at', 'data'])]
 #[Hidden(['cached_roles'])]
 class GuildUser extends Model
 {
+    use DataTrait;
+
     protected $appends = ['rank_changed_ago', 'joined_ago'];
 
     /**
@@ -31,6 +34,7 @@ class GuildUser extends Model
     {
         return [
             'details' => 'array',
+            'data' => 'array',
             'is_request' => 'bool',
             'accepted_at' => 'datetime',
             'cached_roles' => 'array',
@@ -74,7 +78,7 @@ class GuildUser extends Model
 
     public function getRankData(?GuildSettings $guild_settings = null): ?array
     {
-        $guild_settings = $guild_settings ?: SelectedGuildService::get()?->guildSettings();
+        $guild_settings = $guild_settings ?: SelectedGuildService::get()?->guildSettings() ?: GuildSettings::where('guild_id', $this->guild_id)->first();
         $rank_roles = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'rank_roles', []);
         $rank_roles_count = count($rank_roles);
         $highest_match = null;

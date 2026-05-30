@@ -92,6 +92,10 @@ export default function UserManagerView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const safe_user_details = Array.isArray(user_details_config) ? user_details_config : [];
 
+    const hasAnyRank = useMemo(() => {
+        return guild_users.data.some(user => user.data?.rank_role);
+    }, [guild_users.data]);
+
     const column_definitions = useMemo(() => {
         const base_cols = [
             { id: 'user_id', label: 'Discord ID', required: true },
@@ -99,6 +103,15 @@ export default function UserManagerView({
             { id: 'ic_name', label: 'IC Név', required: true },
             { id: 'statuses', label: 'Státuszok', required: true },
         ];
+
+        if (hasAnyRank) {
+            const icNameIndex = base_cols.findIndex(col => col.id === 'ic_name');
+
+            if (icNameIndex !== -1) {
+                base_cols.splice(icNameIndex + 1, 0, {id: 'rank', label: 'Rang', required: true, });
+            }
+        }
+
         const config_cols = safe_user_details.map((config) => ({
             id: `detail_${config.name}`,
             label: config.name,
@@ -115,7 +128,7 @@ export default function UserManagerView({
         ];
 
         return [...base_cols, ...config_cols, ...duty_cols, ...extra_base_cols];
-    }, [safe_user_details]);
+    }, [safe_user_details, hasAnyRank]);
 
     const default_visible = column_definitions.filter((col) => col.required).map((col) => col.id);
     const [visible_columns, setVisibleColumns] = useState<string[]>(default_visible);
@@ -209,7 +222,9 @@ export default function UserManagerView({
     };
 
     const handleBulkRankAction = (action: 'promote' | 'demote') => {
-        if (selected_rows.length === 0) return;
+        if (selected_rows.length === 0) {
+            return;
+        }
 
         router.post(
             route('guild.users.bulk.rank'),
@@ -250,6 +265,15 @@ export default function UserManagerView({
                     render_func = (row: GuildUser) => formatDuty(row.all_period_duties_sum_value);
                 } else if (col.id === 'joined_at') {
                     render_func = (row: GuildUser) => row.joined_ago;
+                } else if (col.id === 'rank') {
+                    render_func = (row: GuildUser) => {
+                        if (!row.data?.rank_role) return '-';
+
+                        const rankId = Object.keys(row.data.rank_role)[0];
+                        const rankName = row.data.rank_role[rankId];
+
+                        return <Badge>{rankName}</Badge>;
+                    };
                 } else if (col.id.startsWith('detail_')) {
                     const key = col.id.replace('detail_', '');
                     render_func = (row: GuildUser) => row.details?.[key] || '-';
