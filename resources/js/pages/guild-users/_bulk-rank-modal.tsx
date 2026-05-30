@@ -18,7 +18,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import type { GuildUser, PageProps } from '@/types';
+import type { PageProps } from '@/types';
 
 interface BulkRankModalProps {
     is_open: boolean;
@@ -62,6 +62,7 @@ export default function BulkRankModal({ is_open, onClose, selected_ids }: BulkRa
         const current_rank_index = current_rank_id ? rank_roles.indexOf(current_rank_id) : -1;
 
         let next_rank_index: number;
+
         if (form_data.action === 'promote') {
             next_rank_index = Math.min(current_rank_index + form_data.level, rank_roles.length - 1);
         } else {
@@ -82,7 +83,6 @@ export default function BulkRankModal({ is_open, onClose, selected_ids }: BulkRa
             onSuccess: () => {
                 onClose();
                 reset();
-                toast.success('A rangok frissítése sikeresen megtörtént.');
             },
             onError: (errors: any) => {
                 if (errors.form_error) {
