@@ -113,6 +113,7 @@ class DutyService
             'discord_id' => $query->orderBy('guild_users.user_id', $direction),
             'discord_name' => $query->orderBy('users.name', $direction),
             'ic_name' => $query->orderBy('guild_users.ic_name', $direction),
+            'rank' => $query->orderBy('data->rank_role_index', $direction),
             default => $query->orderBy('duties.started_at', $direction),
         };
 
@@ -136,7 +137,7 @@ class DutyService
             ->join('guild_users', 'duties.guild_user_id', '=', 'guild_users.id')
             ->where('guild_users.guild_id', $guild->id)
             ->where('duties.started_at', '>=', $now->copy()->subHours(24))
-            ->whereNotNull('guild_users.accepted_at') // Grafikon adatoknál is csak a jóváhagyott tagok
+            ->whereNotNull('guild_users.accepted_at')
             ->selectRaw("TO_CHAR(duties.started_at, 'HH24:00') as date, COUNT(*) as count")
             ->groupBy('date')
             ->get();

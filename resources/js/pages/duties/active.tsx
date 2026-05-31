@@ -7,6 +7,7 @@ import { DataTable } from '@/components/data-table';
 import type { ColumnDef } from '@/components/data-table';
 import { DataTableToolbar } from '@/components/data-table-toolbar';
 import { StatCard } from '@/components/stat-card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Tooltip,
@@ -76,6 +77,7 @@ export default function ActiveDutiesView({
         { id: 'discord_id', label: 'Discord ID', required: true },
         { id: 'discord_name', label: 'Discord Név', required: true },
         { id: 'ic_name', label: 'IC Név', required: true },
+        { id: 'rank', label: 'Rang', required: true},
         { id: 'started_at', label: 'Szolgálatba lépés', required: true },
     ], []);
 
@@ -194,6 +196,17 @@ export default function ActiveDutiesView({
                     render_func = (row: Duty) => (
                         <span className="font-semibold text-foreground">{row.guild_user?.ic_name || '-'}</span>
                     );
+                } else if (col.id === 'rank') {
+                    render_func = (row: Duty) => {
+                        if (!row.guild_user?.data?.rank_role) {
+                            return '-';
+                        }
+
+                        const rankId = Object.keys(row.guild_user?.data.rank_role)[0];
+                        const rankName = row.guild_user?.data.rank_role[rankId];
+
+                        return <Badge>{rankName}</Badge>;
+                    };
                 } else if (col.id === 'started_at') {
                     render_func = (row: Duty) => formatDate(row.started_at, '');
                 }
