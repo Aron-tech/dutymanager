@@ -7,6 +7,7 @@ use App\Actions\Bot\HandleDutyInteraction;
 use App\Actions\Bot\HandleGuildUserInteraction;
 use App\Actions\Bot\HandleHolidayInteraction;
 use App\Concerns\DiscordBotTrait;
+use App\Models\Guild;
 use App\Services\DutyMonitorService;
 use Discord\Discord;
 use Discord\Exceptions\IntentException;
@@ -57,6 +58,16 @@ class DiscordBotCommand extends Command
         });
 
         $bot->on(Event::GUILD_CREATE, function ($guild) use ($bot) {
+            Guild::updateOrCreate(
+                ['id' => $guild->id],
+                [
+                    'name' => $guild->name,
+                    'icon' => $guild->icon,
+                    'owner_id' => $guild->owner_id,
+                    'lang_code' => 'hu',
+                ]
+            );
+
             if ($this->dev_mode) {
                 if ($this->dev_guild_id === (string) $guild->id) {
                     $this->syncGuildCommands($bot, $guild);
