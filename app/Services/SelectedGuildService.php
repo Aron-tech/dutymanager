@@ -39,9 +39,8 @@ class SelectedGuildService
         }
 
         $guild_id = Session::get(self::SESSION_KEY);
-        $user = auth()->user();
 
-        $guild = $user->guilds()->with('guildSettings')->find($guild_id);
+        $guild = Guild::with('guildSettings')->find($guild_id);
 
         if (! $guild) {
             self::clear();
