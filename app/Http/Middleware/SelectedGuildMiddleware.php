@@ -21,7 +21,7 @@ class SelectedGuildMiddleware
             return redirect()->route('guilds.selector');
         }
 
-        if (! $request->session()->has(SelectedGuildService::SESSION_KEY)) {
+        if (! SelectedGuildService::isSelected()) {
             return redirect()->route('guilds.selector');
         }
 
