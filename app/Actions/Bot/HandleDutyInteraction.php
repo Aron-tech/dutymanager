@@ -67,6 +67,10 @@ class HandleDutyInteraction
 
     public function handleButtonStart(DiscordInteraction $interaction): void
     {
+        if (! $this->validateAccess($interaction, PermissionEnum::TOGGLE_DUTY)) {
+            return;
+        }
+
         if ($this->guild_user->hasActiveDuty()) {
             $this->respondSimpleEmbed($interaction, '❌ '.__('duty.already_on_duty'), 'FF0000');
 
@@ -77,6 +81,10 @@ class HandleDutyInteraction
 
     public function handleButtonStop(DiscordInteraction $interaction): void
     {
+        if (! $this->validateAccess($interaction, PermissionEnum::TOGGLE_DUTY)) {
+            return;
+        }
+
         if (! $this->guild_user->hasActiveDuty()) {
             $this->respondSimpleEmbed($interaction, '❌ '.__('duty.not_in_duty'), 'FF0000');
 
