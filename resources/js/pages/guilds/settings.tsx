@@ -64,7 +64,10 @@ export default function GuildSettings() {
 
                 // Keresünk egy olyan tabot, ahol hiba van, hogy oda ugorjunk
                 for (const key of Object.keys(errors)) {
-                    if (key.startsWith('settings.user_details.')) {
+                    if (key.startsWith('settings.general_settings.')) {
+                        setActiveTab('general');
+                        break;
+                    } else if (key.startsWith('settings.user_details.')) {
                         setActiveTab('user_details');
                         break;
                     } else if (key.startsWith('settings.duty_manager.')) {
@@ -138,7 +141,7 @@ export default function GuildSettings() {
                             value="general"
                             className="mt-6 rounded-lg border bg-card p-6 shadow-sm"
                         >
-                            <GeneralSettings {...getFeatureProps('general')} />
+                            <GeneralSettings {...getFeatureProps('general_settings')} />
                         </TabsContent>
 
                         <TabsContent
