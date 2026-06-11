@@ -236,16 +236,19 @@ class GuildUserService
             ]);
 
             $guild = $guild_user->guild;
-            $default_role = $guild->guildSettings?->feature_settings['general']['default_role'] ?? null;
-            if ($default_role) {
-                DB::afterCommit(function () use ($guild, $guild_user, $default_role) {
-                    AddDiscordRoleJob::dispatch($guild->id, $guild_user->user_id, [$default_role]);
-                });
-            }
+            $default_role = $guild->guildSettings?->getGeneralSettings('default_role', null);
 
             ActivityLog::make($guild_user->guild_id, $auth_user->id, $guild_user->user_id, ActionTypeEnum::ACCEPTED_USER_TO_GUILD, $guild_user->toArray());
 
             DB::commit();
+
+            if ($default_role) {
+                DiscordFetchService::addRoleToMember($guild->id, $guild_user->user_id, $default_role);
+            }
+
+            if ($guild->guildSettings?->isEnabledFeature(FeatureEnum::RANK)) {
+                ChangeGuildUserRankAction::run($guild_user, $guild, 'promote', 0, $auth_user->id);
+            }
 
             return true;
         } catch (Throwable $e) {

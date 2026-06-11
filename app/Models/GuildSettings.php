@@ -61,11 +61,11 @@ class GuildSettings extends Model
 
     public function getGeneralSettings(?string $settings_name, mixed $fallback = null): mixed
     {
-        if (isset($this->feature_settings['general'])) {
+        if (isset($this->feature_settings['general_settings'])) {
             if (is_null($settings_name)) {
-                return $this->feature_settings['general'];
+                return $this->feature_settings['general_settings'];
             } else {
-                return $this->feature_settings['general'][$settings_name];
+                return $this->feature_settings['general_settings'][$settings_name];
             }
         }
 

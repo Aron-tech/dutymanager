@@ -30,8 +30,8 @@ class GuildSettingsController extends Controller
 
         $initial_settings = $guild_settings?->feature_settings ?? [];
 
-        $initial_settings['general'] = $initial_settings['general'] ?? [];
-        $initial_settings['general']['mode'] = $initial_settings['general']['mode'] ?? 'preset';
+        $initial_settings['general_settings'] = $initial_settings['general_settings'] ?? [];
+        $initial_settings['general_settings']['mode'] = $initial_settings['general_settings']['mode'] ?? 'preset';
 
         $role_permissions = [];
         foreach ($guild->guildRoles as $guild_role) {
@@ -42,7 +42,7 @@ class GuildSettingsController extends Controller
                 ];
             }
         }
-        $initial_settings['general']['role_permissions'] = $role_permissions;
+        $initial_settings['general_settings']['role_permissions'] = $role_permissions;
 
         $user_details_data = $initial_settings['user_details'] ?? [];
         $user_details_data['config'] = $guild_settings?->user_details_config ?? [];

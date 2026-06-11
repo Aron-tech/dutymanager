@@ -16,10 +16,6 @@ use Throwable;
 readonly class GuildSettingsService
 {
     /**
-     * @param GuildSettings $guild_settings
-     * @param array $enabled_features
-     * @param array $settings
-     * @return void
      * @throws Throwable
      */
     public function updateSettings(GuildSettings $guild_settings, array $enabled_features, array $settings): void
@@ -40,7 +36,7 @@ readonly class GuildSettingsService
             // Generate key and sort for canonical representation
             if (is_array($userDetailsConfig)) {
                 foreach ($userDetailsConfig as &$config) {
-                    if (isset($config['name']) && !isset($config['key'])) {
+                    if (isset($config['name']) && ! isset($config['key'])) {
                         $config['key'] = Str::slug($config['name'], '_');
                     }
                 }
@@ -50,12 +46,12 @@ readonly class GuildSettingsService
 
             $guild_settings->user_details_config = $userDetailsConfig;
 
-            if (isset($settings['general'])) {
-                $this->syncGuildRoles($guild_settings->guild, $settings['general']);
-                unset($settings['general']['role_permissions']);
+            if (isset($settings['general_settings'])) {
+                $this->syncGuildRoles($guild_settings->guild, $settings['general_settings']);
+                unset($settings['general_settings']['role_permissions']);
             }
 
-            $valid_feature_keys = array_merge(['general', 'user_details'], $enabled_features);
+            $valid_feature_keys = array_merge(['general_settings', 'user_details'], $enabled_features);
 
             foreach ($valid_feature_keys as $feature_key) {
                 if (isset($settings[$feature_key])) {
