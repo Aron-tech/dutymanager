@@ -61,14 +61,27 @@ class CommandRegistrationService
             'options' => $this->buildUserAddCommandOptions($guild),
         ];
 
+        // Felépítjük a dinamikus 'request' alparancsot.
+        $dynamicRequestSubCommand = [
+            'name' => 'request',
+            'description' => 'guild_user.user_request_command_description',
+            'type' => 1, // SUB_COMMAND
+            'options' => $this->buildUserRequestCommandOptions($guild),
+        ];
+
         // Kicseréljük a statikus 'add' alparancsot a dinamikusra, a többit békén hagyjuk.
         $finalSubCommands = [];
         $addCommandFound = false;
+        $requestCommandFound = false;
+
         if (isset($userCommandBase['options'])) {
             foreach ($userCommandBase['options'] as $subCommand) {
                 if ($subCommand['name'] === 'add') {
                     $finalSubCommands[] = $dynamicAddSubCommand;
                     $addCommandFound = true;
+                } elseif ($subCommand['name'] === 'request') {
+                    $finalSubCommands[] = $dynamicRequestSubCommand;
+                    $requestCommandFound = true;
                 } else {
                     $finalSubCommands[] = $subCommand;
                 }
@@ -79,30 +92,21 @@ class CommandRegistrationService
             $finalSubCommands[] = $dynamicAddSubCommand;
         }
 
+        if (! $requestCommandFound) {
+            $finalSubCommands[] = $dynamicRequestSubCommand;
+        }
+
         $userCommandBase['options'] = $finalSubCommands;
 
         return $userCommandBase;
     }
 
     /**
-     * Felépíti a '/user add' parancs opcióit, helyes sorrendben.
+     * Közös opcióépítő logika a felhasználói adatokhoz.
      */
-    private function buildUserAddCommandOptions(Guild $guild): array
+    private function buildUserDetailsOptions(Guild $guild): array
     {
-        $requiredOptions = [
-            [
-                'name' => 'user',
-                'description' => 'guild_user.user_option_description',
-                'type' => 6, // USER
-                'required' => true,
-            ],
-            [
-                'name' => 'ic_name',
-                'description' => 'guild_user.ic_name',
-                'type' => 3, // STRING
-                'required' => true,
-            ],
-        ];
+        $requiredOptions = [];
         $optionalOptions = [];
 
         $userDetailsConfig = $guild->guildSettings?->user_details_config ?? [];
@@ -154,7 +158,51 @@ class CommandRegistrationService
             }
         }
 
-        return array_merge($requiredOptions, $optionalOptions);
+        return ['required' => $requiredOptions, 'optional' => $optionalOptions];
+    }
+
+    /**
+     * Felépíti a '/user add' parancs opcióit, helyes sorrendben.
+     */
+    private function buildUserAddCommandOptions(Guild $guild): array
+    {
+        $requiredOptions = [
+            [
+                'name' => 'user',
+                'description' => 'guild_user.user_option_description',
+                'type' => 6, // USER
+                'required' => true,
+            ],
+            [
+                'name' => 'ic_name',
+                'description' => 'guild_user.ic_name',
+                'type' => 3, // STRING
+                'required' => true,
+            ],
+        ];
+
+        $detailsOptions = $this->buildUserDetailsOptions($guild);
+
+        return array_merge($requiredOptions, $detailsOptions['required'], $detailsOptions['optional']);
+    }
+
+    /**
+     * Felépíti a '/user request' parancs opcióit, helyes sorrendben.
+     */
+    private function buildUserRequestCommandOptions(Guild $guild): array
+    {
+        $requiredOptions = [
+            [
+                'name' => 'ic_name',
+                'description' => 'guild_user.ic_name',
+                'type' => 3, // STRING
+                'required' => true,
+            ],
+        ];
+
+        $detailsOptions = $this->buildUserDetailsOptions($guild);
+
+        return array_merge($requiredOptions, $detailsOptions['required'], $detailsOptions['optional']);
     }
 
     /**

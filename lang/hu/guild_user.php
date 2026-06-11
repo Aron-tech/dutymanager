@@ -29,5 +29,5 @@ return [
     'user' => 'Felhasználó',
     'ic_name' => 'IC név',
     'success_added_discord_member' => 'Sikeresen hozzáadtad a felhasználót a szerverhez!',
-
+    'success_requested_discord_member' => 'Sikeresen benyújtottad a csatlakozási kérelmedet!',
 ];

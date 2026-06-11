@@ -49,10 +49,36 @@ class HandleGuildUserInteraction
             match ($this->sub_command_name) {
                 'info' => $this->handleUserInfoCommand($interaction, $this->target_guild_user, $this->target_user_id, true),
                 'add' => $this->handleUserAddCommand($interaction),
+                'request' => $this->handleUserRequestCommand($interaction),
                 'promote' => $this->handlePromoteCommand($interaction),
                 'delete' => $this->handleUserDeleteCommand($interaction),
                 default => $this->respondSimpleEmbed($interaction, '❌ '.__('app.unknow_command'), 'FF0000'),
             };
+        }
+    }
+
+    private function getValidatedDetails(DiscordInteraction $interaction): ?array
+    {
+        $details = [];
+        $userDetailsConfig = $this->guild->guildSettings?->user_details_config ?? [];
+
+        foreach ($userDetailsConfig as $config) {
+            $optionName = $config['key'] ?? str_replace(' ', '_', strtolower($config['name']));
+            $option = $this->active_options->get('name', $optionName);
+            if ($option) {
+                $details[$config['name']] = $option->value;
+            }
+        }
+
+        $rules = $this->getDynamicDetailsRules($this->guild);
+        $validator = Validator::make(['details' => $details], $rules, $this->getDynamicDetailsMessages());
+
+        try {
+            return $validator->validate()['details'] ?? [];
+        } catch (ValidationException $e) {
+            $errors = $e->validator->errors()->all();
+            $this->respondSimpleEmbed($interaction, '❌ '.__('app.validation_error')."\n".implode("\n", $errors), 'FF0000');
+            return null;
         }
     }
 
@@ -74,26 +100,8 @@ class HandleGuildUserInteraction
             return;
         }
 
-        $details = [];
-        $userDetailsConfig = $this->guild->guildSettings?->user_details_config ?? [];
-
-        foreach ($userDetailsConfig as $config) {
-            $optionName = $config['key'] ?? str_replace(' ', '_', strtolower($config['name']));
-            $option = $this->active_options->get('name', $optionName);
-            if ($option) {
-                $details[$config['name']] = $option->value;
-            }
-        }
-
-        $rules = $this->getDynamicDetailsRules($this->guild);
-        $validator = Validator::make(['details' => $details], $rules, $this->getDynamicDetailsMessages());
-
-        try {
-            $validatedData = $validator->validate();
-        } catch (ValidationException $e) {
-            $errors = $e->validator->errors()->all();
-            $this->respondSimpleEmbed($interaction, '❌ '.__('app.validation_error')."\n".implode("\n", $errors), 'FF0000');
-
+        $details = $this->getValidatedDetails($interaction);
+        if ($details === null) {
             return;
         }
 
@@ -114,7 +122,7 @@ class HandleGuildUserInteraction
                 'name' => $userName,
                 'added_by' => $this->user,
                 'ic_name' => $icName,
-                'details' => $validatedData['details'] ?? [],
+                'details' => $details,
             ];
 
             $guild_user = $this->service->joinUserToGuild($data);
@@ -122,6 +130,45 @@ class HandleGuildUserInteraction
             $this->respondSimpleEmbed($interaction, '✅ '.__('guild_user.success_added_discord_member'), '00FF00');
         } catch (\Throwable $e) {
             Log::error('Hiba a user hozzáadásakor: '.$e->getMessage(), ['exception' => $e]);
+            $this->respondSimpleEmbed($interaction, '❌ '.$e->getMessage(), 'FF0000');
+        }
+    }
+
+    protected function handleUserRequestCommand(DiscordInteraction $interaction): void
+    {
+        $user_id = $interaction->member->user->id;
+        if (GuildUser::where('guild_id', $this->guild->id)->where('user_id', $user_id)->first()) {
+            $this->respondSimpleEmbed($interaction, '❌ '.__('guild_user.already_exists_user', ['user' => '<@'.$user_id.'>']), 'FF0000');
+
+            return;
+        }
+
+        $details = $this->getValidatedDetails($interaction);
+        if ($details === null) {
+            return;
+        }
+
+        try {
+            $discordUser = $interaction->member->user;
+
+            $userName = $discordUser ? $discordUser->username : 'Ismeretlen';
+            $icNameOption = $this->active_options->get('name', 'ic_name');
+            $icName = $icNameOption ? $icNameOption->value : ($discordUser ? ($discordUser->global_name ?? $discordUser->username) : 'Ismeretlen');
+
+            $data = [
+                'guild' => $this->guild,
+                'user_id' => $user_id,
+                'name' => $userName,
+                'ic_name' => $icName,
+                'details' => $details,
+                'is_request' => true,
+            ];
+
+            $guild_user = $this->service->joinUserToGuild($data);
+
+            $this->respondSimpleEmbed($interaction, '✅ '.__('guild_user.success_requested_discord_member'), '00FF00');
+        } catch (\Throwable $e) {
+            Log::error('Hiba a user kérelemkor: '.$e->getMessage(), ['exception' => $e]);
             $this->respondSimpleEmbed($interaction, '❌ '.$e->getMessage(), 'FF0000');
         }
     }
