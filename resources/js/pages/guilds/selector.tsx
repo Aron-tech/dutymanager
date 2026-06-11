@@ -44,6 +44,7 @@ export default function Selector({
 
     const __ = (key: string): string => {
         const value = key.split('.').reduce((o, i) => (o ? o[i] : undefined), props.translations as any);
+
         return value || key;
     };
 
@@ -72,7 +73,7 @@ export default function Selector({
     }, [original_url]);
 
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: __('guilds.selector.breadcrumb'), href: '/guilds/selector' },
+        { title: __('app.guild_selector_title'), href: '/guilds/selector' },
     ];
 
     const handleSelectServer = (discord_id: string) => {
@@ -88,7 +89,7 @@ export default function Selector({
 
     return (
         <AppHeaderLayout breadcrumbs={breadcrumbs}>
-            <Head title={__('guilds.selector.page_title')} />
+            <Head title={__('app.guild_selector_title')} />
 
             <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-8 p-6 lg:p-10">
                 <div className="flex flex-col gap-2">

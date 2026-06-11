@@ -142,7 +142,7 @@ export function AppSidebar() {
                             <SidebarMenuButton size="lg" asChild>
                                 <Link href={route('dashboard')} className="flex items-center gap-3">
                                     <Avatar className="h-9 w-9 rounded-lg">
-                                        {selectedGuild.icon_url ? (
+                                        {selectedGuild.icon ? (
                                             <AvatarImage src={selectedGuild.icon} alt={selectedGuild.name} />
                                         ) : (
                                             <AvatarFallback className="rounded-lg">
