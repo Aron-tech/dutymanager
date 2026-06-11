@@ -8,7 +8,7 @@ use Illuminate\Translation\PotentiallyTranslatedString;
 
 class GeneralSettingsRules implements ValidationRule
 {
-    public static function rules(string $prefix = 'settings.general'): array
+    public static function rules(string $prefix = 'settings.general_settings'): array
     {
         return [
             "{$prefix}.lang" => ['required', 'string'],

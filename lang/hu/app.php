@@ -16,8 +16,10 @@ return [
     'success_guild_installation' => 'Sikeresen telepítetted a szervert!',
     'already_guild_installed' => 'Már telepítve van a szerver!',
     'guild_status_installed' => 'Telepítve',
+    'guild_status_waiting_for_installing' => 'Telepítésre vár',
     'guild_action_add' => 'Hozzáadás',
     'guild_selector_title' => 'Szerver választó',
     'guild_selector_description' => 'Válasszon szervert amelyt kezelni szeretné.',
     'guild_selector_my_servers_title' => 'Szervereim',
+    'guild_selector_waiting_for_joining_bot' => 'Csatlakozására vár'
 ];

@@ -26,6 +26,7 @@ interface MultiRoleSelectProps {
     searchPlaceholder?: string;
     emptyPlaceholder?: string;
     className?: string;
+    useSelectionOrder?: boolean;
 }
 
 export function MultiRoleSelect({
@@ -36,6 +37,7 @@ export function MultiRoleSelect({
     searchPlaceholder = 'Rang keresése...',
     emptyPlaceholder = 'Nincs találat.',
     className,
+    useSelectionOrder = false,
 }: MultiRoleSelectProps) {
     const [open, setOpen] = React.useState(false);
 
@@ -51,7 +53,29 @@ export function MultiRoleSelect({
         onChange(newValue);
     };
 
-    const selectedRoles = sortedRoles.filter((role) => value.includes(role.id));
+    const getRoleColor = (color: string | number | undefined | null) => {
+        if (!color) {
+            return undefined;
+        }
+
+        if (typeof color === 'number') {
+            return `#${color.toString(16).padStart(6, '0')}`;
+        }
+
+        return color as string;
+    };
+
+    const selectedRoles = React.useMemo(() => {
+        if (useSelectionOrder) {
+            // Sorrend a `value` tömb alapján
+            return value
+                .map((id) => roles.find((role) => role.id === id))
+                .filter((role): role is DiscordRole => role !== undefined);
+        }
+
+        // Eredeti sorrend (pozíció szerint)
+        return sortedRoles.filter((role) => value.includes(role.id));
+    }, [value, roles, sortedRoles, useSelectionOrder]);
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -60,43 +84,69 @@ export function MultiRoleSelect({
                     variant="outline"
                     role="combobox"
                     aria-expanded={open}
-                    className={cn('w-full justify-between', className)}
+                    className={cn(
+                        'h-auto min-h-10 w-full justify-between py-2',
+                        className,
+                    )}
                     onClick={() => setOpen(!open)}
                 >
-                    <div className="flex flex-wrap items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
                         {selectedRoles.length > 0 ? (
-                            selectedRoles.map((role) => (
-                                <Badge
-                                    key={role.id}
-                                    variant="secondary"
-                                    className="flex items-center gap-1"
-                                    style={{
-                                        backgroundColor: role.color
-                                            ? `${role.color}33`
-                                            : undefined,
-                                        borderColor: role.color || undefined,
-                                    }}
-                                >
-                                    {role.name}
-                                    <button
-                                        className="rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleSelect(role.id);
-                                            }
-                                        }}
-                                        onMouseDown={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                        }}
-                                        onClick={() => handleSelect(role.id)}
+                            selectedRoles.map((role, index) => {
+                                const hexColor = getRoleColor(role.color);
+
+                                return (
+                                    <Badge
+                                        key={role.id}
+                                        variant="secondary"
+                                        className={cn(
+                                            'flex items-center',
+                                            useSelectionOrder
+                                                ? 'gap-1.5 px-2 py-1'
+                                                : 'gap-1',
+                                        )}
                                     >
-                                        <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                                    </button>
-                                </Badge>
-                            ))
+                                        {useSelectionOrder && (
+                                            <>
+                                                <span className="text-xs font-semibold opacity-70">
+                                                    {index + 1}.
+                                                </span>
+                                                <div
+                                                    className="h-2 w-2 rounded-full"
+                                                    style={{
+                                                        backgroundColor:
+                                                            hexColor ||
+                                                            '#99AAB5',
+                                                    }}
+                                                />
+                                            </>
+                                        )}
+                                        <span>{role.name}</span>
+                                        <button
+                                            type="button"
+                                            className="ml-1 rounded-full p-0.5 ring-offset-background transition-colors outline-none hover:bg-black/10 focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    handleSelect(role.id);
+                                                }
+                                            }}
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                            }}
+                                            onClick={() =>
+                                                handleSelect(role.id)
+                                            }
+                                        >
+                                            <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                        </button>
+                                    </Badge>
+                                );
+                            })
                         ) : (
-                            <span>{placeholder}</span>
+                            <span className="text-muted-foreground">
+                                {placeholder}
+                            </span>
                         )}
                     </div>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -108,32 +158,30 @@ export function MultiRoleSelect({
                     <CommandList>
                         <CommandEmpty>{emptyPlaceholder}</CommandEmpty>
                         <CommandGroup>
-                            {sortedRoles.map((role) => (
-                                <CommandItem
-                                    key={role.id}
-                                    value={role.name}
-                                    onSelect={() => handleSelect(role.id)}
-                                >
-                                    <Check
-                                        className={cn(
-                                            'mr-2 h-4 w-4',
-                                            value.includes(role.id)
-                                                ? 'opacity-100'
-                                                : 'opacity-0',
-                                        )}
-                                    />
-                                    <div className="flex items-center">
-                                        <div
-                                            className="mr-2 h-4 w-4 rounded-full"
-                                            style={{
-                                                backgroundColor:
-                                                    role.color || '#99AAB5',
-                                            }}
+                            {sortedRoles.map((role) => {
+                                const hexColor =
+                                    getRoleColor(role.color) || '#99AAB5';
+
+                                return (
+                                    <CommandItem
+                                        key={role.id}
+                                        value={role.name}
+                                        onSelect={() => handleSelect(role.id)}
+                                    >
+                                        <Check
+                                            className={cn(
+                                                'mr-2 h-4 w-4',
+                                                value.includes(role.id)
+                                                    ? 'opacity-100'
+                                                    : 'opacity-0',
+                                            )}
                                         />
-                                        {role.name}
-                                    </div>
-                                </CommandItem>
-                            ))}
+                                        <div className="flex items-center">
+                                            {role.name}
+                                        </div>
+                                    </CommandItem>
+                                );
+                            })}
                         </CommandGroup>
                     </CommandList>
                 </Command>

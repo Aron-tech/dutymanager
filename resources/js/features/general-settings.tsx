@@ -15,19 +15,8 @@ import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-    Combobox,
-    ComboboxChip,
-    ComboboxChips,
-    ComboboxChipsInput,
-    ComboboxContent,
-    ComboboxEmpty,
-    ComboboxInput,
-    ComboboxItem,
-    ComboboxList,
-    ComboboxValue,
-    useComboboxAnchor,
-} from '@/components/ui/combobox';
+import { RoleSelect } from '@/components/RoleSelect';
+import { MultiRoleSelect } from '@/components/MultiRoleSelect';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -61,7 +50,7 @@ interface GeneralSettingsProps {
         };
         languages: { value: string; label: string }[];
         permissions: { value: string; label: string }[];
-        discord_roles: { id: string; name: string; color?: number | string }[];
+        discord_roles: { id: string; name: string; color?: number | string; position: number }[];
     };
     onChange: (field: string, value: any) => void;
     errors?: Record<string, string>;
@@ -79,11 +68,6 @@ export default function GeneralSettings({
     const [licenseKey, setLicenseKey] = useState('');
     const [isActivating, setIsActivating] = useState(false);
 
-    const presetUserAnchor = useComboboxAnchor();
-    const presetStaffAnchor = useComboboxAnchor();
-    const presetOwnerAnchor = useComboboxAnchor();
-    const customPermAnchor = useComboboxAnchor();
-
     const rolePermissions = data.role_permissions || [];
     const currentMode = data.mode || 'preset';
 
@@ -94,7 +78,6 @@ export default function GeneralSettings({
         owner: Array.isArray(rawPreset.owner) ? rawPreset.owner : rawPreset.owner ? [rawPreset.owner] : [],
     };
 
-    const roleIds = context_data.discord_roles?.map((r) => r.id) || [];
     const permValues = context_data.permissions?.map((p) => p.value) || [];
 
     const handleAddRolePerm = () => {
@@ -139,17 +122,13 @@ export default function GeneralSettings({
             route('guild.license.activate', context_data.guild_id),
             { license_key: licenseKey },
             {
-                preserveState: true,
-                preserveScroll: true,
                 onSuccess: () => {
                     toast.success('License sikeresen aktiválva!');
                     setLicenseKey('');
-                    setIsActivating(false);
                 },
                 onError: (err) => {
                     const errorMsg = err.license_key || 'Hiba történt az aktiválás során.';
                     toast.error(errorMsg);
-                    setIsActivating(false);
                 },
                 onFinish: () => {
                     setIsActivating(false);
@@ -217,27 +196,11 @@ export default function GeneralSettings({
                                     </TooltipContent>
                                 </Tooltip>
                             </div>
-                            <Select
+                            <RoleSelect
+                                roles={context_data.discord_roles || []}
                                 value={data.default_role || ''}
-                                onValueChange={(val) => onChange('default_role', val)}
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Válassz alapértelmezett rangot..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {context_data.discord_roles?.map((role) => (
-                                        <SelectItem key={role.id} value={role.id}>
-                                            <div className="flex items-center gap-2">
-                                                <span
-                                                    className="h-2.5 w-2.5 rounded-full"
-                                                    style={{ backgroundColor: getRoleColor(role.id) }}
-                                                />
-                                                {role.name}
-                                            </div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                onChange={(val) => onChange('default_role', val)}
+                            />
                             <InputError message={errors?.['default_role']} />
                         </div>
                     </div>
@@ -327,49 +290,13 @@ export default function GeneralSettings({
                                         <User className="h-4 w-4 text-muted-foreground" />{' '}
                                         Alapértelmezett
                                     </Label>
-                                    <Combobox
-                                        multiple
-                                        autoHighlight
-                                        items={roleIds}
+                                    <MultiRoleSelect
+                                        roles={context_data.discord_roles || []}
                                         value={presetRoles.user}
-                                        onValueChange={(val) =>
-                                            handlePresetChange('user', val as string[])
-                                        }
-                                    >
-                                        <ComboboxChips ref={presetUserAnchor} className={`w-full ${errors?.['preset_roles.user'] ? 'border-destructive' : ''}`}>
-                                            <ComboboxValue>
-                                                {(values: string[]) => {
-                                                    const safeValues = Array.isArray(values) ? values : [];
-                                                    return (
-                                                        <React.Fragment>
-                                                            {safeValues.map((val) => (
-                                                                <ComboboxChip key={val}>
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: getRoleColor(val) }} />
-                                                                        {getRoleName(val)}
-                                                                    </div>
-                                                                </ComboboxChip>
-                                                            ))}
-                                                            <ComboboxChipsInput placeholder="Tag rangok..." />
-                                                        </React.Fragment>
-                                                    );
-                                                }}
-                                            </ComboboxValue>
-                                        </ComboboxChips>
-                                        <ComboboxContent anchor={presetUserAnchor}>
-                                            <ComboboxEmpty>Nincs találat.</ComboboxEmpty>
-                                            <ComboboxList>
-                                                {(item: string) => (
-                                                    <ComboboxItem key={item} value={item}>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: getRoleColor(item) }} />
-                                                            {getRoleName(item)}
-                                                        </div>
-                                                    </ComboboxItem>
-                                                )}
-                                            </ComboboxList>
-                                        </ComboboxContent>
-                                    </Combobox>
+                                        onChange={(val) => handlePresetChange('user', val)}
+                                        placeholder="Tag rangok..."
+                                        className={errors?.['preset_roles.user'] ? 'border-destructive' : ''}
+                                    />
                                     <InputError message={errors?.['preset_roles.user']} />
                                 </div>
 
@@ -378,49 +305,13 @@ export default function GeneralSettings({
                                         <ShieldAlert className="h-4 w-4 text-blue-500" />{' '}
                                         Moderátor
                                     </Label>
-                                    <Combobox
-                                        multiple
-                                        autoHighlight
-                                        items={roleIds}
+                                    <MultiRoleSelect
+                                        roles={context_data.discord_roles || []}
                                         value={presetRoles.staff}
-                                        onValueChange={(val) =>
-                                            handlePresetChange('staff', val as string[])
-                                        }
-                                    >
-                                        <ComboboxChips ref={presetStaffAnchor} className={`w-full ${errors?.['preset_roles.staff'] ? 'border-destructive' : ''}`}>
-                                            <ComboboxValue>
-                                                {(values: string[]) => {
-                                                    const safeValues = Array.isArray(values) ? values : [];
-                                                    return (
-                                                        <React.Fragment>
-                                                            {safeValues.map((val) => (
-                                                                <ComboboxChip key={val}>
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: getRoleColor(val) }} />
-                                                                        {getRoleName(val)}
-                                                                    </div>
-                                                                </ComboboxChip>
-                                                            ))}
-                                                            <ComboboxChipsInput placeholder="Moderátor rangok..." />
-                                                        </React.Fragment>
-                                                    );
-                                                }}
-                                            </ComboboxValue>
-                                        </ComboboxChips>
-                                        <ComboboxContent anchor={presetStaffAnchor}>
-                                            <ComboboxEmpty>Nincs találat.</ComboboxEmpty>
-                                            <ComboboxList>
-                                                {(item: string) => (
-                                                    <ComboboxItem key={item} value={item}>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: getRoleColor(item) }} />
-                                                            {getRoleName(item)}
-                                                        </div>
-                                                    </ComboboxItem>
-                                                )}
-                                            </ComboboxList>
-                                        </ComboboxContent>
-                                    </Combobox>
+                                        onChange={(val) => handlePresetChange('staff', val)}
+                                        placeholder="Moderátor rangok..."
+                                        className={errors?.['preset_roles.staff'] ? 'border-destructive' : ''}
+                                    />
                                     <InputError message={errors?.['preset_roles.staff']} />
                                 </div>
 
@@ -429,49 +320,13 @@ export default function GeneralSettings({
                                         <Crown className="h-4 w-4 text-amber-500" />{' '}
                                         Tulajdonos
                                     </Label>
-                                    <Combobox
-                                        multiple
-                                        autoHighlight
-                                        items={roleIds}
+                                    <MultiRoleSelect
+                                        roles={context_data.discord_roles || []}
                                         value={presetRoles.owner}
-                                        onValueChange={(val) =>
-                                            handlePresetChange('owner', val as string[])
-                                        }
-                                    >
-                                        <ComboboxChips ref={presetOwnerAnchor} className={`w-full ${errors?.['preset_roles.owner'] ? 'border-destructive' : ''}`}>
-                                            <ComboboxValue>
-                                                {(values: string[]) => {
-                                                    const safeValues = Array.isArray(values) ? values : [];
-                                                    return (
-                                                        <React.Fragment>
-                                                            {safeValues.map((val) => (
-                                                                <ComboboxChip key={val}>
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: getRoleColor(val) }} />
-                                                                        {getRoleName(val)}
-                                                                    </div>
-                                                                </ComboboxChip>
-                                                            ))}
-                                                            <ComboboxChipsInput placeholder="Vezetőségi rangok..." />
-                                                        </React.Fragment>
-                                                    );
-                                                }}
-                                            </ComboboxValue>
-                                        </ComboboxChips>
-                                        <ComboboxContent anchor={presetOwnerAnchor}>
-                                            <ComboboxEmpty>Nincs találat.</ComboboxEmpty>
-                                            <ComboboxList>
-                                                {(item: string) => (
-                                                    <ComboboxItem key={item} value={item}>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: getRoleColor(item) }} />
-                                                            {getRoleName(item)}
-                                                        </div>
-                                                    </ComboboxItem>
-                                                )}
-                                            </ComboboxList>
-                                        </ComboboxContent>
-                                    </Combobox>
+                                        onChange={(val) => handlePresetChange('owner', val)}
+                                        placeholder="Vezetőségi rangok..."
+                                        className={errors?.['preset_roles.owner'] ? 'border-destructive' : ''}
+                                    />
                                     <InputError message={errors?.['preset_roles.owner']} />
                                 </div>
                             </div>
@@ -484,63 +339,27 @@ export default function GeneralSettings({
                             <div className="flex flex-col items-start gap-4 rounded-xl border border-dashed border-primary/30 bg-accent/30 p-4 lg:flex-row lg:items-end">
                                 <div className="w-full space-y-2 lg:w-[300px]">
                                     <Label className="text-xs text-muted-foreground">Discord Rang</Label>
-                                    <Combobox items={roleIds} value={selectedRole} onValueChange={(val) => setSelectedRole(val || '')}>
-                                        {selectedRole ? (
-                                            <div className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: getRoleColor(selectedRole) }} />
-                                                    <span className="truncate">{getRoleName(selectedRole)}</span>
-                                                </div>
-                                                <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedRole(''); }} className="text-muted-foreground hover:text-foreground focus:outline-none">
-                                                    <X className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <ComboboxInput placeholder="Keresés rang alapján..." showClear />
-                                        )}
-                                        <ComboboxContent>
-                                            <ComboboxEmpty>Nincs találat.</ComboboxEmpty>
-                                            <ComboboxList>
-                                                {(item: string) => (
-                                                    <ComboboxItem key={item} value={item}>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: getRoleColor(item) }} />
-                                                            {getRoleName(item)}
-                                                        </div>
-                                                    </ComboboxItem>
-                                                )}
-                                            </ComboboxList>
-                                        </ComboboxContent>
-                                    </Combobox>
+                                    <RoleSelect
+                                        roles={context_data.discord_roles || []}
+                                        value={selectedRole}
+                                        onChange={setSelectedRole}
+                                    />
                                 </div>
 
                                 <div className="w-full flex-1 space-y-2">
                                     <Label className="text-xs text-muted-foreground">Rendszer Jogosultság(ok)</Label>
-                                    <Combobox multiple autoHighlight items={permValues} value={selectedPerms} onValueChange={(val) => setSelectedPerms(val as string[])}>
-                                        <ComboboxChips ref={customPermAnchor} className="w-full">
-                                            <ComboboxValue>
-                                                {(values: string[]) => {
-                                                    const safeValues = Array.isArray(values) ? values : [];
-                                                    return (
-                                                        <React.Fragment>
-                                                            {safeValues.map((val) => (
-                                                                <ComboboxChip key={val}>{getPermName(val)}</ComboboxChip>
-                                                            ))}
-                                                            <ComboboxChipsInput placeholder="Válassz jogosultságot..." />
-                                                        </React.Fragment>
-                                                    );
-                                                }}
-                                            </ComboboxValue>
-                                        </ComboboxChips>
-                                        <ComboboxContent anchor={customPermAnchor}>
-                                            <ComboboxEmpty>Nincs találat.</ComboboxEmpty>
-                                            <ComboboxList>
-                                                {(item: string) => (
-                                                    <ComboboxItem key={item} value={item}>{getPermName(item)}</ComboboxItem>
-                                                )}
-                                            </ComboboxList>
-                                        </ComboboxContent>
-                                    </Combobox>
+                                    <Select value={selectedPerms[0] || ''} onValueChange={(val) => setSelectedPerms([val])}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Válassz jogosultságot..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {context_data.permissions?.map((perm) => (
+                                                <SelectItem key={perm.value} value={perm.value}>
+                                                    {perm.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <Button type="button" onClick={handleAddRolePerm} disabled={!selectedRole || selectedPerms.length === 0} variant="secondary" className="w-full lg:w-auto">
@@ -555,7 +374,7 @@ export default function GeneralSettings({
                                     <div className="py-4 text-sm text-muted-foreground italic">
                                         Nincsenek még hozzárendelt jogosultságok.
                                     </div>
-                                ) : (
+                                 ) : (
                                     Object.entries(groupedPermissions).map(([roleId, perms]) => (
                                         <div key={roleId} className="flex flex-col gap-3 rounded-xl border-2 border-dotted border-border/60 bg-muted/10 p-4">
                                             <div className="flex items-center gap-2">

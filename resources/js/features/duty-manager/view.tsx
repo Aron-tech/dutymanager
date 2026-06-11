@@ -1,14 +1,11 @@
 import { Gem } from 'lucide-react';
 import React, { useMemo } from 'react';
 import InputError from '@/components/input-error';
+import { RoleSelect } from '@/components/RoleSelect';
 import SearchableSingleSelect from '@/components/searchable-single-select';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import {
-    getChannelName,
-    getRoleColor,
-    getRoleName,
-} from '@/lib/discord-helpers';
+import { getChannelName } from '@/lib/discord-helpers';
 import type { FeatureViewProps } from '@/types';
 
 export default function DutyManagerView({
@@ -21,16 +18,6 @@ export default function DutyManagerView({
     const voice_channels = context_data.discord_voice_channels || [];
     const roles = context_data.discord_roles || [];
     const has_premium = context_data.has_premium || false;
-
-    // Opciók generálása a kereséshez
-    const role_options = useMemo(
-        () =>
-            roles.map((r: any) => ({
-                value: r.id,
-                label: getRoleName(r.id, roles),
-            })),
-        [roles],
-    );
 
     const text_channel_options = useMemo(
         () =>
@@ -55,25 +42,11 @@ export default function DutyManagerView({
             {/* --- DUTY RANG --- */}
             <div className="space-y-2">
                 <Label>Duty Rang</Label>
-                <SearchableSingleSelect
-                    items={role_options}
+                <RoleSelect
+                    roles={roles}
                     value={data.duty_role_id}
                     onChange={(val) => onChange('duty_role_id', val)}
                     placeholder="Keresés rang alapján..."
-                    renderItem={(item) => (
-                        <div className="flex items-center gap-2">
-                            <span
-                                className="h-2.5 w-2.5 rounded-full"
-                                style={{
-                                    backgroundColor: getRoleColor(
-                                        item.value,
-                                        roles,
-                                    ),
-                                }}
-                            />
-                            {item.label}
-                        </div>
-                    )}
                 />
                 <InputError message={errors['duty_role_id']} />
             </div>
@@ -86,7 +59,7 @@ export default function DutyManagerView({
                     value={data.duty_panel_channel_id}
                     onChange={(val) => onChange('duty_panel_channel_id', val)}
                     placeholder="Keresés szöveges csatornára..."
-                    renderItem={(item) => item.label}
+                    renderItem={(item) => <span>{item.label}</span>}
                 />
                 <InputError
                     message={errors['duty_panel_channel_id']}
@@ -113,7 +86,7 @@ export default function DutyManagerView({
                     value={data.duty_voice_channel_id}
                     onChange={(val) => onChange('duty_voice_channel_id', val)}
                     placeholder="Keresés voice csatornára..."
-                    renderItem={(item) => item.label}
+                    renderItem={(item) => <span>{item.label}</span>}
                 />
                 <InputError
                     message={errors['duty_voice_channel_id']}
@@ -128,7 +101,7 @@ export default function DutyManagerView({
                     value={data.active_duty_channel_id}
                     onChange={(val) => onChange('active_duty_channel_id', val)}
                     placeholder="Keresés statisztika csatornára..."
-                    renderItem={(item) => item.label}
+                    renderItem={(item) => <span>{item.label}</span>}
                 />
                 <InputError
                     message={errors['active_duty_channel_id']}

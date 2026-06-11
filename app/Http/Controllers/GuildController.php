@@ -113,6 +113,12 @@ class GuildController extends Controller
             $guild_settings->current_view = request('current_view');
         }
 
+        $feature_settings = $guild_settings->feature_settings ?? [];
+        if (isset($feature_settings['user_details'])) {
+            $feature_settings['user_details']['config'] = $guild_settings->user_details_config ?? [];
+        }
+        $guild_settings->feature_settings = $feature_settings;
+
         $languages = collect(LanguageEnum::cases())->map(fn ($lang) => [
             'value' => $lang->value,
             'label' => $lang->getLabel(),

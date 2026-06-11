@@ -56,7 +56,13 @@ const getInitialSettings = (viewName: string, backendSettings: any) => {
         return defaults;
     }
 
-    return { ...defaults, ...backendSettings };
+    const settings = { ...defaults, ...backendSettings };
+
+    if (viewName === 'user_details' && backendSettings.config) {
+        settings.config = backendSettings.config;
+    }
+
+    return settings;
 };
 
 export default function Setup({

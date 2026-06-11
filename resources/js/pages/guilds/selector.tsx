@@ -9,10 +9,6 @@ import AppHeaderLayout from '@/layouts/app/app-header-layout';
 import CreateEditModal from '@/pages/guild-users/_create-edit-modal';
 import type { BreadcrumbItem, UserDetailsConfig } from '@/types';
 
-const __ = (key: string): string => {
-    return (window as any).translations?.[key] || key;
-};
-
 interface DiscordGuild {
     discord_id: string;
     name: string;
@@ -45,6 +41,11 @@ export default function Selector({
         useState<boolean>(show_request_modal);
     const { props } = usePage();
     const flash = props.flash as { success: string | null; error: string | null };
+
+    const __ = (key: string): string => {
+        const value = key.split('.').reduce((o, i) => (o ? o[i] : undefined), props.translations as any);
+        return value || key;
+    };
 
     useEffect(() => {
         if (flash?.success) {
@@ -142,10 +143,10 @@ export default function Selector({
                                                 <span className="truncate text-xs text-muted-foreground">
                                                     {guild.is_installed
                                                         ? __(
-                                                              'guilds.status.installed',
+                                                              'app.guild_status_installed',
                                                           )
                                                         : __(
-                                                              'guilds.status.install_required',
+                                                              'app.guild_status_waiting_for_installing',
                                                           )}
                                                 </span>
                                             </div>
@@ -161,7 +162,7 @@ export default function Selector({
                 <div>
                     <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
                         <Plus className="h-5 w-5 text-primary" />
-                        {__('guilds.selector.pending_title')}
+                        {__('app.guild_selector_waiting_for_joining_bot')}
                     </h2>
 
                     {pending_addition.length === 0 ? (
@@ -205,7 +206,7 @@ export default function Selector({
                                             }}
                                         >
                                             <span className="hidden sm:inline">
-                                                {__('guilds.action.add')}
+                                                {__('app.guild_action_add')}
                                             </span>
                                             <Plus className="h-3 w-3 sm:ml-2" />
                                         </Button>

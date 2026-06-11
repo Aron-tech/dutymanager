@@ -1,36 +1,20 @@
 import { Gem } from 'lucide-react';
 import React, { useMemo } from 'react';
 import InputError from '@/components/input-error';
+import { MultiRoleSelect } from '@/components/MultiRoleSelect';
 import SearchableSingleSelect from '@/components/searchable-single-select';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Combobox,
-    ComboboxChip,
-    ComboboxChips,
-    ComboboxChipsInput,
-    ComboboxContent,
-    ComboboxEmpty,
-    ComboboxItem,
-    ComboboxList,
-    ComboboxValue,
-    useComboboxAnchor,
-} from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-    getChannelName,
-    getRoleColor,
-    getRoleName,
-} from '@/lib/discord-helpers';
+import { getChannelName } from '@/lib/discord-helpers';
 import type { FeatureViewProps } from '@/types';
 
 export default function RankSystemView({
-                                           data,
-                                           context_data,
-                                           errors,
-                                           onChange,
-                                       }: FeatureViewProps) {
+    data,
+    context_data,
+    errors,
+    onChange,
+}: FeatureViewProps) {
     const text_channels = context_data.discord_text_channels || [];
     const roles = context_data.discord_roles || [];
     const has_premium = context_data.has_premium || false;
@@ -44,15 +28,10 @@ export default function RankSystemView({
         [text_channels],
     );
 
-    const role_ids = roles.map((r: any) => r.id);
-    const rank_anchor = useComboboxAnchor();
-
     const rank_system_data = data || {};
     const rank_roles_value = Array.isArray(rank_system_data.rank_roles)
         ? rank_system_data.rank_roles
         : [];
-
-    const default_message = '**{user}** új rangot kapott: **{rank}**';
 
     return (
         <div className="animate-in space-y-6 duration-500 fade-in">
@@ -61,78 +40,14 @@ export default function RankSystemView({
                     Felépített Ranglétra (Sorrendben! A legkisebbtől a
                     legnagyobbig)
                 </Label>
-                <Combobox
-                    multiple
-                    autoHighlight
-                    items={role_ids}
+                <MultiRoleSelect
+                    roles={roles}
                     value={rank_roles_value}
-                    onValueChange={(val) =>
-                        onChange('rank_roles', val as string[])
-                    }
-                >
-                    <ComboboxChips
-                        ref={rank_anchor}
-                        className={`w-full ${errors['rank_roles'] ? 'border-destructive' : ''}`}
-                    >
-                        <ComboboxValue>
-                            {(values: string[]) => {
-                                const safe_values = Array.isArray(values)
-                                    ? values
-                                    : [];
-
-                                return (
-                                    <React.Fragment>
-                                        {safe_values.map((val, index) => (
-                                            <ComboboxChip
-                                                key={val}
-                                                className="border-primary/20"
-                                            >
-                                                <span className="mr-1.5 font-mono text-xs opacity-50">
-                                                    {index + 1}.
-                                                </span>
-                                                <div className="flex items-center gap-1.5">
-                                                    <span
-                                                        className="h-2 w-2 rounded-full"
-                                                        style={{
-                                                            backgroundColor:
-                                                                getRoleColor(
-                                                                    val,
-                                                                    roles,
-                                                                ),
-                                                        }}
-                                                    />
-                                                    {getRoleName(val, roles)}
-                                                </div>
-                                            </ComboboxChip>
-                                        ))}
-                                        <ComboboxChipsInput placeholder="Keresés rangokra..." />
-                                    </React.Fragment>
-                                );
-                            }}
-                        </ComboboxValue>
-                    </ComboboxChips>
-                    <ComboboxContent anchor={rank_anchor}>
-                        <ComboboxEmpty>Nincs találat.</ComboboxEmpty>
-                        <ComboboxList>
-                            {(item: string) => (
-                                <ComboboxItem key={item} value={item}>
-                                    <div className="flex items-center gap-2">
-                                        <span
-                                            className="h-2 w-2 rounded-full"
-                                            style={{
-                                                backgroundColor: getRoleColor(
-                                                    item,
-                                                    roles,
-                                                ),
-                                            }}
-                                        />
-                                        {getRoleName(item, roles)}
-                                    </div>
-                                </ComboboxItem>
-                            )}
-                        </ComboboxList>
-                    </ComboboxContent>
-                </Combobox>
+                    onChange={(val) => onChange('rank_roles', val)}
+                    useSelectionOrder
+                    placeholder="Rangok keresése..."
+                    className={errors['rank_roles'] ? 'border-destructive' : ''}
+                />
                 <p className="mt-2 text-xs text-muted-foreground">
                     Tipp: A rangokat abban a sorrendben kattintsd be, ahogy a
                     hierarchia felépül.
@@ -181,7 +96,7 @@ export default function RankSystemView({
                     value={rank_system_data.announcement_channel_id}
                     onChange={(val) => onChange('announcement_channel_id', val)}
                     placeholder="Keresés szöveges csatornára..."
-                    renderItem={(item) => item.label}
+                    renderItem={(item) => <span>{item.label}</span>}
                 />
 
                 <InputError message={errors['announcement_channel_id']} />

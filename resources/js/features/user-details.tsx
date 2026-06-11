@@ -97,7 +97,7 @@ export default function UserDetailsView({
                             value={data.log_channel_id}
                             onChange={(val) => onChange('log_channel_id', val)}
                             placeholder="Keresés csatornára..."
-                            renderItem={(item) => item.label}
+                            renderItem={(item) => <span>{item.label}</span>}
                         />
                         <InputError
                             message={errors['log_channel_id']}
