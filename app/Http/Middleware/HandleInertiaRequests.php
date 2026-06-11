@@ -85,6 +85,7 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => $permissions,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'selectedGuild' => $guild,
             'activeGuild' => $request->session()->get('selected_guild_id'),
             'guildHasActiveSubscription' => $guild?->hasActiveSubscription() ?? false,
             'ziggy' => fn () => [

@@ -9,18 +9,18 @@ import {
     SunSnow,
     Plus,
     Pencil,
-    Trash2,
+    Trash2
 } from 'lucide-react';
 import { useState } from 'react';
 import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { usePermissions } from '@/hooks/use-permissions';
 import AppLayout from '@/layouts/app-layout';
 import type { Item } from '@/types';
 import ClothingDetailsModal from './_clothing-details-modal';
 import CreateEditItemModal from './_create-edit-item-modal';
-import { usePermissions } from '@/hooks/use-permissions';
 
 interface IndexProps {
     items: Item[];
@@ -45,7 +45,7 @@ export default function Index({ items, type }: IndexProps) {
     const current_items =
         items?.slice(
             (current_page - 1) * items_per_page,
-            current_page * items_per_page,
+            current_page * items_per_page
         ) || [];
 
     const handleDelete = () => {
@@ -57,7 +57,7 @@ export default function Index({ items, type }: IndexProps) {
         router.delete(route('items.destroy', deleting_item.id), {
             onSuccess: () => setDeletingItem(null),
             onFinish: () => setIsDeleting(false),
-            preserveScroll: true,
+            preserveScroll: true
         });
     };
 
@@ -146,37 +146,39 @@ export default function Index({ items, type }: IndexProps) {
                             <Card
                                 key={item.id}
                                 className={`group overflow-hidden transition-all duration-200 ${can_open_modal ? 'cursor-pointer hover:border-primary/50 hover:shadow-md' : ''}`}
-                                onClick={() =>
-                                    can_open_modal && setSelectedItem(item)
-                                }
+                                onClick={() => can_open_modal && setSelectedItem(item)}
                             >
                                 <div
                                     className={`relative flex w-full items-center justify-center bg-muted/30 ${is_vehicle ? 'aspect-video h-56' : 'aspect-[3/4] h-[22rem]'}`}
                                 >
                                     {/* Edit / Delete Akciók */}
                                     <div className="absolute top-2 left-2 z-10 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                                        <Button
-                                            size="icon"
-                                            variant="secondary"
-                                            className="h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setEditingItem(item);
-                                            }}
-                                        >
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            size="icon"
-                                            variant="destructive"
-                                            className="h-8 w-8 bg-destructive/90 backdrop-blur-sm hover:bg-destructive"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setDeletingItem(item);
-                                            }}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                        {can('edit_items') && (
+                                            <Button
+                                                size="icon"
+                                                variant="secondary"
+                                                className="h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setEditingItem(item);
+                                                }}
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                        {can('delete_items') && (
+                                            <Button
+                                                size="icon"
+                                                variant="destructive"
+                                                className="h-8 w-8 bg-destructive/90 backdrop-blur-sm hover:bg-destructive"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDeletingItem(item);
+                                                }}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
                                     </div>
 
                                     {item.image ? (
@@ -195,17 +197,89 @@ export default function Index({ items, type }: IndexProps) {
                                         </div>
                                     )}
                                 </div>
+
                                 <CardHeader className="pb-2">
                                     <CardTitle className="line-clamp-1 text-lg font-bold">
                                         {item.name}
                                     </CardTitle>
                                 </CardHeader>
+
                                 <CardContent>
                                     {renderCardDetails(item)}
                                 </CardContent>
                             </Card>
                         );
-                    })}
+                    })}{current_items.map((item) => {
+                    const can_open_modal = item.type === 'clothing';
+
+                    return (
+                        <Card
+                            key={item.id}
+                            className={`group overflow-hidden transition-all duration-200 ${can_open_modal ? 'cursor-pointer hover:border-primary/50 hover:shadow-md' : ''}`}
+                            onClick={() => can_open_modal && setSelectedItem(item)}
+                        >
+                            <div
+                                className={`relative flex w-full items-center justify-center bg-muted/30 ${is_vehicle ? 'aspect-video h-56' : 'aspect-[3/4] h-[22rem]'}`}
+                            >
+                                {/* Edit / Delete Akciók */}
+                                <div className="absolute top-2 left-2 z-10 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                                    {can('edit_items') && (
+                                        <Button
+                                            size="icon"
+                                            variant="secondary"
+                                            className="h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingItem(item);
+                                            }}
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                    {can('delete_items') && (
+                                        <Button
+                                            size="icon"
+                                            variant="destructive"
+                                            className="h-8 w-8 bg-destructive/90 backdrop-blur-sm hover:bg-destructive"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeletingItem(item);
+                                            }}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+
+                                {item.image ? (
+                                    <img
+                                        src={item.image.url}
+                                        alt={item.name}
+                                        className="h-full w-full object-cover object-top"
+                                    />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center">
+                                        {is_vehicle ? (
+                                            <Car className="h-16 w-16 text-muted-foreground/30" />
+                                        ) : (
+                                            <Shirt className="h-16 w-16 text-muted-foreground/30" />
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <CardHeader className="pb-2">
+                                <CardTitle className="line-clamp-1 text-lg font-bold">
+                                    {item.name}
+                                </CardTitle>
+                            </CardHeader>
+
+                            <CardContent>
+                                {renderCardDetails(item)}
+                            </CardContent>
+                        </Card>
+                    );
+                })}
                 </div>
 
                 {total_pages > 1 && (
@@ -229,7 +303,7 @@ export default function Index({ items, type }: IndexProps) {
                             size="sm"
                             onClick={() =>
                                 setCurrentPage((p) =>
-                                    Math.min(total_pages, p + 1),
+                                    Math.min(total_pages, p + 1)
                                 )
                             }
                             disabled={current_page === total_pages}
@@ -266,7 +340,8 @@ export default function Index({ items, type }: IndexProps) {
                     isProcessing={is_deleting}
                     description={
                         <>
-                            A(z) <strong>{deleting_item?.name}</strong> véglegesen törlésre kerül. Ezt a műveletet nem lehet visszavonni.
+                            A(z) <strong>{deleting_item?.name}</strong> véglegesen törlésre kerül. Ezt a műveletet nem
+                            lehet visszavonni.
                         </>
                     }
                 />

@@ -40,14 +40,15 @@ const getInitials = (name: string): string => {
 
 export function AppSidebar() {
     const { can, canAny } = usePermissions();
-    const { selectedGuild } = usePage<{ selectedGuild: { id: string; name: string; icon: string | null } }>().props;
+    const { selectedGuild } = usePage<{ selectedGuild: { id: string; name: string; icon: string | null } }>()
+        .props;
 
     const mainNavItems: NavItem[] = [
         {
             title: 'Kezdőlap',
             href: dashboard(),
             icon: LayoutGrid,
-        }
+        },
     ];
 
     if (canAny(['view_item_clothes', 'view_items'])) {
@@ -65,7 +66,7 @@ export function AppSidebar() {
             icon: Car,
         });
     }
-    
+
     const adminNavItems: NavItem[] = [];
 
     if (can('view_guild_users')) {
@@ -141,11 +142,8 @@ export function AppSidebar() {
                             <SidebarMenuButton size="lg" asChild>
                                 <Link href={route('dashboard')} className="flex items-center gap-3">
                                     <Avatar className="h-9 w-9 rounded-lg">
-                                        {selectedGuild.icon ? (
-                                            <AvatarImage
-                                                src={`https://cdn.discordapp.com/icons/${selectedGuild.id}/${selectedGuild.icon}.png`}
-                                                alt={selectedGuild.name}
-                                            />
+                                        {selectedGuild.icon_url ? (
+                                            <AvatarImage src={selectedGuild.icon} alt={selectedGuild.name} />
                                         ) : (
                                             <AvatarFallback className="rounded-lg">
                                                 {getInitials(selectedGuild.name)}
