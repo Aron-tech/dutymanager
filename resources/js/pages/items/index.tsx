@@ -20,6 +20,7 @@ import AppLayout from '@/layouts/app-layout';
 import type { Item } from '@/types';
 import ClothingDetailsModal from './_clothing-details-modal';
 import CreateEditItemModal from './_create-edit-item-modal';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface IndexProps {
     items: Item[];
@@ -33,6 +34,8 @@ export default function Index({ items, type }: IndexProps) {
     const [is_deleting, setIsDeleting] = useState(false);
     const [is_create_modal_open, setIsCreateModalOpen] = useState(false);
     const [current_page, setCurrentPage] = useState(1);
+
+    const { can } = usePermissions();
 
     const items_per_page = 9;
     const is_vehicle = type === 'vehicle';
@@ -127,11 +130,12 @@ export default function Index({ items, type }: IndexProps) {
                             Összesen: {items?.length || 0} db
                         </Badge>
                     </div>
-
-                    <Button onClick={() => setIsCreateModalOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Új {is_vehicle ? 'Jármű' : 'Ruházat'}
-                    </Button>
+                    {can('add_items') && (
+                        <Button onClick={() => setIsCreateModalOpen(true)}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Új {is_vehicle ? 'Jármű' : 'Ruházat'}
+                        </Button>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">

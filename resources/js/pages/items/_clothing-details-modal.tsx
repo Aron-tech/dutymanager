@@ -1,3 +1,5 @@
+import { SunSnow, Shirt } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import {
     Dialog,
     DialogContent,
@@ -5,9 +7,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { SunSnow, Shirt } from 'lucide-react';
-import { Item } from './index';
+import type { Item } from './index';
 
 interface Props {
     isOpen: boolean;
@@ -23,7 +23,9 @@ const DetailRow = ({ label, value }: { label: string; value?: string | null }) =
 );
 
 export default function ClothingDetailsModal({ isOpen, onClose, item }: Props) {
-    if (!item) return null;
+    if (!item) {
+return null;
+}
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

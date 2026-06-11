@@ -45,6 +45,7 @@ class ItemService
         }
 
         $item = $guild->items()->create([
+            'guild_id' => $guild->id,
             'name' => $data['name'],
             'type' => $data['type'],
             'details' => $details,

@@ -15,12 +15,15 @@ return new class extends Migration
     {
         Schema::create('items', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Guild::class);
+            $table->string('guild_id', 30);
             $table->string('name');
             $table->enum('type', ItemTypeEnum::getOptions());
             $table->jsonb('details');
             $table->unsignedInteger('position')->default(0);
             $table->timestamps();
+
+            $table->foreign('guild_id')->references('id')->on('guilds')->onDelete('restrict');
+            $table->index('guild_id');
         });
     }
 
