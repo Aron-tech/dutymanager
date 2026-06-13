@@ -13,7 +13,11 @@ use App\Enums\PermissionEnum;
 use App\Models\Duty;
 use App\Models\GuildUser;
 use App\Services\GuildUserService;
+use Discord\Builders\Components\ActionRow;
+use Discord\Builders\Components\Button;
+use Discord\Builders\MessageBuilder;
 use Discord\Discord;
+use Discord\Parts\Embed\Embed;
 use Discord\Parts\Interactions\Interaction as DiscordInteraction;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -26,6 +30,8 @@ class HandleGuildUserInteraction
 
     /**
      * Execute the console command.
+     *
+     * @throws \Exception
      */
     public function handle(Discord $discord, DiscordInteraction $interaction): void
     {
@@ -34,8 +40,13 @@ class HandleGuildUserInteraction
             return;
         }
 
-        if ($interaction->type === 3 && $interaction->data->custom_id === 'btn_duty_info') {
-            $this->handleUserInfoCommand($interaction, $this->guild_user);
+        if ($interaction->type === 3) {
+            match ($interaction->data->custom_id) {
+                'btn_duty_info' => $this->handleUserInfoCommand($interaction, $this->guild_user),
+                'btn_sync_execute' => $this->handleSyncExecuteCommand($interaction),
+                'btn_sync_cancel' => $this->handleSyncCancelCommand($interaction),
+                default => null,
+            };
 
             return;
         }
@@ -52,6 +63,7 @@ class HandleGuildUserInteraction
                 'request' => $this->handleUserRequestCommand($interaction),
                 'promote' => $this->handlePromoteCommand($interaction),
                 'delete' => $this->handleUserDeleteCommand($interaction),
+                'sync' => $this->handleUserSyncCommand($interaction),
                 default => $this->respondSimpleEmbed($interaction, '❌ '.__('app.unknow_command'), 'FF0000'),
             };
         }
@@ -78,6 +90,7 @@ class HandleGuildUserInteraction
         } catch (ValidationException $e) {
             $errors = $e->validator->errors()->all();
             $this->respondSimpleEmbed($interaction, '❌ '.__('app.validation_error')."\n".implode("\n", $errors), 'FF0000');
+
             return null;
         }
     }
@@ -258,5 +271,141 @@ class HandleGuildUserInteraction
 
         $this->respondSimpleEmbed($interaction, __('guild_user.success_deleted_user', ['user' => $this->target_guild_user->user->name]));
 
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function handleUserSyncCommand(DiscordInteraction $interaction): void
+    {
+        if (! $this->validateAccess($interaction, PermissionEnum::DELETE_GUILD_USERS)) {
+            return;
+        }
+
+        $discord_guild = $this->discord->guilds->get('id', $this->guild->id);
+
+        if (! $discord_guild) {
+            $this->respondSimpleEmbed($interaction, '❌ Hiba a Discord szerver lekérésekor.', 'FF0000');
+
+            return;
+        }
+
+        $discord_guild->members->freshen()->then(function ($discord_members) use ($interaction) {
+            $this->processUserSync($interaction, $discord_members);
+        })->catch(function (\Throwable $e) use ($interaction, $discord_guild) {
+            Log::warning('Hiba a Discord tagok freshen hívásakor, fallback a memóriára: '.$e->getMessage());
+            if ($discord_guild->members && $discord_guild->members->count() > 0) {
+                $this->processUserSync($interaction, $discord_guild->members);
+            } else {
+                Log::error('A bot memóriájában sincsenek Discord tagok.');
+                $this->respondSimpleEmbed($interaction, '❌ Sikertelen taglista lekérés (API hiba és üres cache).', 'FF0000');
+            }
+        });
+    }
+
+    private function processUserSync(DiscordInteraction $interaction, $discord_members): void
+    {
+        $default_role_id = $this->guild->guildSettings?->getGeneralSettings('default_role');
+        $guild_users = $this->guild->guildUsers()->get();
+
+        $to_delete = [];
+        $lines = [];
+
+        foreach ($guild_users as $guild_user) {
+            $discord_member = $discord_members->get('id', $guild_user->user_id);
+            $is_in_discord = $discord_member !== null;
+            $should_delete = false;
+            $reason = '';
+
+            if ($guild_user->accepted_at !== null) {
+                if (! $is_in_discord) {
+                    $should_delete = true;
+                    $reason = 'Már nincs a Discord szerveren';
+                } elseif ($default_role_id && ! $discord_member->roles->has($default_role_id)) {
+                    $should_delete = true;
+                    $reason = 'Hiányzó default rang';
+                }
+            } else {
+                if (! $is_in_discord) {
+                    $should_delete = true;
+                    $reason = 'Nincs elfogadva és nincs a Discord szerveren';
+                }
+            }
+
+            if ($should_delete) {
+                $to_delete[] = $guild_user->id;
+                $lines[] = "<@{$guild_user->user_id}> - {$guild_user->ic_name} - {$reason}";
+            }
+        }
+
+        if (empty($to_delete)) {
+            $this->respondSimpleEmbed($interaction, '✅ Minden szinkronban van, nincs törlendő felhasználó.', '00FF00');
+
+            return;
+        }
+
+        $this->guild->setData('sync_users', $to_delete);
+        $this->guild->save();
+        $chunks = $this->chunkTextLines($lines, 4000);
+
+        $builder = MessageBuilder::new();
+        $builder->addEmbed(new Embed($this->discord, [
+            'title' => 'Törlendő felhasználók listája',
+            'description' => $chunks[0],
+            'color' => hexdec('FFA500'),
+        ]));
+
+        $action_row = ActionRow::new()
+            ->addComponent(
+                Button::new(Button::STYLE_DANGER)
+                    ->setLabel('Végrehajtás')
+                    ->setCustomId('btn_sync_execute')
+            )
+            ->addComponent(
+                Button::new(Button::STYLE_SECONDARY)
+                    ->setLabel('Mégsem')
+                    ->setCustomId('btn_sync_cancel')
+            );
+
+        $builder->addComponent($action_row);
+        $interaction->respondWithMessage($builder->setFlags(64));
+    }
+
+    public function handleSyncExecuteCommand(DiscordInteraction $interaction): void
+    {
+        if (! $this->validateAccess($interaction, PermissionEnum::DELETE_GUILD_USERS)) {
+            return;
+        }
+
+        $this->guild->refresh();
+
+        $to_delete = $this->guild->getData('sync_users', []);
+
+        if (empty($to_delete)) {
+            $this->respondSimpleEmbed($interaction, '❌ Nincs törlendő adat, vagy a művelet lejárt.', 'FF0000');
+
+            return;
+        }
+
+        $deleted_count = 0;
+        foreach ($to_delete as $guild_user_id) {
+            $guild_user = GuildUser::find($guild_user_id);
+            if ($guild_user) {
+                DeleteGuildUserAction::run($guild_user, $this->user->id, false);
+                $deleted_count++;
+            }
+        }
+
+        $this->guild->setData('sync_users', []);
+        $this->guild->save();
+        $this->respondSimpleEmbed($interaction, "✅ Szinkronizáció befejezve. ({$deleted_count} felhasználó törölve)", '00FF00');
+    }
+
+    public function handleSyncCancelCommand(DiscordInteraction $interaction): void
+    {
+        $this->guild->refresh();
+        $this->guild->setData('sync_users', []);
+        $this->guild->save();
+        $this->respondSimpleEmbed($interaction, '❌ Szinkronizáció megszakítva.', 'FF0000');
     }
 }

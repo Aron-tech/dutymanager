@@ -102,7 +102,7 @@ class DiscordBotCommand extends Command
 
                 $custom_id = $interaction->data->custom_id;
 
-                if (str_starts_with($custom_id, 'btn_duty_info')) {
+                if (str_starts_with($custom_id, 'btn_duty_info') || str_starts_with($custom_id, 'btn_sync_')) {
                     (new HandleGuildUserInteraction)->handle($bot, $interaction);
                 } elseif (str_starts_with($custom_id, 'btn_duty_')) {
                     (new HandleDutyInteraction)->handle($bot, $interaction);
