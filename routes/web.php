@@ -3,6 +3,9 @@
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\Auth\DiscordController;
 use App\Http\Controllers\DutyController;
+use App\Http\Controllers\Exams\ExamAttemptController;
+use App\Http\Controllers\Exams\ExamController;
+use App\Http\Controllers\Exams\ExamGradingController;
 use App\Http\Controllers\GuildController;
 use App\Http\Controllers\GuildSettingsController;
 use App\Http\Controllers\GuildUserController;
@@ -97,6 +100,36 @@ Route::middleware(['auth'])->group(function () {
 
         Route::prefix('activity-log')->group(function () {
             Route::get('/', [ActivityLogController::class, 'index'])->name('activity-log.index');
+        });
+
+        Route::prefix('exams')->name('exams.')->group(function () {
+            Route::get('/', [ExamController::class, 'index'])->name('index');
+
+            Route::prefix('attempts')->name('attempts.')->group(function () {
+                Route::get('/', [ExamAttemptController::class, 'index'])->name('index');
+                Route::post('/{exam}', [ExamAttemptController::class, 'store'])->name('store');
+                Route::get('/{exam_attempt}', [ExamAttemptController::class, 'show'])->name('show');
+                Route::get('/{exam_attempt}/take', [ExamAttemptController::class, 'edit'])->name('edit');
+                Route::put('/{exam_attempt}', [ExamAttemptController::class, 'update'])->name('update');
+            });
+
+            // --- Admin-facing routes ---
+            Route::middleware('can:manage_exams')->group(function () {
+                Route::prefix('manage')->name('manage.')->group(function () {
+                    Route::get('/', [ExamController::class, 'manageIndex'])->name('index');
+                    Route::get('/create', [ExamController::class, 'create'])->name('create');
+                    Route::post('/', [ExamController::class, 'store'])->name('store');
+                    Route::get('/{exam}/edit', [ExamController::class, 'edit'])->name('edit');
+                    Route::put('/{exam}', [ExamController::class, 'update'])->name('update');
+                    Route::delete('/{exam}', [ExamController::class, 'destroy'])->name('destroy');
+                });
+
+                Route::prefix('grading')->name('grading.')->group(function () {
+                    Route::get('/', [ExamGradingController::class, 'index'])->name('index');
+                    Route::get('/{exam_attempt}', [ExamGradingController::class, 'show'])->name('show');
+                    Route::put('/{exam_attempt}', [ExamGradingController::class, 'update'])->name('update');
+                });
+            });
         });
     });
 });

@@ -72,6 +72,9 @@ enum PermissionEnum: string
     // Extra jogosultságok
     case FORCE_CANCEL_HOLIDAY = 'force_cancel_holiday';
 
+    // Vizsga jogosultságok
+    case MANAGE_EXAMS = 'manage_exams';
+
     // Alap jogosultságok
     case GET_USER_INFO = 'get_user_info';
     case TOGGLE_DUTY = 'toggle_duty';
