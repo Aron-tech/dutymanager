@@ -1,5 +1,5 @@
     import { Link, usePage } from '@inertiajs/react';
-    import { LayoutGrid, Menu, Search } from 'lucide-react';
+    import { Menu } from 'lucide-react';
     import AppLogo from '@/components/app-logo';
     import AppLogoIcon from '@/components/app-logo-icon';
     import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -40,11 +40,6 @@
     };
 
     const mainNavItems: NavItem[] = [
-        {
-            title: 'Dashboard',
-            href: dashboard(),
-            icon: LayoutGrid,
-        },
     ];
 
     const rightNavItems: NavItem[] = [];
@@ -172,7 +167,6 @@
                                     size="icon"
                                     className="group h-9 w-9 cursor-pointer"
                                 >
-                                    <Search className="!size-5 opacity-80 group-hover:opacity-100" />
                                 </Button>
                                 <div className="ml-1 hidden gap-1 lg:flex">
                                     {rightNavItems.map((item) => (
@@ -207,7 +201,7 @@
                                     >
                                         <Avatar className="size-8 overflow-hidden rounded-full">
                                             <AvatarImage
-                                                src={auth.user.avatar}
+                                                src={auth.user.avatar_url}
                                                 alt={auth.user.name}
                                             />
                                             <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">

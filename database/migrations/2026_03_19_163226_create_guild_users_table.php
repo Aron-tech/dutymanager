@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('added_by')->nullable();
             $table->jsonb('cached_roles')->nullable();
             $table->timestamp('roles_last_synced')->nullable();
-            $table->timestamp('rank_changed_at')->default(now());
+            $table->timestamp('rank_changed_at')->nullable();
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('restrict');
