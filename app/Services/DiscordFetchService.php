@@ -244,7 +244,6 @@ class DiscordFetchService
     {
         $cache_filter = $filter ?? 0;
         $cache_key = "discord_guild_{$guild_id}_members_".($select_format ? 'select' : 'raw')."_{$cache_filter}";
-
         $result = self::cacheValidResponse($cache_key, 15, function () use ($guild_id, $select_format, $filter) {
             $data = self::callBotApi('GET', "/guilds/{$guild_id}/members");
 
@@ -258,7 +257,12 @@ class DiscordFetchService
                 $db_user_ids = GuildUser::where('guild_id', $guild_id)->pluck('user_id')->toArray();
 
                 $collection = $collection->filter(function ($member) use ($db_user_ids, $filter) {
-                    $is_in_db = in_array((string) $member['user']['id'], $db_user_ids);
+                    $user_id = (string) ($member['user']['id'] ?? '');
+                    if (! $user_id) {
+                        return false;
+                    }
+
+                    $is_in_db = in_array($user_id, $db_user_ids);
 
                     return $filter === 1 ? $is_in_db : ! $is_in_db;
                 });
@@ -268,11 +272,15 @@ class DiscordFetchService
                 return $collection->values()->toArray();
             }
 
-            return $collection->map(fn ($member) => [
-                'value' => (string) $member['id'],
-                'label' => $member['globalName'] ?? $member['username'],
-                'name' => $member['username'],
-            ])->values()->toArray();
+            return $collection->map(function ($member) {
+                $user = $member['user'] ?? [];
+
+                return [
+                    'value' => (string) ($user['id'] ?? ''),
+                    'label' => $user['global_name'] ?? ($user['username'] ?? 'Ismeretlen'),
+                    'name' => $user['username'] ?? 'Ismeretlen',
+                ];
+            })->values()->toArray();
         });
 
         return $result ?? [];
