@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\Auth\DiscordController;
 use App\Http\Controllers\DutyController;
+use App\Http\Controllers\ExamController;
 use App\Http\Controllers\GuildController;
 use App\Http\Controllers\GuildSettingsController;
 use App\Http\Controllers\GuildUserController;
@@ -98,6 +99,12 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('activity-log')->group(function () {
             Route::get('/', [ActivityLogController::class, 'index'])->name('activity-log.index');
         });
+
+        Route::get('exams/attempts', [ExamController::class, 'attempts'])->name('exams.attempts');
+        Route::get('exams/attempts/{attempt}', [ExamController::class, 'showAttempt'])->name('exams.attempts.show');
+        Route::post('exams/attempts/{attempt}/grade', [ExamController::class, 'gradeAttempt'])->name('exams.attempts.grade');
+        Route::resource('exams', ExamController::class);
+        Route::post('exams/{exam}/attempt', [ExamController::class, 'submitAttempt'])->name('exams.submit');
     });
 });
 

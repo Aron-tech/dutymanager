@@ -48,9 +48,13 @@ enum ActionTypeEnum: string
     case GET_HOLIDAY = 'get_holiday';
     case CANCEL_HOLIDAY = 'cancel_holiday';
 
-    /**
-     * @return array
-     */
+    // Vizsga események
+    case CREATE_EXAM = 'create_exam';
+    case UPDATE_EXAM = 'update_exam';
+    case DELETE_EXAM = 'delete_exam';
+    case CREATE_EXAM_ATTEMPT = 'create_exam_attempt';
+    case GRADE_EXAM_ATTEMPT = 'grade_exam_attempt';
+
     public static function getOptions(): array
     {
         return array_column(self::cases(), 'value');

@@ -31,4 +31,10 @@ return [
     'request_join_guild' => 'Request to join guild',
     'get_holiday' => 'Get holiday',
     'cancel_holiday' => 'Cancel holiday',
+
+    'create_exam' => 'Create exam',
+    'update_exam' => 'Update exam',
+    'delete_exam' => 'Delete exam',
+    'create_exam_attempt' => 'Submit exam attempt',
+    'grade_exam_attempt' => 'Grade exam attempt',
 ];

@@ -32,6 +32,12 @@ return [
     'get_holiday' => 'Szabadság kivétele',
     'cancel_holiday' => 'Szabadság lemondása',
 
+    'create_exam' => 'Vizsga létrehozása',
+    'update_exam' => 'Vizsga frissítése',
+    'delete_exam' => 'Vizsga törlése',
+    'create_exam_attempt' => 'Vizsga kitöltés elindítása/beküldése',
+    'grade_exam_attempt' => 'Vizsga kiértékelése',
+
     'unknown' => 'Ismeretlen',
     'unknown_reason' => 'Nincs megadva indok',
     'unknown_type' => 'Ismeretlen típus',
@@ -67,5 +73,11 @@ return [
         'image_deleted' => 'Kép törölve.',
 
         'bot_added' => 'Discord Bot csatlakoztatva a szervezetbe.',
+
+        'create_exam' => 'Vizsga létrehozva: :name',
+        'update_exam' => 'Vizsga frissítve: :name',
+        'delete_exam' => 'Vizsga törölve: :name',
+        'create_exam_attempt' => 'Vizsga kitöltve: :name',
+        'grade_exam_attempt' => 'Vizsga kiértékelve: :name (:score%).',
     ],
 ];
