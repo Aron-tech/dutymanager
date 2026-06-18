@@ -51,7 +51,7 @@ class GuildUserService
             'filters' => $data,
             'rank_roles' => $rank_roles,
             'has_rank_system' => $guild_settings->isEnabledFeature(FeatureEnum::RANK),
-            'all_ranks' => $guild->getData('roles'),
+            'available_ranks' => $guild->getData('roles'),
         ];
     }
 
