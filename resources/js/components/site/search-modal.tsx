@@ -1,8 +1,7 @@
 import { Command } from 'cmdk';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { FileText, TerminalSquare, Search } from 'lucide-react';
 import { useEffect } from 'react';
-import { doc_sections } from '@/data/docs-content';
 
 interface search_modal_props {
     open: boolean;
@@ -10,6 +9,25 @@ interface search_modal_props {
 }
 
 export default function SearchModal({ open, onOpenChange }: search_modal_props) {
+    const { props } = usePage<any>();
+    const doc_sections = props.translations?.docs?.sections ?? [];
+
+    const __ = (key: string): string => {
+        const parts = key.split('.');
+        let translation: any = props.translations;
+
+        for (const part of parts) {
+            if (translation && translation[part] !== undefined) {
+                translation = translation[part];
+            } else {
+                translation = key;
+                break;
+            }
+        }
+
+        return typeof translation === 'string' ? translation : key;
+    };
+
     // Close on Escape is handled by the overlay click + key listener below.
     useEffect(() => {
         const onKeyDown = (event: KeyboardEvent) => {
@@ -55,7 +73,7 @@ export default function SearchModal({ open, onOpenChange }: search_modal_props) 
                     <Search className="h-4 w-4 shrink-0 text-[#4B9BFF]" />
                     <Command.Input
                         autoFocus
-                        placeholder="Search the documentation and commands..."
+                        placeholder={__('docs.search.placeholder')}
                         className="h-14 w-full bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none"
                     />
                     <kbd className="hidden shrink-0 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-white/50 sm:block">
@@ -65,14 +83,14 @@ export default function SearchModal({ open, onOpenChange }: search_modal_props) 
 
                 <Command.List className="max-h-[60vh] overflow-y-auto p-2">
                     <Command.Empty className="py-10 text-center text-sm text-white/40">
-                        No results found.
+                        {__('docs.search.no_results')}
                     </Command.Empty>
 
                     <Command.Group
-                        heading="Pages"
+                        heading={__('docs.search.pages')}
                         className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-white/40 [&_[cmdk-group-items]]:mt-1"
                     >
-                        {doc_sections.map((section) => (
+                        {doc_sections.map((section: any) => (
                             <Command.Item
                                 key={section.id}
                                 value={`${section.title} ${section.summary}`}
@@ -89,11 +107,11 @@ export default function SearchModal({ open, onOpenChange }: search_modal_props) 
                     </Command.Group>
 
                     <Command.Group
-                        heading="Commands"
+                        heading={__('docs.search.commands')}
                         className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-white/40 [&_[cmdk-group-items]]:mt-1"
                     >
-                        {doc_sections.flatMap((section) =>
-                            (section.commands ?? []).map((command) => (
+                        {doc_sections.flatMap((section: any) =>
+                            (section.commands ?? []).map((command: any) => (
                                 <Command.Item
                                     key={`${section.id}-${command.signature}`}
                                     value={`${command.signature} ${command.description}`}

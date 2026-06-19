@@ -8,11 +8,11 @@ import SearchModal from '@/components/site/search-modal';
 const DISCORD_INVITE = 'https://discord.gg/JyPa9dhwhx';
 
 const nav_links = [
-    { label: 'Home', href: '/' },
-    { label: 'Features', href: '/#features' },
-    { label: 'Pricing', href: '/#pricing' },
-    { label: 'Docs', href: '/docs' },
-    { label: 'Contact', href: '/contact' },
+    { labelKey: 'landing.nav.home', href: '/' },
+    { labelKey: 'landing.nav.features', href: '/#features' },
+    { labelKey: 'landing.nav.pricing', href: '/#pricing' },
+    { labelKey: 'landing.nav.docs', href: '/docs' },
+    { labelKey: 'landing.nav.contact', href: '/contact' },
 ];
 
 // Subtle carbon-fiber weave texture used across every public page.
@@ -23,10 +23,47 @@ const carbon_background: React.CSSProperties = {
 };
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-    const { url } = usePage();
+    const { url, props } = usePage<any>();
     const [mobile_open, setMobileOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [search_open, setSearchOpen] = useState(false);
+
+    const currentLocale = props.locale ?? 'en';
+
+    const __ = (key: string, replace: Record<string, string | number> = {}): string => {
+        const parts = key.split('.');
+        let translation: any = props.translations;
+
+        for (const part of parts) {
+            if (translation && translation[part] !== undefined) {
+                translation = translation[part];
+            } else {
+                translation = key;
+                break;
+            }
+        }
+
+        if (typeof translation !== 'string') {
+            return key;
+        }
+
+        Object.keys(replace).forEach((token) => {
+            translation = translation.replace(`:${token}`, String(replace[token]));
+        });
+
+        return translation;
+    };
+
+    const switchLanguage = (lang: string) => {
+        router.post(`/language/${lang}`, {}, {
+            preserveScroll: true,
+        });
+    };
+
+    const toggleLanguage = () => {
+        const nextLang = currentLocale === 'en' ? 'hu' : 'en';
+        switchLanguage(nextLang);
+    };
 
     useEffect(() => {
         const onScroll = () => setScrolled(window.scrollY > 16);
@@ -111,7 +148,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                     isActive(item.href) ? 'text-white' : 'text-white/60 hover:text-white'
                                 }`}
                             >
-                                {item.label}
+                                {__(item.labelKey)}
                             </button>
                         ))}
                     </nav>
@@ -123,10 +160,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             className="hidden items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80 sm:flex"
                         >
                             <Search className="h-3.5 w-3.5" />
-                            <span>Search</span>
+                            <span>{__('landing.nav.search')}</span>
                             <kbd className="rounded border border-white/10 bg-white/5 px-1.5 font-mono text-[10px] text-white/50">
                                 ⌘K
                             </kbd>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={toggleLanguage}
+                            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white/70 transition-colors hover:border-white/20 hover:text-white"
+                            title={currentLocale === 'en' ? 'Váltás magyar nyelvre' : 'Switch to English'}
+                        >
+                            <span className="text-white/40">🌐</span>
+                            <span>{currentLocale}</span>
                         </button>
 
                         <a
@@ -136,7 +183,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             className="hidden items-center gap-2 rounded-lg bg-gradient-to-r from-[#FF2A2A] to-[#FF4B4B] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_20px_rgba(255,75,75,0.35)] transition-transform hover:scale-[1.03] sm:flex"
                         >
                             <FaDiscord className="h-4 w-4" />
-                            Add to Discord
+                            {__('landing.nav.add_to_discord')}
                         </a>
 
                         <button
@@ -161,7 +208,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                     onClick={() => navigate(item.href)}
                                     className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/70 hover:bg-white/5 hover:text-white"
                                 >
-                                    {item.label}
+                                    {__(item.labelKey)}
                                 </button>
                             ))}
                             <button
@@ -172,7 +219,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 }}
                                 className="mt-1 flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2.5 text-left text-sm font-medium text-white/70"
                             >
-                                <Search className="h-4 w-4" /> Search
+                                <Search className="h-4 w-4" /> {__('landing.nav.search')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={toggleLanguage}
+                                className="mt-1 flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2.5 text-left text-sm font-medium text-white/70 uppercase"
+                            >
+                                🌐 {currentLocale}
                             </button>
                             <a
                                 href={DISCORD_INVITE}
@@ -180,7 +234,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 rel="noreferrer"
                                 className="mt-2 flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#FF2A2A] to-[#FF4B4B] px-4 py-2.5 text-sm font-semibold text-white"
                             >
-                                <FaDiscord className="h-4 w-4" /> Add to Discord
+                                <FaDiscord className="h-4 w-4" /> {__('landing.nav.add_to_discord')}
                             </a>
                         </nav>
                     </div>
@@ -195,7 +249,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     <div className="lg:col-span-1">
                         <SiteLogo />
                         <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/50">
-                            The duty-tracking and staff-management platform built for serious Discord communities.
+                            {__('landing.footer.tagline')}
                         </p>
                         <a
                             href={DISCORD_INVITE}
@@ -203,45 +257,45 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             rel="noreferrer"
                             className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[#4B9BFF]/30 bg-[#2A85FF]/10 px-4 py-2 text-sm font-medium text-[#4B9BFF] transition-colors hover:bg-[#2A85FF]/20"
                         >
-                            <FaDiscord className="h-4 w-4" /> Join our Discord
+                            <FaDiscord className="h-4 w-4" /> {__('landing.footer.join_discord')}
                         </a>
                     </div>
 
                     <div>
-                        <h4 className="text-sm font-semibold text-white">Product</h4>
+                        <h4 className="text-sm font-semibold text-white">{__('landing.footer.product')}</h4>
                         <ul className="mt-4 flex flex-col gap-3 text-sm">
-                            <li><button type="button" onClick={() => navigate('/#features')} className="text-white/50 hover:text-white">Features</button></li>
-                            <li><button type="button" onClick={() => navigate('/#pricing')} className="text-white/50 hover:text-white">Pricing</button></li>
-                            <li><button type="button" onClick={() => navigate('/#stats')} className="text-white/50 hover:text-white">Statistics</button></li>
+                            <li><button type="button" onClick={() => navigate('/#features')} className="text-white/50 hover:text-white">{__('landing.footer.features')}</button></li>
+                            <li><button type="button" onClick={() => navigate('/#pricing')} className="text-white/50 hover:text-white">{__('landing.footer.pricing')}</button></li>
+                            <li><button type="button" onClick={() => navigate('/#stats')} className="text-white/50 hover:text-white">{__('landing.footer.statistics')}</button></li>
                         </ul>
                     </div>
 
                     <div>
-                        <h4 className="text-sm font-semibold text-white">Resources</h4>
+                        <h4 className="text-sm font-semibold text-white">{__('landing.footer.resources')}</h4>
                         <ul className="mt-4 flex flex-col gap-3 text-sm">
-                            <li><Link href="/docs" className="text-white/50 hover:text-white">Documentation</Link></li>
-                            <li><Link href="/contact" className="text-white/50 hover:text-white">Contact</Link></li>
+                            <li><Link href="/docs" className="text-white/50 hover:text-white">{__('landing.footer.documentation')}</Link></li>
+                            <li><Link href="/contact" className="text-white/50 hover:text-white">{__('landing.footer.contact')}</Link></li>
                             <li>
                                 <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-white/50 hover:text-white">
-                                    Support Server
+                                    {__('landing.footer.support_server')}
                                 </a>
                             </li>
                         </ul>
                     </div>
 
                     <div>
-                        <h4 className="text-sm font-semibold text-white">Legal</h4>
+                        <h4 className="text-sm font-semibold text-white">{__('landing.footer.legal')}</h4>
                         <ul className="mt-4 flex flex-col gap-3 text-sm">
-                            <li><Link href="/terms" className="text-white/50 hover:text-white">Terms of Service</Link></li>
-                            <li><Link href="/privacy" className="text-white/50 hover:text-white">Privacy Policy</Link></li>
+                            <li><Link href="/terms" className="text-white/50 hover:text-white">{__('landing.footer.terms')}</Link></li>
+                            <li><Link href="/privacy" className="text-white/50 hover:text-white">{__('landing.footer.privacy')}</Link></li>
                         </ul>
                     </div>
                 </div>
 
                 <div className="border-t border-white/10">
                     <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-xs text-white/40 sm:flex-row sm:px-6 lg:px-8">
-                        <span>© {new Date().getFullYear()} DutyManager v3. All rights reserved.</span>
-                        <span>Not affiliated with or endorsed by Discord Inc.</span>
+                        <span>{__('landing.footer.copyright', { year: new Date().getFullYear() })}</span>
+                        <span>{__('landing.footer.disclaimer')}</span>
                     </div>
                 </div>
             </footer>

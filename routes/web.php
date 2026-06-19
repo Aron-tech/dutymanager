@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\LanguageEnum;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\Auth\DiscordController;
 use App\Http\Controllers\DutyController;
@@ -28,6 +29,17 @@ Route::inertia('/privacy', 'privacy', [])->name('privacy');
 
 Route::get('/login/discord', [DiscordController::class, 'redirectToDiscord'])->name('login.discord');
 Route::get('/login/callback', [DiscordController::class, 'handleDiscordCallback']);
+
+Route::post('/language/{locale}', function (string $locale) {
+    if (in_array($locale, LanguageEnum::getOptions())) {
+        if (auth()->check()) {
+            auth()->user()->update(['lang_code' => $locale]);
+        }
+        cookie()->queue(cookie()->forever('language', $locale));
+    }
+
+    return back();
+})->name('language.update');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/guilds/selector', [GuildController::class, 'selector'])->name('guilds.selector');

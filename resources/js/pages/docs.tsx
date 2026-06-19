@@ -2,8 +2,6 @@ import { Head, usePage } from '@inertiajs/react';
 import { Search, Hash } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import MainLayout from '@/layouts/main-layout';
-import { doc_groups, doc_sections } from '@/data/docs-content';
-
 const openSearch = () => window.dispatchEvent(new Event('open-docs-search'));
 
 interface SharedPageProps {
@@ -38,10 +36,24 @@ export default function Docs() {
         return translation;
     };
 
+    const doc_sections = props.translations?.docs?.sections ?? [];
+    const doc_groups = Array.from(new Set(doc_sections.map((section: any) => section.group))) as string[];
+
     const [active_id, setActiveId] = useState(doc_sections[0]?.id ?? '');
+
+    // Update active id when sections load
+    useEffect(() => {
+        if (doc_sections.length > 0 && !active_id) {
+            setActiveId(doc_sections[0].id);
+        }
+    }, [doc_sections, active_id]);
 
     // Scrollspy: highlight the section currently in view.
     useEffect(() => {
+        if (doc_sections.length === 0) {
+            return;
+        }
+
         const observer = new IntersectionObserver(
             (entries) => {
                 const visible = entries
@@ -55,7 +67,7 @@ export default function Docs() {
             { rootMargin: '-96px 0px -65% 0px', threshold: 0 },
         );
 
-        doc_sections.forEach((section) => {
+        doc_sections.forEach((section: any) => {
             const node = document.getElementById(section.id);
 
             if (node) {
@@ -64,7 +76,7 @@ export default function Docs() {
         });
 
         return () => observer.disconnect();
-    }, []);
+    }, [doc_sections]);
 
     // Honor the #hash when arriving from the search modal.
     useEffect(() => {

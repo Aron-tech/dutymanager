@@ -86,7 +86,7 @@ class DiscordFetchService
 
     private static function fetchRawGuilds(string $token, string $user_id): array
     {
-        $data = self::cacheValidResponse("discord_guilds_user_{$user_id}", 5, function () use ($token) {
+        $data = self::cacheValidResponse("discord_guilds_user_{$user_id}", 10, function () use ($token) {
             $url = 'https://discord.com/api/v10/users/@me/guilds';
             $headers = [
                 'Authorization' => "Bearer {$token}",
