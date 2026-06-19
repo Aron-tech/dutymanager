@@ -20,7 +20,7 @@ return new class extends Migration
             $table->timestamp('used_at')->nullable();
             $table->string('activated_by')->nullable();
             $table->foreign('activated_by')->references('id')->on('users');
-            $table->string('guild_id');
+            $table->string('guild_id')->nullable();
             $table->foreign('guild_id')->references('id')->on('guilds');
             $table->timestamps();
         });
