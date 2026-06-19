@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('id', 30)->primary();
             $table->string('name');
             $table->string('global_name')->nullable();
-            $table->string('email')->unique()->nullable();
+            $table->string('email')->nullable()->unique();
             $table->string('avatar_url')->nullable();
             $table->enum('global_role', GlobalRoleEnum::getOptions())->default(GlobalRoleEnum::USER);
             $table->string('lang_code', 4)->default('hu');
