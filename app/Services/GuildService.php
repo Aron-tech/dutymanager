@@ -226,15 +226,20 @@ class GuildService
         });
     }
 
-    /**
-     * @param Guild $guild
-     * @param string $user_id
-     * @return string
-     */
-    public function determineAccessLevel(Guild $guild, string $user_id): string
+    public function determineAccessLevel(Guild $guild, string $user_id, ?string $access_token = null): string
     {
         if ($user_id === $guild->owner_id) {
             return 'accepted';
+        }
+
+        if (! $guild->is_installed && $access_token) {
+            try {
+                if (DiscordFetchService::isGuildAdmin($access_token, $user_id, $guild->id)) {
+                    return 'accepted';
+                }
+            } catch (Exception $e) {
+                Log::error('Hiba a Discord admin jogosultság ellenőrzésekor: '.$e->getMessage());
+            }
         }
 
         /** @var GuildUser|null $guild_user */
@@ -251,10 +256,6 @@ class GuildService
         return 'pending';
     }
 
-    /**
-     * @param Guild $guild
-     * @return array
-     */
     public function getRegistrationConfig(Guild $guild): array
     {
         return $guild->guildSettings?->user_details_config ?? [];

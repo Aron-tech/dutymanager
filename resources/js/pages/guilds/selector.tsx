@@ -68,11 +68,11 @@ export default function Selector({
         router.post(`/guilds/select/${discord_id}`);
     };
 
-    const handleAddBot = () => {
+    const handleAddBot = (discordId?: string) => {
+        const baseUrl = 'https://discord.com/oauth2/authorize?client_id=1485260478048505876';
+        const url = discordId ? `${baseUrl}&guild_id=${discordId}` : baseUrl;
 
-        window.location.assign(
-            `https://discord.com/oauth2/authorize?client_id=1485260478048505876`,
-        );
+        window.location.assign(url);
     };
 
     return (
