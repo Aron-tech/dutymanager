@@ -9,11 +9,9 @@ return new class extends Migration
 {
     private function indexExists(string $table, string $index): bool
     {
-        $schema = Schema::getContext()->getSchemaName() ?? 'public';
-
         return DB::selectOne(
-            'SELECT 1 FROM pg_indexes WHERE schemaname = :schema AND tablename = :table AND indexname = :index',
-            ['schema' => $schema, 'table' => $table, 'index' => $index]
+            "SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND tablename = :table AND indexname = :index",
+            ['table' => $table, 'index' => $index]
         ) !== null;
     }
 
