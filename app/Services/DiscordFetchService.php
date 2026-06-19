@@ -162,6 +162,24 @@ class DiscordFetchService
         ];
     }
 
+    public static function isGuildAdmin(string $token, string $user_id, string $guild_id): bool
+    {
+        $guilds = self::fetchRawGuilds($token, $user_id);
+
+        foreach ($guilds as $guild_data) {
+            if ((string) $guild_data['id'] === $guild_id) {
+                $is_owner = $guild_data['owner'] ?? false;
+                $permissions = $guild_data['permissions'] ?? 0;
+                // Administrator bit is 0x8 (1 << 3)
+                $is_admin = ($permissions & 0x8) === 0x8;
+
+                return $is_owner || $is_admin;
+            }
+        }
+
+        return false;
+    }
+
     public static function isDevGuildMember(string $token, string $user_id): bool
     {
         $dev_guild_id = config('services.discord.dev_guild_id', '1394218179554967583');

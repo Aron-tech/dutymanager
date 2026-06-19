@@ -1,4 +1,4 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Plus, Check, Trash2, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import React, {
     useState,
@@ -45,19 +45,6 @@ export default function UserManagerView({
                                             has_rank_system = false,
                                             available_ranks = [],
                                         }: UserManagerProps) {
-    const { props } = usePage();
-    const flash = props.flash as { success: string | null; error: string | null };
-
-    useEffect(() => {
-        if (flash?.success) {
-            toast.success(flash.success);
-        }
-
-        if (flash?.error) {
-            toast.error(flash.error);
-        }
-    }, [flash]);
-
     const safe_filters = Array.isArray(filters) ? {} : filters || {};
     const [search_query, setSearchQuery] = useState(safe_filters.search || '');
     const debounced_search = useDebounce(search_query, 400);

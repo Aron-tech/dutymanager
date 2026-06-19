@@ -1,5 +1,5 @@
 // holidays/index.tsx
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Trash2 } from 'lucide-react';
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
@@ -71,14 +71,6 @@ export default function HolidaysIndexView({
                                               holidays = defaultHolidays,
                                               filters = {},
                                           }: PageProps) {
-    const { props } = usePage();
-    const flash = props.flash as { success: string | null; error: string | null; };
-
-    useEffect(() => {
-        if (flash?.success) toast.success(flash.success);
-        if (flash?.error) toast.error(flash.error);
-    }, [flash]);
-
     const safe_filters = Array.isArray(filters) ? {} : filters || {};
 
     const [search_query, setSearchQuery] = useState(safe_filters.search || '');

@@ -51,7 +51,6 @@ enum PermissionEnum: string
     case DELETE_ITEM_VEHICLES = 'delete_item_vehicles';
     case DELETE_ITEM_CLOTHES = 'delete_item_clothes';
 
-
     // Megtekintési jogok
     case VIEW_ITEMS = 'view_items';
     case VIEW_ITEM_VEHICLES = 'view_item_vehicles';
@@ -79,25 +78,21 @@ enum PermissionEnum: string
     case CANCEL_HOLIDAY = 'cancel_holiday';
     case MAKE_REQUEST = 'make_request';
 
-    /**
-     * @return array
-     */
+    // Vizsga jogosultságok
+    case TAKE_EXAMS = 'take_exams';
+    case MANAGE_EXAMS = 'manage_exams';
+
     public static function getOptions(): array
     {
         return array_column(self::cases(), 'value');
     }
 
-    /**
-     * @param string|null $lang
-     * @return string
-     */
     public function getLabel(?string $lang = null): string
     {
         return __('permission.'.$this->value, [], $lang);
     }
 
     /**
-     * @param string $group
      * @return array|PermissionEnum[]
      */
     public function getGroupPermissions(string $group): array
@@ -109,6 +104,7 @@ enum PermissionEnum: string
             PermissionEnum::CANCEL_HOLIDAY,
             PermissionEnum::GET_HOLIDAY,
             PermissionEnum::MAKE_REQUEST,
+            PermissionEnum::TAKE_EXAMS,
         ];
 
         return match ($group) {
@@ -126,6 +122,7 @@ enum PermissionEnum: string
                 PermissionEnum::DELETE_WARNING,
                 PermissionEnum::VIEW_STATISTICS,
                 PermissionEnum::VIEW_LOGS,
+                PermissionEnum::MANAGE_EXAMS,
             ]),
             PermissionEnum::ADMIN_GROUP => [
                 PermissionEnum::ALL,

@@ -42,14 +42,15 @@ export function MultiRoleSelect({
     const [open, setOpen] = React.useState(false);
 
     const sortedRoles = React.useMemo(
-        () => [...roles].sort((a, b) => b.position - a.position),
+        () => [...roles].sort((a, b) => (b.position ?? 0) - (a.position ?? 0)),
         [roles],
     );
 
-    const handleSelect = (roleId: string) => {
-        const newValue = value.includes(roleId)
-            ? value.filter((id) => id !== roleId)
-            : [...value, roleId];
+    const handleSelect = (roleId: string | number) => {
+        const idStr = String(roleId);
+        const newValue = value.map(String).includes(idStr)
+            ? value.filter((id) => String(id) !== idStr)
+            : [...value, idStr];
         onChange(newValue);
     };
 
@@ -66,15 +67,16 @@ export function MultiRoleSelect({
     };
 
     const selectedRoles = React.useMemo(() => {
+        const valueStrings = value.map(String);
         if (useSelectionOrder) {
             // Sorrend a `value` tömb alapján
-            return value
-                .map((id) => roles.find((role) => role.id === id))
+            return valueStrings
+                .map((id) => roles.find((role) => String(role.id) === id))
                 .filter((role): role is DiscordRole => role !== undefined);
         }
 
         // Eredeti sorrend (pozíció szerint)
-        return sortedRoles.filter((role) => value.includes(role.id));
+        return sortedRoles.filter((role) => valueStrings.includes(String(role.id)));
     }, [value, roles, sortedRoles, useSelectionOrder]);
 
     return (
@@ -88,7 +90,6 @@ export function MultiRoleSelect({
                         'h-auto min-h-10 w-full justify-between py-2',
                         className,
                     )}
-                    onClick={() => setOpen(!open)}
                 >
                     <div className="flex flex-wrap items-center gap-1.5">
                         {selectedRoles.length > 0 ? (
@@ -171,7 +172,7 @@ export function MultiRoleSelect({
                                         <Check
                                             className={cn(
                                                 'mr-2 h-4 w-4',
-                                                value.includes(role.id)
+                                                value.map(String).includes(String(role.id))
                                                     ? 'opacity-100'
                                                     : 'opacity-0',
                                             )}

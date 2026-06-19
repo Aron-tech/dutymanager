@@ -65,7 +65,8 @@ class GuildController extends Controller
         SelectedGuildService::set($guild);
 
         $user = auth()->user();
-        $access_level = $this->service->determineAccessLevel($guild, $user->id);
+        $access_token = session('discord_access_token') ?? $user->access_token;
+        $access_level = $this->service->determineAccessLevel($guild, $user->id, $access_token);
 
         if ($access_level === 'accepted') {
             return to_route('dashboard');
@@ -74,8 +75,6 @@ class GuildController extends Controller
         if ($access_level === 'pending') {
             return back()->with('error', __('guild_user.error_pending_approval'));
         }
-
-        $access_token = session('discord_access_token') ?? $user->access_token;
 
         try {
             $guilds = DiscordFetchService::getCategorizedGuilds($access_token, $user);

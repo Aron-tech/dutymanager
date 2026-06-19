@@ -11,6 +11,7 @@ import {
     ShieldCheck,
     Shirt,
     Users,
+    GraduationCap,
 } from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -64,6 +65,14 @@ export function AppSidebar() {
             title: 'Járművek',
             href: route('items.index', { type: 'vehicle' }),
             icon: Car,
+        });
+    }
+
+    if (canAny(['take_exams', 'manage_exams'])) {
+        mainNavItems.push({
+            title: 'Vizsgák',
+            href: route('exams.index'),
+            icon: GraduationCap,
         });
     }
 
@@ -122,6 +131,14 @@ export function AppSidebar() {
             title: 'Aktivitás Napló',
             href: route('activity-log.index'),
             icon: ActivitySquare,
+        });
+    }
+
+    if (can('manage_exams')) {
+        adminNavItems.push({
+            title: 'Vizsga eredmények',
+            href: route('exams.attempts'),
+            icon: GraduationCap,
         });
     }
 

@@ -40,23 +40,11 @@ export default function Selector({
     const [is_modal_open, setIsModalOpen] =
         useState<boolean>(show_request_modal);
     const { props } = usePage();
-    const flash = props.flash as { success: string | null; error: string | null };
-
     const __ = (key: string): string => {
         const value = key.split('.').reduce((o, i) => (o ? o[i] : undefined), props.translations as any);
 
         return value || key;
     };
-
-    useEffect(() => {
-        if (flash?.success) {
-            toast.success(flash.success);
-        }
-
-        if (flash?.error) {
-            toast.error(flash.error);
-        }
-    }, [flash]);
 
     // 1. Modal nyitásának kezelése
     useEffect(() => {
@@ -80,11 +68,11 @@ export default function Selector({
         router.post(`/guilds/select/${discord_id}`);
     };
 
-    const handleAddBot = () => {
+    const handleAddBot = (discordId?: string) => {
+        const baseUrl = 'https://discord.com/oauth2/authorize?client_id=1485260478048505876';
+        const url = discordId ? `${baseUrl}&guild_id=${discordId}` : baseUrl;
 
-        window.location.assign(
-            `https://discord.com/oauth2/authorize?client_id=1485260478048505876`,
-        );
+        window.location.assign(url);
     };
 
     return (
