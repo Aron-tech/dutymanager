@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import ExamBuilder from './_exam-builder';
 import type { Exam } from '@/types';
@@ -15,6 +15,38 @@ interface EditProps {
 }
 
 export default function Edit({ exam, guild_roles }: EditProps) {
+    const { props } = usePage();
+
+    const __ = (
+        key: string,
+        replace: Record<string, string | number> = {},
+    ): string => {
+        const parts = key.split('.');
+        let translation: any = props.translations;
+
+        for (const part of parts) {
+            if (translation && translation[part] !== undefined) {
+                translation = translation[part];
+            } else {
+                translation = key;
+                break;
+            }
+        }
+
+        if (typeof translation !== 'string') {
+            return key;
+        }
+
+        Object.keys(replace).forEach((token) => {
+            translation = translation.replace(
+                `:${token}`,
+                String(replace[token]),
+            );
+        });
+
+        return translation;
+    };
+
     // Convert DB models to ExamBuilder structure
     const initial_data = {
         name: exam.name,
@@ -32,21 +64,21 @@ export default function Edit({ exam, guild_roles }: EditProps) {
             points: q.points,
             time_limit: q.time_limit ?? '',
             order: q.order,
-            content: q.content
-        }))
+            content: q.content,
+        })),
     };
 
     return (
         <AppLayout>
-            <Head title={`Vizsga szerkesztése: ${exam.name}`} />
+            <Head title={`${__('exam.edit_title')}: ${exam.name}`} />
 
-            <div className="container mx-auto p-6 max-w-5xl space-y-8 animate-fade-in">
+            <div className="animate-fade-in container mx-auto space-y-8 p-6">
                 <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-indigo-400 bg-clip-text text-transparent">
-                        Vizsga szerkesztése
+                    <h1 className="bg-gradient-to-r from-primary to-indigo-400 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent">
+                        {__('exam.edit_title')}
                     </h1>
-                    <p className="text-muted-foreground mt-1 text-sm">
-                        Módosítsd a vizsga paramétereit, adj hozzá vagy törölj kérdéseket a meglévő sablonból.
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        {__('exam.edit_desc')}
                     </p>
                 </div>
 

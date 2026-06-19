@@ -100,10 +100,14 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/', [ActivityLogController::class, 'index'])->name('activity-log.index');
         });
 
+        Route::post('exams/attempts/bulk-delete', [ExamController::class, 'bulkDeleteAttempts'])->name('exams.attempts.bulk-delete');
+        Route::post('exams/attempts/bulk-status', [ExamController::class, 'bulkStatusAttempts'])->name('exams.attempts.bulk-status');
         Route::get('exams/attempts', [ExamController::class, 'attempts'])->name('exams.attempts');
         Route::get('exams/attempts/{attempt}', [ExamController::class, 'showAttempt'])->name('exams.attempts.show');
         Route::post('exams/attempts/{attempt}/grade', [ExamController::class, 'gradeAttempt'])->name('exams.attempts.grade');
+        Route::post('exams/attempts/{attempt}/save', [ExamController::class, 'saveAttempt'])->name('exams.attempts.save');
         Route::resource('exams', ExamController::class);
+        Route::post('exams/{exam}/start', [ExamController::class, 'startAttempt'])->name('exams.start');
         Route::post('exams/{exam}/attempt', [ExamController::class, 'submitAttempt'])->name('exams.submit');
     });
 });

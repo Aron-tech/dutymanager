@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import ExamBuilder from './_exam-builder';
 
@@ -13,17 +13,49 @@ interface CreateProps {
 }
 
 export default function Create({ guild_roles }: CreateProps) {
+    const { props } = usePage();
+
+    const __ = (
+        key: string,
+        replace: Record<string, string | number> = {},
+    ): string => {
+        const parts = key.split('.');
+        let translation: any = props.translations;
+
+        for (const part of parts) {
+            if (translation && translation[part] !== undefined) {
+                translation = translation[part];
+            } else {
+                translation = key;
+                break;
+            }
+        }
+
+        if (typeof translation !== 'string') {
+            return key;
+        }
+
+        Object.keys(replace).forEach((token) => {
+            translation = translation.replace(
+                `:${token}`,
+                String(replace[token]),
+            );
+        });
+
+        return translation;
+    };
+
     return (
         <AppLayout>
-            <Head title="Új vizsga létrehozása" />
+            <Head title={__('exam.create_title')} />
 
-            <div className="container mx-auto p-6 max-w-5xl space-y-8 animate-fade-in">
+            <div className="animate-fade-in container mx-auto space-y-8 p-6">
                 <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-indigo-400 bg-clip-text text-transparent">
-                        Új vizsga létrehozása
+                    <h1 className="bg-gradient-to-r from-primary to-indigo-400 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent">
+                        {__('exam.create_title')}
                     </h1>
-                    <p className="text-muted-foreground mt-1 text-sm">
-                        Állítsd össze a vizsgát, adj hozzá kérdéseket és állítsd be a sikeres teljesítéshez szükséges feltételeket.
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        {__('exam.create_desc')}
                     </p>
                 </div>
 

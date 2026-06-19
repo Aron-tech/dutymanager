@@ -1,4 +1,4 @@
-import { useForm, Head, usePage } from '@inertiajs/react';
+import { useForm, Head } from '@inertiajs/react';
 import { CheckCircle, ArrowLeft, Server, CreditCard, ShieldCheck } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -77,20 +77,9 @@ function UserSubscriptionCard({ sub, availableGuilds }: { sub: any, availableGui
 }
 
 export default function SubscriptionPage({ subscriptions, savings, userSubscriptions, availableGuilds }: any) {
-    const { flash } = usePage().props as any;
-
     const { setData, post, processing } = useForm({
         plan: 'monthly',
     });
-
-    useEffect(() => {
-        if (flash?.error) {
-            toast.error(flash.error);
-        }
-        if (flash?.success) {
-            toast.success(flash.success);
-        }
-    }, [flash]);
 
     function handleSubscription(e: React.MouseEvent, plan: string) {
         e.preventDefault();

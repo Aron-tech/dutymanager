@@ -104,9 +104,15 @@ class ExamGradingService
         $score_percentage = $total_points > 0 ? (int) round(($earned_points / $total_points) * 100) : 0;
 
         $attempt->score = $score_percentage;
-        $attempt->status = 'graded';
+        if ($exam->auto_grade) {
+            $attempt->status = 'graded';
+        } else {
+            $attempt->status = 'pending';
+        }
         $attempt->save();
 
-        $this->role_assignment_service->assignPassedRoles($attempt);
+        if ($exam->auto_grade) {
+            $this->role_assignment_service->assignPassedRoles($attempt);
+        }
     }
 }

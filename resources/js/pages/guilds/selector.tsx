@@ -40,23 +40,11 @@ export default function Selector({
     const [is_modal_open, setIsModalOpen] =
         useState<boolean>(show_request_modal);
     const { props } = usePage();
-    const flash = props.flash as { success: string | null; error: string | null };
-
     const __ = (key: string): string => {
         const value = key.split('.').reduce((o, i) => (o ? o[i] : undefined), props.translations as any);
 
         return value || key;
     };
-
-    useEffect(() => {
-        if (flash?.success) {
-            toast.success(flash.success);
-        }
-
-        if (flash?.error) {
-            toast.error(flash.error);
-        }
-    }, [flash]);
 
     // 1. Modal nyitásának kezelése
     useEffect(() => {

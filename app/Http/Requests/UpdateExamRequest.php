@@ -43,4 +43,32 @@ class UpdateExamRequest extends FormRequest
             'questions.*.content' => ['required', 'array'],
         ];
     }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $timeLimit = $this->input('time_limit');
+            if ($timeLimit !== null && $timeLimit !== '') {
+                $questions = $this->input('questions', []);
+                $totalQuestionTime = 0;
+                foreach ($questions as $q) {
+                    if (isset($q['time_limit']) && $q['time_limit'] !== null && $q['time_limit'] !== '') {
+                        $totalQuestionTime += (float) $q['time_limit'];
+                    }
+                }
+                if ($totalQuestionTime > $timeLimit) {
+                    $validator->errors()->add(
+                        'time_limit',
+                        __('exam.time_limit_exceeded', [
+                            'total' => $totalQuestionTime,
+                            'limit' => $timeLimit,
+                        ])
+                    );
+                }
+            }
+        });
+    }
 }
