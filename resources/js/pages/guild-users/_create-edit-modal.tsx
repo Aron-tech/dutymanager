@@ -88,9 +88,10 @@ export default function CreateEditUserModal({
                 });
             } else {
                 reset();
+                const ranks = available_ranks || [];
 
-                if (has_rank_system && available_ranks?.length > 0) {
-                    setFormData('rank_id', available_ranks[0].id.toString());
+                if (has_rank_system && ranks.length > 0) {
+                    setFormData('rank_id', ranks[0].id.toString());
                 }
             }
 
