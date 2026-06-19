@@ -34,9 +34,9 @@ class HandleDefaultInteraction
                 return;
             }
 
-            if (! $this->validateAccess($interaction, PermissionEnum::EDIT_SETTINGS)) {
+            /*if (! $this->validateAccess($interaction, PermissionEnum::EDIT_SETTINGS)) {
                 return;
-            }
+            }*/
 
             if ($this->guild->is_installed) {
                 $this->respondSimpleEmbed($interaction, __('app.already_guild_installed'), 'FF0000');
