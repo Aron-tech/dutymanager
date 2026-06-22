@@ -21,6 +21,7 @@ class HandleHolidayInteraction
 
     public function handle(Discord $discord, DiscordInteraction $interaction): void
     {
+        $this->deferReply($interaction);
         $this->init($discord, $interaction, app(HolidayService::class));
         if (! $this->validateFeature($interaction, FeatureEnum::HOLIDAY)) {
             return;

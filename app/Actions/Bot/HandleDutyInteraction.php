@@ -34,6 +34,7 @@ class HandleDutyInteraction
      */
     public function handle(Discord $discord, DiscordInteraction $interaction): void
     {
+        $this->deferReply($interaction);
         $this->init($discord, $interaction, app(DutyService::class));
         if (! $this->validateFeature($interaction, FeatureEnum::DUTY)) {
             return;
@@ -243,10 +244,6 @@ class HandleDutyInteraction
         }
     }
 
-    /**
-     * @param DiscordInteraction $interaction
-     * @return void
-     */
     public function handleDutyResetCommand(DiscordInteraction $interaction): void
     {
         if (! $this->validateAccess($interaction, PermissionEnum::EDIT_DUTIES)) {

@@ -21,6 +21,7 @@ class HandlePunishmentInteraction
 
     public function handle(Discord $discord, DiscordInteraction $interaction): void
     {
+        $this->deferReply($interaction);
         $this->init($discord, $interaction, app(PunishmentService::class));
         if (! $this->validateFeature($interaction, FeatureEnum::WARN)) {
             return;
@@ -114,11 +115,12 @@ class HandlePunishmentInteraction
 
             if (! $this->target_guild_user) {
                 $this->respondSimpleEmbed($interaction, ('guild_user.error_not_found_user'), 'FF0000');
+
                 return;
             }
 
             $level = $this->active_options->get('name', 'level')?->value ?? null;
-            //$reason = $this->active_options->get('name', 'reason')?->value ?? null;
+            // $reason = $this->active_options->get('name', 'reason')?->value ?? null;
 
             $query = $this->target_guild_user->activePunishments();
             if ($level && $type !== PunishmentTypeEnum::BLACKLIST) {
@@ -128,6 +130,7 @@ class HandlePunishmentInteraction
 
             if (! $active_punishment) {
                 $this->respondSimpleEmbed($interaction, __('punishment.error_no_active_punishment'), 'FF0000');
+
                 return;
             }
 

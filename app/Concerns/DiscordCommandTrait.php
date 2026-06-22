@@ -9,11 +9,11 @@ use App\Models\GuildUser;
 use App\Models\User;
 use App\Services\DiscordEmbedFactory;
 use App\Services\DutyService;
+use App\Services\GuildService;
 use App\Services\GuildUserService;
 use App\Services\HolidayService;
 use App\Services\PunishmentService;
 use App\Services\SelectedGuildService;
-use App\Services\GuildService;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use Discord\Parts\Embed\Embed;
@@ -160,6 +160,29 @@ trait DiscordCommandTrait
         return true;
     }
 
+    protected function deferReply(DiscordInteraction $interaction, bool $ephemeral = true): void
+    {
+        if (! $interaction->isResponded()) {
+            $interaction->acknowledgeWithResponse($ephemeral);
+        }
+    }
+
+    protected function acknowledge(DiscordInteraction $interaction): void
+    {
+        if (! $interaction->isResponded()) {
+            $interaction->acknowledge();
+        }
+    }
+
+    protected function respondWithMessageSafe(DiscordInteraction $interaction, MessageBuilder $builder): void
+    {
+        if ($interaction->isResponded()) {
+            $interaction->updateOriginalResponse($builder);
+        } else {
+            $interaction->respondWithMessage($builder->setFlags(64));
+        }
+    }
+
     protected function respondEphemeral(DiscordInteraction $interaction, string|array $messageOrEmbed): void
     {
         $builder = MessageBuilder::new();
@@ -176,7 +199,7 @@ trait DiscordCommandTrait
             $builder->setContent($messageOrEmbed);
         }
 
-        $interaction->respondWithMessage($builder->setFlags(64));
+        $this->respondWithMessageSafe($interaction, $builder);
     }
 
     protected function respondEphemeralEmbed(DiscordInteraction $interaction, string $type, array $data = []): void

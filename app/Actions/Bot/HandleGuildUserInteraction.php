@@ -35,6 +35,7 @@ class HandleGuildUserInteraction
      */
     public function handle(Discord $discord, DiscordInteraction $interaction): void
     {
+        $this->deferReply($interaction);
         $this->init($discord, $interaction, app(GuildUserService::class));
         if (! $this->validateGuild($interaction)) {
             return;
@@ -368,7 +369,7 @@ class HandleGuildUserInteraction
             );
 
         $builder->addComponent($action_row);
-        $interaction->respondWithMessage($builder->setFlags(64));
+        $this->respondWithMessageSafe($interaction, $builder);
     }
 
     public function handleSyncExecuteCommand(DiscordInteraction $interaction): void

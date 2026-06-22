@@ -5,7 +5,6 @@ namespace App\Actions\Bot;
 use App\Concerns\DiscordCommandTrait;
 use App\Concerns\DiscordEmbedTrait;
 use App\Enums\ActionTypeEnum;
-use App\Enums\PermissionEnum;
 use App\Models\ActivityLog;
 use App\Services\GuildService;
 use Discord\Discord;
@@ -19,6 +18,7 @@ class HandleDefaultInteraction
 
     public function handle(Discord $discord, DiscordInteraction $interaction): void
     {
+        $this->deferReply($interaction);
         $this->init($discord, $interaction, app(GuildService::class));
 
         match ($this->command_name) {
