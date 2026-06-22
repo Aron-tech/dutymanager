@@ -46,6 +46,7 @@ class DiscordBotCommand extends Command
         $bot = new Discord([
             'token' => config('services.discord.token'),
             'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS | Intents::GUILDS,
+            'dnsConfig' => '1.1.1.1',
         ]);
 
         $bot->on('init', function (Discord $discord) use ($bot) {
