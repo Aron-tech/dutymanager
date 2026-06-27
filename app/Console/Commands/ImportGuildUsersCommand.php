@@ -14,13 +14,13 @@ class ImportGuildUsersCommand extends Command
                             {guild_id : A szűrendő Discord Guild ID}
                             {--import-details : Ha meg van adva, a Jelvényszám és Telefonszám átvitelre kerül a details JSONB mezőbe}';
 
-    protected $description = 'MySQL dumpból adatok átvétele PostgreSQL-be egy adott guild_id alapján, kiegészített alapértelmezett mezőkkel.';
+    protected $description = 'MySQL dumpból adatok átvétele PostgreSQL-be egy adott guild_id alapján, javított rugalmas parszolással.';
 
     public function handle(): int
     {
         $file_name = $this->argument('file');
         $file_path = base_path($file_name);
-        $target_guild_id = $this->argument('guild_id');
+        $target_guild_id = trim((string) $this->argument('guild_id'));
         $import_details = $this->option('import-details');
 
         if (! file_exists($file_path)) {
@@ -42,7 +42,15 @@ class ImportGuildUsersCommand extends Command
                     continue;
                 }
 
-                preg_match_all('/\(.*?\)/', $line, $matches);
+                // Kinyerjük a VALUES utáni részeket
+                if (preg_match('/VALUES\s+(.*);/i', trim($line), $values_match)) {
+                    $values_block_str = $values_match[1];
+                } else {
+                    continue;
+                }
+
+                // Felosztjuk a rekordokat a zárójelek mentén
+                preg_match_all('/\(.*?\)/', $values_block_str, $matches);
 
                 if (empty($matches[0])) {
                     continue;
@@ -56,26 +64,30 @@ class ImportGuildUsersCommand extends Command
                         continue;
                     }
 
-                    $guild_guild_id = trim($values[1], "'");
+                    // Biztonságos tisztítás (levágja az aposztrófokat és a felesleges szóközöket is)
+                    $guild_guild_id = trim($values[1], "' ");
 
                     if ($guild_guild_id !== $target_guild_id) {
                         continue;
                     }
 
-                    $id = $values[0];
-                    $user_discord_id = trim($values[2], "'");
-                    $ic_name = trim($values[3], "'");
-                    $ic_number = trim($values[4], "'");
-                    $ic_tel = $values[5] === 'NULL' ? null : trim($values[5], "'");
+                    $id = trim($values[0], "' ");
+                    $user_discord_id = trim($values[2], "' ");
+                    $ic_name = trim($values[3], "' ");
+                    $ic_number = trim($values[4], "' ");
+                    $ic_tel = trim($values[5], "' ");
 
-                    $created_at = isset($values[9]) && $values[9] !== 'NULL' ? trim($values[9], "'") : now();
-                    $updated_at = isset($values[10]) && $values[10] !== 'NULL' ? trim($values[10], "'") : now();
+                    if ($ic_tel === 'NULL' || $ic_tel === '') {
+                        $ic_tel = null;
+                    }
+
+                    $created_at = isset($values[9]) && trim($values[9], "' ") !== 'NULL' ? trim($values[9], "' ") : now();
+                    $updated_at = isset($values[10]) && trim($values[10], "' ") !== 'NULL' ? trim($values[10], "' ") : now();
 
                     $current_time = now();
 
-                    // Adatstruktúra kizárólag a Postgres sémában létező oszlopokkal
                     $insert_data = [
-                        'id' => $id,
+                        'id' => (int) $id,
                         'guild_id' => $guild_guild_id,
                         'discord_id' => $user_discord_id,
                         'ic_name' => $ic_name,
@@ -88,7 +100,6 @@ class ImportGuildUsersCommand extends Command
                     ];
 
                     if ($import_details) {
-                        // Csak a Jelvényszám és a Telefonszám kerül mentésre a kérés szerint
                         $insert_data['details'] = json_encode([
                             'Jelvényszám' => $ic_number,
                             'Telefonszám' => $ic_tel,
@@ -112,7 +123,7 @@ class ImportGuildUsersCommand extends Command
             DB::commit();
             $this->info("Sikeres futás! Beillesztve/Frissítve: {$imported_count} rekord.");
 
-            return Command::SUCCESS;
+            return CommandAlias::SUCCESS;
 
         } catch (\Exception $e) {
             DB::rollBack();
