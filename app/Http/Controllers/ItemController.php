@@ -34,7 +34,7 @@ class ItemController extends Controller
             }
         }
 
-        $items = $guild->items->with('image')->where('type', $type)->orderBy('position')->get();
+        $items = $guild->items()->with('image')->where('type', $type)->orderBy('position')->get();
 
         return Inertia::render('items/index', [
             'items' => $items,
