@@ -14,7 +14,7 @@ class ImportGuildUsersCommand extends Command
                             {guild_id : A szűrendő Discord Guild ID}
                             {--import-details : Ha meg van adva, a Jelvényszám és Telefonszám átvitelre kerül a details JSONB mezőbe}';
 
-    protected $description = 'MySQL dumpból adatok átvétele PostgreSQL-be egy adott guild_id alapján, javított rugalmas parszolással.';
+    protected $description = 'MySQL dumpból adatok átvétele PostgreSQL-be egy adott guild_id alapján, fixált regex parszolással.';
 
     public function handle(): int
     {
@@ -42,47 +42,42 @@ class ImportGuildUsersCommand extends Command
                     continue;
                 }
 
-                // Kinyerjük a VALUES utáni részeket
-                if (preg_match('/VALUES\s+(.*);/i', trim($line), $values_match)) {
-                    $values_block_str = $values_match[1];
-                } else {
-                    continue;
-                }
-
-                // Felosztjuk a rekordokat a zárójelek mentén
-                preg_match_all('/\(.*?\)/', $values_block_str, $matches);
+                // Kivonjuk az összes ( ... ) rekordot a sorból, figyelembe véve az idézőjeleket is
+                preg_match_all('/\((\d+),\s*\'?(\d+)\'?,\s*(.*?)\)/s', $line, $matches);
 
                 if (empty($matches[0])) {
-                    continue;
+                    // Ha nem illeszkedett az előző, egy lazább zárójeles illesztést futtatunk
+                    preg_match_all('/\(([^)]+)\)/', $line, $matches);
                 }
 
                 foreach ($matches[0] as $values_block) {
                     $cleaned_block = trim($values_block, '()');
-                    $values = str_getcsv($cleaned_block, ',', "'");
 
-                    if (count($values) < 6) {
+                    // Kézi darabolás a sima CSV helyett, hogy a fixen string/szám mezők ne essenek szét
+                    $parts = explode(',', $cleaned_block);
+                    if (count($parts) < 6) {
                         continue;
                     }
 
-                    // Biztonságos tisztítás (levágja az aposztrófokat és a felesleges szóközöket is)
-                    $guild_guild_id = trim($values[1], "' ");
+                    // Mezők kinyerése és tisztítása a felesleges karakterektől
+                    $id = trim($parts[0], "' ");
+                    $guild_guild_id = trim($parts[1], "' ");
+                    $user_discord_id = trim($parts[2], "' ");
+                    $ic_name = trim($parts[3], "' ");
+                    $ic_number = trim($parts[4], "' ");
+                    $ic_tel = trim($parts[5], "' ");
 
                     if ($guild_guild_id !== $target_guild_id) {
                         continue;
                     }
 
-                    $id = trim($values[0], "' ");
-                    $user_discord_id = trim($values[2], "' ");
-                    $ic_name = trim($values[3], "' ");
-                    $ic_number = trim($values[4], "' ");
-                    $ic_tel = trim($values[5], "' ");
-
                     if ($ic_tel === 'NULL' || $ic_tel === '') {
                         $ic_tel = null;
                     }
 
-                    $created_at = isset($values[9]) && trim($values[9], "' ") !== 'NULL' ? trim($values[9], "' ") : now();
-                    $updated_at = isset($values[10]) && trim($values[10], "' ") !== 'NULL' ? trim($values[10], "' ") : now();
+                    // Időbélyegek kinyerése a tömb végéről biztonságosan
+                    $created_at = isset($parts[9]) && trim($parts[9], "' ") !== 'NULL' ? trim($parts[9], "' ") : now();
+                    $updated_at = isset($parts[10]) && trim($parts[10], "' ") !== 'NULL' ? trim($parts[10], "' ") : now();
 
                     $current_time = now();
 
@@ -123,7 +118,7 @@ class ImportGuildUsersCommand extends Command
             DB::commit();
             $this->info("Sikeres futás! Beillesztve/Frissítve: {$imported_count} rekord.");
 
-            return CommandAlias::SUCCESS;
+            return Command::SUCCESS;
 
         } catch (\Exception $e) {
             DB::rollBack();
