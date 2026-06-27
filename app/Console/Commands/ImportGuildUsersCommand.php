@@ -14,7 +14,7 @@ class ImportGuildUsersCommand extends Command
                             {guild_id : A szűrendő Discord Guild ID}
                             {--import-details : Ha meg van adva, a Jelvényszám és Telefonszám átvitelre kerül a details JSONB mezőbe}';
 
-    protected $description = 'MySQL dumpból adatok átvétele PostgreSQL-be egy adott guild_id alapján, javított mezőnevekkel (user_id).';
+    protected $description = 'MySQL dumpból adatok átvétele PostgreSQL-be egy adott guild_id alapján, details hiba javítással.';
 
     public function handle(): int
     {
@@ -36,7 +36,7 @@ class ImportGuildUsersCommand extends Command
         if (! preg_match_all('/INSERT INTO `?guild_user`?(?:\s*\([^)]+\))?\s*VALUES\s*(.*?);/is', $content, $matches)) {
             $this->error('Nem található INSERT INTO guild_user utasítás a fájlban.');
 
-            return Command::FAILURE;
+            return CommandAlias::FAILURE;
         }
 
         $imported_count = 0;
@@ -84,6 +84,16 @@ class ImportGuildUsersCommand extends Command
                     $created_at = (strtoupper($created_at_str) !== 'NULL' && $created_at_str !== '') ? $created_at_str : $current_time;
                     $updated_at = (strtoupper($updated_at_str) !== 'NULL' && $updated_at_str !== '') ? $updated_at_str : $current_time;
 
+                    // Alapértelmezetten egy üres JSON objektum, ha nincs --import-details flag, elkerülve a NOT NULL hibát
+                    $details_json = json_encode([], JSON_UNESCAPED_UNICODE);
+
+                    if ($import_details) {
+                        $details_json = json_encode([
+                            'Jelvényszám' => $ic_number,
+                            'Telefonszám' => $ic_tel,
+                        ], JSON_UNESCAPED_UNICODE);
+                    }
+
                     $insert_data = [
                         'id' => $id,
                         'guild_id' => $guild_guild_id,
@@ -94,15 +104,8 @@ class ImportGuildUsersCommand extends Command
                         'rank_changed_at' => $current_time,
                         'created_at' => $created_at,
                         'updated_at' => $updated_at,
-                        'details' => null,
+                        'details' => $details_json,
                     ];
-
-                    if ($import_details) {
-                        $insert_data['details'] = json_encode([
-                            'Jelvényszám' => $ic_number,
-                            'Telefonszám' => $ic_tel,
-                        ], JSON_UNESCAPED_UNICODE);
-                    }
 
                     DB::table('guild_users')->upsert(
                         [$insert_data],
@@ -124,7 +127,7 @@ class ImportGuildUsersCommand extends Command
             DB::commit();
             $this->info("Sikeres futás! Beillesztve/Frissítve: {$imported_count} rekord.");
 
-            return Command::SUCCESS;
+            return CommandAlias::SUCCESS;
 
         } catch (\Exception $e) {
             DB::rollBack();
