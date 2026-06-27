@@ -24,6 +24,8 @@ class ItemController extends Controller
 
     public function index(IndexItemRequest $request): Response
     {
+        $guild = SelectedGuildService::get();
+
         $type = ItemTypeEnum::from($request->validated()['type']);
 
         if (auth()->user()->cannot(PermissionEnum::VIEW_ITEMS)) {
@@ -32,7 +34,7 @@ class ItemController extends Controller
             }
         }
 
-        $items = Item::with('image')->where('type', $type)->orderBy('position')->get();
+        $items = $guild->items->with('image')->where('type', $type)->orderBy('position')->get();
 
         return Inertia::render('items/index', [
             'items' => $items,
@@ -99,7 +101,11 @@ class ItemController extends Controller
      */
     public function delete(Item $item)
     {
+        $guild = SelectedGuildService::get();
         try {
+            if ($item->guild_id !== $guild->id) {
+                return;
+            }
             $item_model = clone $item;
             $item->delete();
             ActivityLog::make($item->guild_id, auth()->id(), null, ActionTypeEnum::DELETE_ITEM_FROM_GUILD, $item_model->toArray());
