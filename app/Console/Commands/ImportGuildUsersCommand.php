@@ -14,7 +14,7 @@ class ImportGuildUsersCommand extends Command
                             {guild_id : A szűrendő Discord Guild ID}
                             {--import-details : Ha meg van adva, a Jelvényszám és Telefonszám átvitelre kerül a details JSONB mezőbe}';
 
-    protected $description = '100% működő, garantált blokk-alapú import SQL dumpból.';
+    protected $description = 'MySQL dumpból adatok átvétele PostgreSQL-be egy adott guild_id alapján, javított mezőnevekkel (user_id).';
 
     public function handle(): int
     {
@@ -33,7 +33,6 @@ class ImportGuildUsersCommand extends Command
 
         $content = file_get_contents($file_path);
 
-        // Keresünk minden INSERT INTO guild_user VALUES ... blokkot
         if (! preg_match_all('/INSERT INTO `?guild_user`?(?:\s*\([^)]+\))?\s*VALUES\s*(.*?);/is', $content, $matches)) {
             $this->error('Nem található INSERT INTO guild_user utasítás a fájlban.');
 
@@ -48,11 +47,8 @@ class ImportGuildUsersCommand extends Command
         try {
             foreach ($matches[1] as $values_block) {
                 $values_block = trim($values_block);
-
-                // Eltávolítjuk a legelső '(' és a legutolsó ')' karaktereket
                 $values_block = preg_replace('/^\(|\)$/', '', $values_block);
 
-                // Darabolás kizárólag a rekordokat elválasztó '),' vagy '), (' mentén
                 $records = preg_split('/\)\s*,\s*\(/', $values_block);
 
                 foreach ($records as $record_str) {
@@ -63,7 +59,6 @@ class ImportGuildUsersCommand extends Command
                         continue;
                     }
 
-                    // Megtisztítjuk az aposztrófoktól és a felesleges szóközöktől
                     $guild_guild_id = trim($values[1], "'");
 
                     if ($guild_guild_id !== $target_guild_id) {
@@ -92,7 +87,7 @@ class ImportGuildUsersCommand extends Command
                     $insert_data = [
                         'id' => $id,
                         'guild_id' => $guild_guild_id,
-                        'discord_id' => $user_discord_id,
+                        'user_id' => $user_discord_id,
                         'ic_name' => $ic_name,
                         'is_request' => false,
                         'accepted_at' => $current_time,
@@ -112,7 +107,7 @@ class ImportGuildUsersCommand extends Command
                     DB::table('guild_users')->upsert(
                         [$insert_data],
                         ['id'],
-                        ['guild_id', 'discord_id', 'ic_name', 'is_request', 'accepted_at', 'rank_changed_at', 'details', 'updated_at']
+                        ['guild_id', 'user_id', 'ic_name', 'is_request', 'accepted_at', 'rank_changed_at', 'details', 'updated_at']
                     );
 
                     $imported_count++;
@@ -129,14 +124,14 @@ class ImportGuildUsersCommand extends Command
             DB::commit();
             $this->info("Sikeres futás! Beillesztve/Frissítve: {$imported_count} rekord.");
 
-            return CommandAlias::SUCCESS;
+            return Command::SUCCESS;
 
         } catch (\Exception $e) {
             DB::rollBack();
             $this->error('Hiba: '.$e->getMessage());
             Log::error('Import hiba: '.$e->getMessage());
 
-            return Command::FAILURE;
+            return CommandAlias::FAILURE;
         }
     }
 }
