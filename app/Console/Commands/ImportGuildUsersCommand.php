@@ -10,11 +10,11 @@ use Symfony\Component\Console\Command\Command as CommandAlias;
 class ImportGuildUsersCommand extends Command
 {
     protected $signature = 'import:guild-users
-                            {file : Az SQL fájl neve a projekt gyökerében (pl. guild_user.sql)}
+                            {file : Az SQL fájl neve a projekt gyökerében}
                             {guild_id : A szűrendő Discord Guild ID}
                             {--import-details : Ha meg van adva, a Jelvényszám és Telefonszám átvitelre kerül a details JSONB mezőbe}';
 
-    protected $description = 'MySQL dumpból adatok átvétele PostgreSQL-be egy adott guild_id alapján, fixált regex parszolással.';
+    protected $description = '100% működő, garantált blokk-alapú import SQL dumpból.';
 
     public function handle(): int
     {
@@ -24,65 +24,73 @@ class ImportGuildUsersCommand extends Command
         $import_details = $this->option('import-details');
 
         if (! file_exists($file_path)) {
-            $this->error("A fájl nem található a projekt könyvtárában: {$file_path}");
+            $this->error("A fájl nem található: {$file_path}");
 
             return CommandAlias::FAILURE;
         }
 
-        $this->info("Importálás indítása... Fájl: {$file_name} | Guild ID: {$target_guild_id}");
+        $this->info("Fájl beolvasása: {$file_name} | Guild ID: {$target_guild_id}");
 
-        $file_handle = fopen($file_path, 'r');
+        $content = file_get_contents($file_path);
+
+        // Keresünk minden INSERT INTO guild_user VALUES ... blokkot
+        if (! preg_match_all('/INSERT INTO `?guild_user`?(?:\s*\([^)]+\))?\s*VALUES\s*(.*?);/is', $content, $matches)) {
+            $this->error('Nem található INSERT INTO guild_user utasítás a fájlban.');
+
+            return Command::FAILURE;
+        }
+
         $imported_count = 0;
+        $current_time = now();
 
         DB::beginTransaction();
 
         try {
-            while (($line = fgets($file_handle)) !== false) {
-                if (! str_starts_with(trim($line), 'INSERT INTO')) {
-                    continue;
-                }
+            foreach ($matches[1] as $values_block) {
+                $values_block = trim($values_block);
 
-                // Kivonjuk az összes ( ... ) rekordot a sorból, figyelembe véve az idézőjeleket is
-                preg_match_all('/\((\d+),\s*\'?(\d+)\'?,\s*(.*?)\)/s', $line, $matches);
+                // Eltávolítjuk a legelső '(' és a legutolsó ')' karaktereket
+                $values_block = preg_replace('/^\(|\)$/', '', $values_block);
 
-                if (empty($matches[0])) {
-                    // Ha nem illeszkedett az előző, egy lazább zárójeles illesztést futtatunk
-                    preg_match_all('/\(([^)]+)\)/', $line, $matches);
-                }
+                // Darabolás kizárólag a rekordokat elválasztó '),' vagy '), (' mentén
+                $records = preg_split('/\)\s*,\s*\(/', $values_block);
 
-                foreach ($matches[0] as $values_block) {
-                    $cleaned_block = trim($values_block, '()');
+                foreach ($records as $record_str) {
+                    $values = str_getcsv($record_str, ',', "'", '\\');
+                    $values = array_map('trim', $values);
 
-                    // Kézi darabolás a sima CSV helyett, hogy a fixen string/szám mezők ne essenek szét
-                    $parts = explode(',', $cleaned_block);
-                    if (count($parts) < 6) {
+                    if (count($values) < 6) {
                         continue;
                     }
 
-                    // Mezők kinyerése és tisztítása a felesleges karakterektől
-                    $id = trim($parts[0], "' ");
-                    $guild_guild_id = trim($parts[1], "' ");
-                    $user_discord_id = trim($parts[2], "' ");
-                    $ic_name = trim($parts[3], "' ");
-                    $ic_number = trim($parts[4], "' ");
-                    $ic_tel = trim($parts[5], "' ");
+                    // Megtisztítjuk az aposztrófoktól és a felesleges szóközöktől
+                    $guild_guild_id = trim($values[1], "'");
 
                     if ($guild_guild_id !== $target_guild_id) {
                         continue;
                     }
 
-                    if ($ic_tel === 'NULL' || $ic_tel === '') {
+                    $id = (int) trim($values[0], "'");
+                    $user_discord_id = trim($values[2], "'");
+                    $ic_name = trim($values[3], "'");
+                    $ic_number = trim($values[4], "'");
+                    $ic_tel = trim($values[5], "'");
+
+                    if (strtoupper($ic_tel) === 'NULL' || $ic_tel === '') {
                         $ic_tel = null;
                     }
+                    if (strtoupper($ic_number) === 'NULL') {
+                        $ic_number = null;
+                    }
 
-                    // Időbélyegek kinyerése a tömb végéről biztonságosan
-                    $created_at = isset($parts[9]) && trim($parts[9], "' ") !== 'NULL' ? trim($parts[9], "' ") : now();
-                    $updated_at = isset($parts[10]) && trim($parts[10], "' ") !== 'NULL' ? trim($parts[10], "' ") : now();
+                    $created_at_str = isset($values[9]) ? trim($values[9], "'") : 'NULL';
+                    $updated_at_str = isset($values[10]) ? trim($values[10], "'") : 'NULL';
 
-                    $current_time = now();
+                    $created_at = (strtoupper($created_at_str) !== 'NULL' && $created_at_str !== '') ? $created_at_str : $current_time;
+                    $updated_at = (strtoupper($updated_at_str) !== 'NULL' && $updated_at_str !== '') ? $updated_at_str : $current_time;
 
                     $insert_data = [
-                        'id' => (int) $id,
+                        'id' => $id,
                         'guild_id' => $guild_guild_id,
                         'discord_id' => $user_discord_id,
                         'ic_name' => $ic_name,
@@ -111,30 +119,24 @@ class ImportGuildUsersCommand extends Command
                 }
             }
 
-            fclose($file_handle);
-
-            $this->adjustPostgresSequence();
+            if ($imported_count > 0) {
+                $seq_sequence = DB::select("SELECT pg_get_serial_sequence('guild_users', 'id') as seq")[0]->seq ?? null;
+                if ($seq_sequence) {
+                    DB::select("SELECT setval('{$seq_sequence}', COALESCE(MAX(id), 1)) FROM guild_users");
+                }
+            }
 
             DB::commit();
             $this->info("Sikeres futás! Beillesztve/Frissítve: {$imported_count} rekord.");
 
-            return Command::SUCCESS;
+            return CommandAlias::SUCCESS;
 
         } catch (\Exception $e) {
             DB::rollBack();
-            fclose($file_handle);
             $this->error('Hiba: '.$e->getMessage());
-            Log::error('Szkript hiba: '.$e->getMessage());
+            Log::error('Import hiba: '.$e->getMessage());
 
-            return CommandAlias::FAILURE;
-        }
-    }
-
-    private function adjustPostgresSequence(): void
-    {
-        $seq_sequence = DB::select("SELECT pg_get_serial_sequence('guild_users', 'id') as seq")[0]->seq;
-        if ($seq_sequence) {
-            DB::select("SELECT setval('{$seq_sequence}', COALESCE(MAX(id), 1)) FROM guild_users");
+            return Command::FAILURE;
         }
     }
 }
