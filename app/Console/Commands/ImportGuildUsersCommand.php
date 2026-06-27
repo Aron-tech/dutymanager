@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\Console\Command\Command as CommandAlias;
 
 class ImportGuildUsersCommand extends Command
 {
@@ -14,7 +13,7 @@ class ImportGuildUsersCommand extends Command
                             {guild_id : A szűrendő Discord Guild ID}
                             {--import-details : Ha meg van adva, a Jelvényszám és Telefonszám átvitelre kerül a details JSONB mezőbe}';
 
-    protected $description = 'MySQL dumpból adatok átvétele PostgreSQL-be egy adott guild_id alapján, details hiba javítással.';
+    protected $description = 'MySQL dumpból adatok átvétele PostgreSQL-be egy adott guild_id alapján, duplikációk kihagyásával.';
 
     public function handle(): int
     {
@@ -26,7 +25,7 @@ class ImportGuildUsersCommand extends Command
         if (! file_exists($file_path)) {
             $this->error("A fájl nem található: {$file_path}");
 
-            return CommandAlias::FAILURE;
+            return Command::FAILURE;
         }
 
         $this->info("Fájl beolvasása: {$file_name} | Guild ID: {$target_guild_id}");
@@ -36,10 +35,11 @@ class ImportGuildUsersCommand extends Command
         if (! preg_match_all('/INSERT INTO `?guild_user`?(?:\s*\([^)]+\))?\s*VALUES\s*(.*?);/is', $content, $matches)) {
             $this->error('Nem található INSERT INTO guild_user utasítás a fájlban.');
 
-            return CommandAlias::FAILURE;
+            return Command::FAILURE;
         }
 
         $imported_count = 0;
+        $skipped_count = 0;
         $current_time = now();
 
         DB::beginTransaction();
@@ -78,13 +78,26 @@ class ImportGuildUsersCommand extends Command
                         $ic_number = null;
                     }
 
+                    // Ellenőrzés: ha az ID vagy a (guild_id, user_id) páros már létezik, teljesen kihagyjuk
+                    $exists = DB::table('guild_users')
+                        ->where('id', $id)
+                        ->orWhere(function ($query) use ($guild_guild_id, $user_discord_id) {
+                            $query->where('guild_id', $guild_guild_id)
+                                ->where('user_id', $user_discord_id);
+                        })->exists();
+
+                    if ($exists) {
+                        $skipped_count++;
+
+                        continue;
+                    }
+
                     $created_at_str = isset($values[9]) ? trim($values[9], "'") : 'NULL';
                     $updated_at_str = isset($values[10]) ? trim($values[10], "'") : 'NULL';
 
                     $created_at = (strtoupper($created_at_str) !== 'NULL' && $created_at_str !== '') ? $created_at_str : $current_time;
                     $updated_at = (strtoupper($updated_at_str) !== 'NULL' && $updated_at_str !== '') ? $updated_at_str : $current_time;
 
-                    // Alapértelmezetten egy üres JSON objektum, ha nincs --import-details flag, elkerülve a NOT NULL hibát
                     $details_json = json_encode([], JSON_UNESCAPED_UNICODE);
 
                     if ($import_details) {
@@ -94,7 +107,9 @@ class ImportGuildUsersCommand extends Command
                         ], JSON_UNESCAPED_UNICODE);
                     }
 
-                    $insert_data = [
+                    DB::table('users')->inverseUpsertIfMissing($user_discord_id, $ic_name, $current_time);
+
+                    DB::table('guild_users')->insert([
                         'id' => $id,
                         'guild_id' => $guild_guild_id,
                         'user_id' => $user_discord_id,
@@ -105,13 +120,7 @@ class ImportGuildUsersCommand extends Command
                         'created_at' => $created_at,
                         'updated_at' => $updated_at,
                         'details' => $details_json,
-                    ];
-
-                    DB::table('guild_users')->upsert(
-                        [$insert_data],
-                        ['id'],
-                        ['guild_id', 'user_id', 'ic_name', 'is_request', 'accepted_at', 'rank_changed_at', 'details', 'updated_at']
-                    );
+                    ]);
 
                     $imported_count++;
                 }
@@ -125,16 +134,34 @@ class ImportGuildUsersCommand extends Command
             }
 
             DB::commit();
-            $this->info("Sikeres futás! Beillesztve/Frissítve: {$imported_count} rekord.");
+            $this->info("Sikeres futás! Beillesztve: {$imported_count} rekord. Kihagyva (már létezett): {$skipped_count}.");
 
-            return CommandAlias::SUCCESS;
+            return Command::SUCCESS;
 
         } catch (\Exception $e) {
             DB::rollBack();
             $this->error('Hiba: '.$e->getMessage());
             Log::error('Import hiba: '.$e->getMessage());
 
-            return CommandAlias::FAILURE;
+            return Command::FAILURE;
         }
     }
 }
+
+namespace Illuminate\Database\Query;
+
+use Illuminate\Support\Facades\DB;
+
+Builder::macro('inverseUpsertIfMissing', function (string $id, string $name, $time) {
+    $user = DB::table('users')->where('id', $id)->first();
+    if (! $user) {
+        DB::table('users')->insert([
+            'id' => $id,
+            'name' => $name,
+            'email' => $id.'@temporary.discord',
+            'global_name' => $name,
+            'created_at' => $time,
+            'updated_at' => $time,
+        ]);
+    }
+});
