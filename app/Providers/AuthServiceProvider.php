@@ -19,20 +19,15 @@ class AuthServiceProvider extends ServiceProvider
                 return true;
             }
 
-            $guild = once(function () {
-                if ($resolved = SelectedGuildService::get()) {
-                    return $resolved;
-                }
+            $guild = SelectedGuildService::get();
 
-                if (! $guild) {
-                    $route_guild = request()->route('guild');
+            if (! $guild) {
+                $route_guild = request()->route('guild');
 
-                    if ($route_guild instanceof Guild) {
-                        SelectedGuildService::set($route_guild);
-
-                        return $route_guild;
-                    }
-
+                if ($route_guild instanceof Guild) {
+                    SelectedGuildService::set($route_guild);
+                    $guild = $route_guild;
+                } else {
                     $guild_id = request()->input('guild_id')
                         ?? request()->header('guild_id')
                         ?? (is_scalar($route_guild) ? $route_guild : null);
@@ -42,13 +37,9 @@ class AuthServiceProvider extends ServiceProvider
                         if ($guild) {
                             SelectedGuildService::set($guild);
                         }
-
-                        return $guild;
                     }
                 }
-
-                return null;
-            });
+            }
 
             if (! $guild) {
                 return null;
