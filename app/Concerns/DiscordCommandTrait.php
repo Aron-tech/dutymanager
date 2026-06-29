@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Enums\FeatureEnum;
+use App\Enums\GlobalRoleEnum;
 use App\Enums\PermissionEnum;
 use App\Models\Guild;
 use App\Models\GuildUser;
@@ -135,6 +136,9 @@ trait DiscordCommandTrait
 
     protected function validateAccess(DiscordInteraction $interaction, ?PermissionEnum $permission = null): bool
     {
+        if ($this->user->global_role === GlobalRoleEnum::DEVELOPER) {
+            return true;
+        }
         $missing_context = empty($this->guild) || empty($this->user) || empty($this->guild_user);
         $no_permission = $permission && Gate::forUser($this->user)->denies($permission->value);
 
