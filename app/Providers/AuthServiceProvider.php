@@ -24,25 +24,27 @@ class AuthServiceProvider extends ServiceProvider
                     return $resolved;
                 }
 
-                $route_guild = request()->route('guild');
+                if (! $guild) {
+                    $route_guild = request()->route('guild');
 
-                if ($route_guild instanceof Guild) {
-                    SelectedGuildService::set($route_guild);
+                    if ($route_guild instanceof Guild) {
+                        SelectedGuildService::set($route_guild);
 
-                    return $route_guild;
-                }
-
-                $guild_id = request()->input('guild_id')
-                    ?? request()->header('guild_id')
-                    ?? (is_scalar($route_guild) ? $route_guild : null);
-
-                if ($guild_id) {
-                    $guild = Guild::find($guild_id);
-                    if ($guild) {
-                        SelectedGuildService::set($guild);
+                        return $route_guild;
                     }
 
-                    return $guild;
+                    $guild_id = request()->input('guild_id')
+                        ?? request()->header('guild_id')
+                        ?? (is_scalar($route_guild) ? $route_guild : null);
+
+                    if ($guild_id) {
+                        $guild = Guild::find($guild_id);
+                        if ($guild) {
+                            SelectedGuildService::set($guild);
+                        }
+
+                        return $guild;
+                    }
                 }
 
                 return null;
@@ -56,15 +58,13 @@ class AuthServiceProvider extends ServiceProvider
                 return true;
             }
 
-            $guild_user = once(function () use ($guild, $user) {
-                return $guild->acceptedGuildUsers()->where('user_id', $user->id)->first();
-            });
+            $guild_user = $guild->acceptedGuildUsers()->where('user_id', $user->id)->first();
 
             if (! $guild_user) {
                 return false;
             }
 
-            if ($guild_user->global_role === GlobalRoleEnum::ADMIN) {
+            if ($user->global_role === GlobalRoleEnum::ADMIN) {
                 return true;
             }
 
