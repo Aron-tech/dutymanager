@@ -320,7 +320,8 @@ export default function UserManagerView({
                         Felhasználó Kezelő
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                        Szerver tagok kezelése. Összesen: {guild_users.total} tag.
+                        Szerver tagok kezelése. Összesen: {guild_users.total}{' '}
+                        tag.
                     </p>
                 </div>
 
@@ -332,46 +333,62 @@ export default function UserManagerView({
                         <Button
                             className="w-full shadow-sm"
                             variant="default"
-                            onClick={() => { setEditUser(null); setIsModalOpen(true); }}
+                            onClick={() => {
+                                setEditUser(null);
+                                setIsModalOpen(true);
+                            }}
                         >
                             <Plus className="mr-2 h-4 w-4" /> Új felhasználó
                         </Button>
                     </div>
                 </div>
 
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-8">
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-4 flex-1">
-                        {selected_rows.length > 0 && status_filter === 'accepted' && (
-                            <div className="flex shrink-0 items-center gap-2 bg-muted/50 p-1.5 rounded-md border">
-                                <span className="text-sm font-medium px-2">{selected_rows.length} elem kijelölve</span>
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    className="h-8 text-green-600 hover:text-green-700 "
-                                    onClick={() => handleBulkRankAction('promote')}
-                                >
-                                    <ArrowUpCircle className="mr-2 h-4 w-4" />
-                                    Felfokozás
-                                </Button>
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    className="h-8 text-red-600 hover:text-red-700"
-                                    onClick={() => handleBulkRankAction('demote')}
-                                >
-                                    <ArrowDownCircle className="mr-2 h-4 w-4" />
-                                    Lefokozás
-                                </Button>
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    className="h-8"
-                                    onClick={() => setDeleteState({ is_open: true, ids: selected_rows, is_processing: false })}
-                                >
-                                    Tömeges törlés
-                                </Button>
-                            </div>
-                        )}
+                <div className="mt-8 flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
+                    <div className="flex flex-1 flex-col gap-4 lg:flex-row lg:items-center">
+                        {selected_rows.length > 0 &&
+                            status_filter === 'accepted' && (
+                                <div className="flex shrink-0 items-center gap-2 rounded-md border bg-muted/50 p-1.5">
+                                    <span className="px-2 text-sm font-medium">
+                                        {selected_rows.length} elem kijelölve
+                                    </span>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="h-8 text-green-600 hover:text-green-700"
+                                        onClick={() =>
+                                            handleBulkRankAction('promote')
+                                        }
+                                    >
+                                        <ArrowUpCircle className="mr-2 h-4 w-4" />
+                                        Felfokozás
+                                    </Button>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="h-8 text-red-600 hover:text-red-700"
+                                        onClick={() =>
+                                            handleBulkRankAction('demote')
+                                        }
+                                    >
+                                        <ArrowDownCircle className="mr-2 h-4 w-4" />
+                                        Lefokozás
+                                    </Button>
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        className="h-8"
+                                        onClick={() =>
+                                            setDeleteState({
+                                                is_open: true,
+                                                ids: selected_rows,
+                                                is_processing: false,
+                                            })
+                                        }
+                                    >
+                                        Tömeges törlés
+                                    </Button>
+                                </div>
+                            )}
                         <div className="w-full flex-1">
                             <DataTableToolbar
                                 search_query={search_query}
@@ -383,14 +400,20 @@ export default function UserManagerView({
                                 onPerPageChange={handlePerPageChange}
                                 custom_per_page={custom_per_page}
                                 onCustomPerPageChange={setCustomPerPage}
-                                onCustomPerPageSubmit={handleCustomPerPageSubmit}
+                                onCustomPerPageSubmit={
+                                    handleCustomPerPageSubmit
+                                }
                             />
                         </div>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-2 bg-muted/30 p-1 rounded-lg border w-fit">
+                    <div className="flex w-fit shrink-0 items-center gap-2 rounded-lg border bg-muted/30 p-1">
                         <Button
-                            variant={status_filter === 'accepted' ? 'secondary' : 'ghost'}
+                            variant={
+                                status_filter === 'accepted'
+                                    ? 'secondary'
+                                    : 'ghost'
+                            }
                             size="sm"
                             onClick={() => setStatusFilter('accepted')}
                             className="h-8 text-xs font-medium"
@@ -398,7 +421,11 @@ export default function UserManagerView({
                             Elfogadott
                         </Button>
                         <Button
-                            variant={status_filter === 'pending' ? 'secondary' : 'ghost'}
+                            variant={
+                                status_filter === 'pending'
+                                    ? 'secondary'
+                                    : 'ghost'
+                            }
                             size="sm"
                             onClick={() => setStatusFilter('pending')}
                             className="h-8 text-xs font-medium"
@@ -431,7 +458,17 @@ export default function UserManagerView({
                                 variant={link.active ? 'default' : 'outline'}
                                 size="sm"
                                 disabled={!link.url}
-                                onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
+                                onClick={() =>
+                                    link.url &&
+                                    router.get(
+                                        link.url,
+                                        {},
+                                        {
+                                            preserveState: true,
+                                            preserveScroll: true,
+                                        },
+                                    )
+                                }
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />
                         ))}
@@ -441,50 +478,92 @@ export default function UserManagerView({
 
             <CreateEditUserModal
                 is_open={is_modal_open}
-                onClose={() => { setIsModalOpen(false); setEditUser(null); }}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditUser(null);
+                }}
                 edit_user={edit_user}
                 user_details_config={safe_user_details}
-                unattached_guild_users={unattached_guild_users}
+                unattached_guild_users={unattached_guild_users || []}
                 has_rank_system={has_rank_system}
-                available_ranks={available_ranks}
+                available_ranks={available_ranks || []}
             />
 
             <BulkRankModal
                 is_open={is_bulk_rank_modal_open}
-                onClose={() => { setIsBulkRankModalOpen(false); setRankModalIds([]); }}
+                onClose={() => {
+                    setIsBulkRankModalOpen(false);
+                    setRankModalIds([]);
+                }}
                 selected_ids={rank_modal_ids}
             />
 
-            <EditDutyModal is_open={!!duty_user} onClose={() => setDutyUser(null)} user={duty_user} />
-            <EditPunishmentModal is_open={!!punishment_user} onClose={() => setPunishmentUser(null)} user={punishment_user} />
-            <EditHolidayModal is_open={!!holiday_user} onClose={() => setHolidayUser(null)} user={holiday_user} />
-            <UserImageGallery user={gallery_user} onClose={() => setGalleryUser(null)} />
+            <EditDutyModal
+                is_open={!!duty_user}
+                onClose={() => setDutyUser(null)}
+                user={duty_user}
+            />
+            <EditPunishmentModal
+                is_open={!!punishment_user}
+                onClose={() => setPunishmentUser(null)}
+                user={punishment_user}
+            />
+            <EditHolidayModal
+                is_open={!!holiday_user}
+                onClose={() => setHolidayUser(null)}
+                user={holiday_user}
+            />
+            <UserImageGallery
+                user={gallery_user}
+                onClose={() => setGalleryUser(null)}
+            />
 
             <ConfirmDeleteDialog
                 isOpen={delete_state.is_open}
-                onClose={() => setDeleteState((prev) => ({ ...prev, is_open: false }))}
+                onClose={() =>
+                    setDeleteState((prev) => ({ ...prev, is_open: false }))
+                }
                 onConfirm={confirmDelete}
                 isProcessing={delete_state.is_processing}
                 checkboxText="Kirúgás a Discord szerverről"
                 description={
                     delete_state.ids.length === 1
-                        ? "Biztosan törölni szeretnéd ezt a felhasználót? Ez a művelet végleges."
+                        ? 'Biztosan törölni szeretnéd ezt a felhasználót? Ez a művelet végleges.'
                         : `Biztosan törölni szeretnéd a kijelölt ${delete_state.ids.length} felhasználót?`
                 }
             />
 
-            <AlertDialog open={accept_state.is_open} onOpenChange={(open) => !open && setAcceptState(prev => ({ ...prev, is_open: false }))}>
+            <AlertDialog
+                open={accept_state.is_open}
+                onOpenChange={(open) =>
+                    !open &&
+                    setAcceptState((prev) => ({ ...prev, is_open: false }))
+                }
+            >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Felhasználó elfogadása</AlertDialogTitle>
+                        <AlertDialogTitle>
+                            Felhasználó elfogadása
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                            Biztosan el szeretnéd fogadni ezt a felhasználót? Ezzel teljes jogú taggá válik a rendszerben.
+                            Biztosan el szeretnéd fogadni ezt a felhasználót?
+                            Ezzel teljes jogú taggá válik a rendszerben.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={accept_state.is_processing}>Mégse</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmAccept} disabled={accept_state.is_processing} className="bg-green-600 hover:bg-green-700">
-                            {accept_state.is_processing ? "Folyamatban..." : "Elfogadás"}
+                        <AlertDialogCancel
+                            disabled={accept_state.is_processing}
+                        >
+                            Mégse
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmAccept}
+                            disabled={accept_state.is_processing}
+                            className="bg-green-600 hover:bg-green-700"
+                        >
+                            {accept_state.is_processing
+                                ? 'Folyamatban...'
+                                : 'Elfogadás'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

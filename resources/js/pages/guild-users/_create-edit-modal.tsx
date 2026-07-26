@@ -53,6 +53,17 @@ export default function CreateEditUserModal({
     is_request_mode = false,
     target_discord_id,
 }: CreateEditUserModalProps) {
+    // A null értékek garantált kiszűrése (a default parameter csak undefined esetén lép életbe)
+    const safe_unattached_guild_users = Array.isArray(unattached_guild_users)
+        ? unattached_guild_users
+        : [];
+    const safe_available_ranks = Array.isArray(available_ranks)
+        ? available_ranks
+        : [];
+    const safe_user_details_config = Array.isArray(user_details_config)
+        ? user_details_config
+        : [];
+
     const is_edit = !!edit_user;
     const { auth } = usePage().props;
 
@@ -88,10 +99,12 @@ export default function CreateEditUserModal({
                 });
             } else {
                 reset();
-                const ranks = available_ranks || [];
 
-                if (has_rank_system && ranks.length > 0) {
-                    setFormData('rank_id', ranks[0].id.toString());
+                if (has_rank_system && safe_available_ranks.length > 0) {
+                    setFormData(
+                        'rank_id',
+                        safe_available_ranks[0].id.toString(),
+                    );
                 }
             }
 
@@ -101,7 +114,7 @@ export default function CreateEditUserModal({
         is_open,
         edit_user,
         has_rank_system,
-        available_ranks,
+        safe_available_ranks,
         is_edit,
         clearErrors,
         setFormData,
@@ -147,8 +160,7 @@ export default function CreateEditUserModal({
     };
 
     const handleUserSelect = (val: string) => {
-        const safe_unattached_users = unattached_guild_users || [];
-        const selected_user = safe_unattached_users.find(
+        const selected_user = safe_unattached_guild_users.find(
             (u) => u.value === val,
         );
 
@@ -168,10 +180,6 @@ export default function CreateEditUserModal({
             clearErrors('ic_name');
         }
     };
-
-    const safe_user_details_config = user_details_config || [];
-    const safe_available_ranks = available_ranks || [];
-    const safe_unattached_guild_users = unattached_guild_users || [];
 
     return (
         <Dialog open={is_open} onOpenChange={(open) => !open && onClose()}>
