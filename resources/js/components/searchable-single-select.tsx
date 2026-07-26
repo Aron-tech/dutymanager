@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import type { SelectItem } from '@/types';
 
 interface SearchableSingleSelectProps {
-    items?: SelectItem[] | null;
+    items: SelectItem[];
     value: string | undefined | null;
     onChange: (value: string) => void;
     placeholder?: string;
@@ -29,7 +29,7 @@ interface SearchableSingleSelectProps {
 }
 
 export default function SearchableSingleSelect({
-    items = [],
+    items,
     value,
     onChange,
     placeholder = 'Válassz...',
@@ -40,27 +40,9 @@ export default function SearchableSingleSelect({
 }: SearchableSingleSelectProps) {
     const [open, setOpen] = React.useState(false);
 
-    // BIZTOSÍTÉK: Ha null, undefined vagy asszociatív objektum jön a PHP/Laravel oldalról
-    const safeItems = React.useMemo(() => {
-        if (!items) {
-            return [];
-        }
+    const selectedItem = items.find((item) => item.value === value);
 
-        if (Array.isArray(items)) {
-            return items;
-        }
-
-        // Ha a Laravel associatív tömbként küldte át (pl. ['id1' => [...], 'id2' => [...]])
-        if (typeof items === 'object') {
-            return Object.values(items);
-        }
-
-        return [];
-    }, [items]);
-
-    const selectedItem = safeItems.find((item) => item && item.value === value);
-
-    const defaultRenderItem = (item: SelectItem) => item?.label || '';
+    const defaultRenderItem = (item: SelectItem) => item.label;
 
     const displayRender = renderItem || defaultRenderItem;
 
@@ -89,32 +71,28 @@ export default function SearchableSingleSelect({
                     <CommandList>
                         <CommandEmpty>{emptyPlaceholder}</CommandEmpty>
                         <CommandGroup>
-                            {safeItems.map((item) => {
-                                if (!item || !item.value) return null;
-
-                                return (
-                                    <CommandItem
-                                        key={item.value}
-                                        value={item.label || item.value}
-                                        onSelect={() => {
-                                            onChange(item.value);
-                                            setOpen(false);
-                                        }}
-                                    >
-                                        <Check
-                                            className={cn(
-                                                'mr-2 h-4 w-4',
-                                                value === item.value
-                                                    ? 'opacity-100'
-                                                    : 'opacity-0',
-                                            )}
-                                        />
-                                        <div className="flex items-center">
-                                            {displayRender(item)}
-                                        </div>
-                                    </CommandItem>
-                                );
-                            })}
+                            {items.map((item) => (
+                                <CommandItem
+                                    key={item.value}
+                                    value={item.label}
+                                    onSelect={() => {
+                                        onChange(item.value);
+                                        setOpen(false);
+                                    }}
+                                >
+                                    <Check
+                                        className={cn(
+                                            'mr-2 h-4 w-4',
+                                            value === item.value
+                                                ? 'opacity-100'
+                                                : 'opacity-0',
+                                        )}
+                                    />
+                                    <div className="flex items-center">
+                                        {displayRender(item)}
+                                    </div>
+                                </CommandItem>
+                            ))}
                         </CommandGroup>
                     </CommandList>
                 </Command>
