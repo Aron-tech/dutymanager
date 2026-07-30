@@ -11,9 +11,12 @@ use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
+use Discord\Parts\Channel\Channel;
 use Discord\Parts\Embed\Embed;
 use Discord\WebSockets\Event;
+use Exception;
 use Illuminate\Support\Facades\Log;
+use React\Promise\PromiseInterface;
 
 class DutyMonitorService
 {
@@ -34,6 +37,9 @@ class DutyMonitorService
         });
     }
 
+    /**
+     * @throws Exception
+     */
     public static function runPeriodicUpdate(Discord $discord, ?string $specific_guild_id = null): void
     {
         $query = Guild::installed()->with('guildSettings');
@@ -62,23 +68,28 @@ class DutyMonitorService
 
             $active_voice_id = $guild->guildSettings->getFeatureSettings(FeatureEnum::DUTY, 'active_duty_channel_id', null);
             if ($active_voice_id) {
-                $voice_channel = $discord_guild->channels->get('id', $active_voice_id);
-                if ($voice_channel && $voice_channel->type === 2) {
-                    $new_name = '🛡️ '.__('duty.voice_on_duty', ['count' => $active_count]);
-                    if ($voice_channel->name !== $new_name) {
-                        $voice_channel->name = $new_name;
-                        $voice_channel->save()->catch(fn ($e) => Log::error("Hiba a csatornanév módosításakor: {$e->getMessage()}"));
-                    }
-                }
+                self::resolveChannel($discord_guild, $active_voice_id)
+                    ->then(function ($voice_channel) use ($active_count) {
+                        if ($voice_channel && $voice_channel->type === 2) { // 2 = Voice channel
+                            $new_name = '🛡️ '.__('duty.voice_on_duty', ['count' => $active_count]);
+                            if ($voice_channel->name !== $new_name) {
+                                $voice_channel->name = $new_name;
+                                $voice_channel->save()->catch(fn ($e) => Log::error("Hiba a csatornanév módosításakor: {$e->getMessage()}"));
+                            }
+                        }
+                    })
+                    ->catch(fn ($e) => Log::warning("Nem sikerült elérni a voice csatornát: {$e->getMessage()}"));
             }
 
-            // Panel Update
             $panel_channel_id = $guild->guildSettings->getFeatureSettings(FeatureEnum::DUTY, 'duty_panel_channel_id', null);
             if ($panel_channel_id) {
-                $panel_channel = $discord_guild->channels->get('id', $panel_channel_id);
-                if ($panel_channel) {
-                    self::updateOrSendPanel($discord, $guild, $panel_channel, $active_duties);
-                }
+                self::resolveChannel($discord_guild, $panel_channel_id)
+                    ->then(function ($panel_channel) use ($discord, $guild, $active_duties) {
+                        if ($panel_channel) {
+                            self::updateOrSendPanel($discord, $guild, $panel_channel, $active_duties);
+                        }
+                    })
+                    ->catch(fn ($e) => Log::warning("Nem sikerült elérni a panel csatornát: {$e->getMessage()}"));
             }
         }
     }
@@ -236,5 +247,20 @@ class DutyMonitorService
         }
 
         return $chunks;
+    }
+
+    /**
+     * Lekéri a csatornát a cache-ből, ha ott nincs meg, csak akkor fordul az API-hoz.
+     *
+     * @throws Exception
+     */
+    private static function resolveChannel(\Discord\Parts\Guild\Guild $discord_guild, string $channel_id): PromiseInterface|Channel|null
+    {
+        $channel = $discord_guild->channels->get('id', $channel_id);
+        if ($channel) {
+            return \React\Promise\resolve($channel);
+        }
+
+        return $discord_guild->channels->fetch($channel_id);
     }
 }
