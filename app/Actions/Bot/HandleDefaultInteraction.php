@@ -70,6 +70,7 @@ class HandleDefaultInteraction
                         'is_request' => false,
                         'accepted_at' => now(),
                         'added_by' => $this->user->id,
+                        'details' => [],
                         'cached_roles' => $roles,
                     ]);
                 } else {
