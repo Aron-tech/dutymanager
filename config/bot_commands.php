@@ -7,6 +7,11 @@ return [
         'type' => 1,
     ],
     [
+        'name' => 'syncpermission',
+        'description' => 'app.syncpermission_command_description',
+        'type' => 1,
+    ],
+    [
         'name' => 'info',
         'description' => 'guild_user.info_command_description',
         'type' => 1,
