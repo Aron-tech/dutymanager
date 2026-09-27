@@ -1,11 +1,11 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Menu, Search, X } from 'lucide-react';
+import { LogIn, Menu, Search, X } from 'lucide-react';
 import { FaDiscord } from 'react-icons/fa';
 import React, { useEffect, useState } from 'react';
 import SiteLogo from '@/components/site/site-logo';
 import SearchModal from '@/components/site/search-modal';
 
-const DISCORD_INVITE = 'https://discord.gg/JyPa9dhwhx';
+const DISCORD_SUPPORT_SERVER = 'https://discord.gg/JyPa9dhwhx';
 
 const nav_links = [
     { labelKey: 'landing.nav.home', href: '/' },
@@ -29,6 +29,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const [search_open, setSearchOpen] = useState(false);
 
     const currentLocale = props.locale ?? 'en';
+    const bot_invite_url: string = props.discordBotInviteUrl;
+    const is_logged_in = Boolean(props.auth?.user);
+    const account_href = is_logged_in ? '/dashboard' : '/login';
+    const account_label_key = is_logged_in ? 'landing.nav.dashboard' : 'landing.nav.login';
 
     const __ = (key: string, replace: Record<string, string | number> = {}): string => {
         const parts = key.split('.');
@@ -176,8 +180,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             <span>{currentLocale}</span>
                         </button>
 
+                        <Link
+                            href={account_href}
+                            className="hidden items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/80 transition-colors hover:border-white/20 hover:text-white sm:flex"
+                        >
+                            <LogIn className="h-4 w-4" />
+                            {__(account_label_key)}
+                        </Link>
+
                         <a
-                            href={DISCORD_INVITE}
+                            href={bot_invite_url}
                             target="_blank"
                             rel="noreferrer"
                             className="hidden items-center gap-2 rounded-lg bg-gradient-to-r from-[#FF2A2A] to-[#FF4B4B] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_20px_rgba(255,75,75,0.35)] transition-transform hover:scale-[1.03] sm:flex"
@@ -228,8 +240,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             >
                                 🌐 {currentLocale}
                             </button>
+                            <Link
+                                href={account_href}
+                                className="mt-1 flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2.5 text-left text-sm font-medium text-white/70"
+                            >
+                                <LogIn className="h-4 w-4" /> {__(account_label_key)}
+                            </Link>
                             <a
-                                href={DISCORD_INVITE}
+                                href={bot_invite_url}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="mt-2 flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#FF2A2A] to-[#FF4B4B] px-4 py-2.5 text-sm font-semibold text-white"
@@ -252,7 +270,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             {__('landing.footer.tagline')}
                         </p>
                         <a
-                            href={DISCORD_INVITE}
+                            href={DISCORD_SUPPORT_SERVER}
                             target="_blank"
                             rel="noreferrer"
                             className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[#4B9BFF]/30 bg-[#2A85FF]/10 px-4 py-2 text-sm font-medium text-[#4B9BFF] transition-colors hover:bg-[#2A85FF]/20"
@@ -276,7 +294,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             <li><Link href="/docs" className="text-white/50 hover:text-white">{__('landing.footer.documentation')}</Link></li>
                             <li><Link href="/contact" className="text-white/50 hover:text-white">{__('landing.footer.contact')}</Link></li>
                             <li>
-                                <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-white/50 hover:text-white">
+                                <a href={DISCORD_SUPPORT_SERVER} target="_blank" rel="noreferrer" className="text-white/50 hover:text-white">
                                     {__('landing.footer.support_server')}
                                 </a>
                             </li>

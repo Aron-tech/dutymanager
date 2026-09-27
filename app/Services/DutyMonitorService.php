@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Concerns\DataTrait;
 use App\Enums\DutyActionEnum;
 use App\Enums\FeatureEnum;
 use App\Models\Duty;
@@ -11,6 +10,7 @@ use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
+use Discord\Http\Exceptions\NotFoundException;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Embed\Embed;
 use Discord\WebSockets\Event;
@@ -20,7 +20,19 @@ use React\Promise\PromiseInterface;
 
 class DutyMonitorService
 {
-    use DataTrait;
+    /**
+     * Guildek, amelyeknél épp folyamatban van a panel küldése/szerkesztése.
+     *
+     * @var array<string, bool>
+     */
+    private static array $panel_updates_in_progress = [];
+
+    /**
+     * Guildek, amelyeknél a folyamatban lévő frissítés alatt újabb frissítés érkezett.
+     *
+     * @var array<string, bool>
+     */
+    private static array $panel_updates_pending = [];
 
     public static function register(Discord $discord): void
     {
@@ -96,6 +108,40 @@ class DutyMonitorService
 
     private static function updateOrSendPanel(Discord $discord, Guild $guild, $channel, $active_duties): void
     {
+        $guild_id = (string) $guild->id;
+
+        if (isset(self::$panel_updates_in_progress[$guild_id])) {
+            self::$panel_updates_pending[$guild_id] = true;
+
+            return;
+        }
+
+        self::$panel_updates_in_progress[$guild_id] = true;
+
+        try {
+            $promise = self::buildAndSendPanel($discord, $guild, $channel, $active_duties);
+        } catch (Exception $e) {
+            Log::error("Hiba a panel összeállítása közben: {$e->getMessage()}");
+            self::clearPanelUpdateGuard($discord, $guild_id);
+
+            return;
+        }
+
+        $promise->finally(fn () => self::clearPanelUpdateGuard($discord, $guild_id));
+    }
+
+    private static function clearPanelUpdateGuard(Discord $discord, string $guild_id): void
+    {
+        unset(self::$panel_updates_in_progress[$guild_id]);
+
+        if (isset(self::$panel_updates_pending[$guild_id])) {
+            unset(self::$panel_updates_pending[$guild_id]);
+            self::runPeriodicUpdate($discord, $guild_id);
+        }
+    }
+
+    private static function buildAndSendPanel(Discord $discord, Guild $guild, $channel, $active_duties): PromiseInterface
+    {
         $actionRow = ActionRow::new()
             ->addComponent(Button::new(Button::STYLE_SUCCESS)->setLabel(__('duty.panel_btn_start'))->setCustomId('btn_duty_start'))
             ->addComponent(Button::new(Button::STYLE_DANGER)->setLabel(__('duty.panel_btn_stop'))->setCustomId('btn_duty_stop'))
@@ -155,22 +201,32 @@ class DutyMonitorService
 
         $last_msg_id = $guild->getData('last_duty_panel_message_id');
 
-        $sendNewMessage = function () use ($channel, $builder, $guild) {
-            $channel->sendMessage($builder)->then(function ($message) use ($guild) {
-                $guild->setData('last_duty_panel_message_id', $message->id);
-                $guild->save();
+        $sendNewMessage = function () use ($channel, $builder, $guild): PromiseInterface {
+            return $channel->sendMessage($builder)->then(function ($message) use ($guild) {
+                $guild->saveDataAtomically('last_duty_panel_message_id', $message->id);
             })->catch(fn ($e) => Log::error("Hiba a panel küldésekor: {$e->getMessage()}"));
         };
 
         if ($last_msg_id) {
-            $channel->messages->fetch($last_msg_id)->then(function ($message) use ($builder) {
-                $message->edit($builder)->catch(fn ($e) => Log::error("Hiba a panel frissítésekor: {$e->getMessage()}"));
-            })->catch(function ($e) use ($sendNewMessage) {
-                $sendNewMessage();
-            });
+            $promise = $channel->messages->fetch($last_msg_id)->then(
+                fn ($message) => $message->edit($builder)->catch(fn ($e) => Log::error("Hiba a panel frissítésekor: {$e->getMessage()}")),
+                function ($e) use ($sendNewMessage) {
+                    // Csak akkor küldünk új panelt, ha a régi üzenet biztosan nem létezik már,
+                    // különben egy átmeneti hiba (rate limit, hálózat) duplikált panelt eredményezne.
+                    if ($e instanceof NotFoundException) {
+                        return $sendNewMessage();
+                    }
+
+                    Log::warning("Nem sikerült lekérni a panel üzenetet: {$e->getMessage()}");
+
+                    return null;
+                }
+            );
         } else {
-            $sendNewMessage();
+            $promise = $sendNewMessage();
         }
+
+        return $promise;
     }
 
     private static function handleVoiceStateUpdate($state, $discord, $oldstate): void

@@ -14,6 +14,7 @@ use App\Http\Requests\StoreGuildUserRequest;
 use App\Http\Requests\UpdateGuildUserRequest;
 use App\Http\Requests\UpdateRankGuildUserRequest;
 use App\Http\Requests\UploadImageRequest;
+use App\Models\Guild;
 use App\Models\GuildUser;
 use App\Models\Image;
 use App\Services\DiscordFetchService;
@@ -49,9 +50,9 @@ class GuildUserController extends Controller
     public function store(StoreGuildUserRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $is_request = $data['is_request'] ?? false;
+        $data['is_request'] = false;
 
-        if (! $is_request && auth()->user()->cannot(PermissionEnum::ADD_GUILD_USERS)) {
+        if (auth()->user()->cannot(PermissionEnum::ADD_GUILD_USERS)) {
             abort(403, __('app.error_no_permission'));
         }
 
@@ -62,6 +63,30 @@ class GuildUserController extends Controller
             $guild_user = $this->service->joinUserToGuild($data);
 
             return back()->with('success', __('guild_user.success_add_new_user', ['user' => $guild_user->user->name]));
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        } catch (Throwable $e) {
+            return back()->withErrors(['form_error' => $e->getMessage()])->withInput();
+        }
+    }
+
+    /**
+     * Join request sent from the guild selector by a user who is not a member of the guild yet.
+     */
+    public function requestJoin(Guild $guild, StoreGuildUserRequest $request): RedirectResponse
+    {
+        $user = auth()->user();
+        $data = $request->validated();
+
+        $data['user_id'] = $user->id;
+        $data['name'] = $user->name;
+        $data['is_request'] = true;
+        $data['guild'] = $guild->load('guildSettings');
+
+        try {
+            $this->service->joinUserToGuild($data);
+
+            return back()->with('success', __('guild_user.success_add_new_user', ['user' => $user->name]));
         } catch (ValidationException $e) {
             return back()->withErrors($e->errors())->withInput();
         } catch (Throwable $e) {
@@ -143,6 +168,7 @@ class GuildUserController extends Controller
             return back()->with('success', __('guild_user.delete_users_in_queue_started'));
         } catch (Throwable $e) {
             \Log::error($e);
+
             return back()->withErrors(['error' => __('app.error_action')]);
         }
     }

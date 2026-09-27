@@ -2,14 +2,14 @@
 
 namespace Database\Factories;
 
-use App\Enums\GlobalRoleEnum;
+use App\Models\Guild;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<User>
+ * @extends Factory<Guild>
  */
-class UserFactory extends Factory
+class GuildFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -20,21 +20,22 @@ class UserFactory extends Factory
     {
         return [
             'id' => (string) fake()->unique()->numberBetween(100000000000000000, 999999999999999999),
-            'name' => fake()->userName(),
-            'global_name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'avatar_url' => null,
+            'name' => fake()->company(),
+            'icon' => null,
+            'owner_id' => User::factory(),
             'lang_code' => 'hu',
+            'is_installed' => true,
+            'data' => [],
         ];
     }
 
     /**
-     * Indicate that the user is a global administrator.
+     * Indicate that the bot has not been initialized on the guild yet.
      */
-    public function admin(): static
+    public function notInstalled(): static
     {
         return $this->state(fn (array $attributes) => [
-            'global_role' => GlobalRoleEnum::ADMIN,
+            'is_installed' => false,
         ]);
     }
 }

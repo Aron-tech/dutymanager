@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Concerns\ValidatesDynamicUserDetailsTrait;
+use App\Models\Guild;
 use App\Services\SelectedGuildService;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -20,7 +21,8 @@ class StoreGuildUserRequest extends FormRequest
             'details' => ['nullable', 'array'],
         ];
 
-        $guild = SelectedGuildService::get();
+        $route_guild = $this->route('guild');
+        $guild = $route_guild instanceof Guild ? $route_guild : SelectedGuildService::get();
 
         return array_merge($rules, $this->getDynamicDetailsRules($guild));
     }

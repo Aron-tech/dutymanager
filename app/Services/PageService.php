@@ -37,25 +37,25 @@ final class PageService
             ->withSum(['duties as current_total_duty_time' => static function ($query): void {
                 $query->where('status', '<=', DutyStatusEnum::CURRENT_PERIOD);
             }], 'value')
-            ->firstOrFail();
+            ->first();
 
-        $duties_raw = $guild_user->duties()
-            ->where('started_at', '>=', now()->subDays($stats)->startOfDay())
-            ->selectRaw('DATE(started_at) as date, status, SUM(value) as total_value')
-            ->groupBy('date', 'status')
-            ->get()
-            ->groupBy('date');
+        // The guild owner (or a Discord admin during setup) can reach the dashboard without being a guild user.
+        $duties_raw = $guild_user
+            ? $guild_user->duties()
+                ->where('started_at', '>=', now()->subDays($stats)->startOfDay())
+                ->selectRaw('DATE(started_at) as date, status, SUM(value) as total_value')
+                ->groupBy('date', 'status')
+                ->get()
+                ->groupBy('date')
+            : collect();
 
         $guild_avg_raw = Cache::remember(
             "guild_{$guild->id}_duty_avg_{$stats}_days_v2",
             now()->addMinutes(15),
             static function () use ($guild, $stats): array {
                 return Duty::query()
-                    ->whereIn('guild_user_id', static function ($query) use ($guild): void {
-                        $query->select('id')
-                            ->from('guild_users')
-                            ->where('guild_id', $guild->id);
-                    })
+                    ->where('guild_id', $guild->id)
+                    ->whereNotNull('guild_user_id')
                     ->where('started_at', '>=', now()->subDays($stats)->startOfDay())
                     ->selectRaw('DATE(started_at) as date, (SUM(value) / COUNT(DISTINCT guild_user_id)) as avg_value')
                     ->groupBy('date')
@@ -88,18 +88,18 @@ final class PageService
             ];
         }
 
-        $active_duties_count = Duty::getActiveDutiesCount();
-        $in_guild_days = (int) round($guild_user->created_at->diffInDays(now()));
+        $active_duties_count = Duty::getActiveDutiesCount($guild->id);
+        $in_guild_days = $guild_user ? (int) round($guild_user->created_at->diffInDays(now())) : 0;
 
         return [
             'active_duties_count' => $active_duties_count,
-            'has_active_duty' => $guild_user->has_active_duty,
-            'current_total_duty_time' => (int) $guild_user->current_total_duty_time,
-            'total_duty_time' => (int) $guild_user->total_duty_time,
+            'has_active_duty' => (bool) $guild_user?->has_active_duty,
+            'current_total_duty_time' => (int) $guild_user?->current_total_duty_time,
+            'total_duty_time' => (int) $guild_user?->total_duty_time,
             'in_guild_days' => $in_guild_days,
             'duty_chart_data' => $duty_chart_data,
             'stats_days' => $stats,
-            'guild_user_id' => $guild_user->id,
+            'guild_user_id' => $guild_user?->id,
         ];
     }
 

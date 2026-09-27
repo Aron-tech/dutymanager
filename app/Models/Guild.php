@@ -4,9 +4,11 @@ namespace App\Models;
 
 use App\Concerns\DataTrait;
 use App\Enums\DutyStatusEnum;
+use Database\Factories\GuildFactory;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
@@ -18,7 +20,8 @@ use Illuminate\Support\Facades\Cache;
 #[Hidden(['lang_code'])]
 class Guild extends Model
 {
-    use DataTrait, SoftDeletes;
+    /** @use HasFactory<GuildFactory> */
+    use DataTrait, HasFactory, SoftDeletes;
 
     public const string ROLE_WHITELIST_CACHE_PREFIX = 'guild_role_whitelist:';
 
@@ -66,7 +69,7 @@ class Guild extends Model
 
     public function duties(): HasMany
     {
-        return $this->hasMany(Duty::class, 'id', 'guild_id');
+        return $this->hasMany(Duty::class);
     }
 
     public function guildDuties(): HasManyThrough
@@ -115,7 +118,7 @@ class Guild extends Model
 
     public function punishments(): HasMany
     {
-        return $this->hasMany(Punishment::class, 'id', 'guild_id');
+        return $this->hasMany(Punishment::class);
     }
 
     public function scopeInstalled(Builder $query): Builder

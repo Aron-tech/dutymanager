@@ -76,6 +76,12 @@ export interface GuildUser {
     current_period_duties_sum_value?: number;
     all_period_duties_sum_value?: number;
     joined_ago?: string;
+    rank_changed_ago?: string;
+    data?: {
+        rank_role?: Record<string, string>;
+        rank_role_index?: number;
+        [key: string]: unknown;
+    } | null;
 }
 
 export interface Subscription {

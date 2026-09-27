@@ -69,8 +69,8 @@ export default function Selector({
     };
 
     const handleAddBot = (discordId?: string) => {
-        const baseUrl = 'https://discord.com/oauth2/authorize?client_id=1485260478048505876';
-        const url = discordId ? `${baseUrl}&guild_id=${discordId}` : baseUrl;
+        const base_url = props.discordBotInviteUrl;
+        const url = discordId ? `${base_url}&guild_id=${discordId}&disable_guild_select=true` : base_url;
 
         window.location.assign(url);
     };

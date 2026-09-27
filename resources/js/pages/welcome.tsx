@@ -16,8 +16,6 @@ import { FaDiscord } from 'react-icons/fa';
 import StatCounter from '@/components/site/stat-counter';
 import MainLayout from '@/layouts/main-layout';
 
-const DISCORD_INVITE = 'https://discord.gg/JyPa9dhwhx';
-
 interface SharedPageProps {
     translations: Record<string, any>;
     [key: string]: any;
@@ -86,6 +84,7 @@ const fade_up = {
 
 export default function Welcome() {
     const { props } = usePage<SharedPageProps>();
+    const bot_invite_url: string = props.discordBotInviteUrl;
 
     const __ = (key: string, replace: Record<string, string | number> = {}): string => {
         const parts = key.split('.');
@@ -169,7 +168,7 @@ export default function Welcome() {
                         className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
                     >
                         <a
-                            href={DISCORD_INVITE}
+                            href={bot_invite_url}
                             target="_blank"
                             rel="noreferrer"
                             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FF2A2A] to-[#FF4B4B] px-6 py-3 text-sm font-semibold text-white shadow-[0_0_30px_rgba(255,75,75,0.4)] transition-transform hover:scale-[1.03] sm:w-auto"
@@ -281,7 +280,7 @@ export default function Welcome() {
                                 ))}
                             </ul>
                             <a
-                                href={DISCORD_INVITE}
+                                href={bot_invite_url}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition-colors hover:border-white/30 hover:bg-white/10"
@@ -320,7 +319,7 @@ export default function Welcome() {
                                 ))}
                             </ul>
                             <a
-                                href={DISCORD_INVITE}
+                                href={bot_invite_url}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="relative mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2A85FF] to-[#4B9BFF] px-5 py-3 text-sm font-semibold text-white shadow-[0_0_24px_rgba(42,133,255,0.4)] transition-transform hover:scale-[1.02]"
@@ -346,7 +345,7 @@ export default function Welcome() {
                     </p>
                     <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
                         <a
-                            href={DISCORD_INVITE}
+                            href={bot_invite_url}
                             target="_blank"
                             rel="noreferrer"
                             className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FF2A2A] to-[#FF4B4B] px-6 py-3 text-sm font-semibold text-white shadow-[0_0_30px_rgba(255,75,75,0.4)] transition-transform hover:scale-[1.03]"

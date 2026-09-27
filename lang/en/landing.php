@@ -91,6 +91,8 @@ return [
         'contact' => 'Contact',
         'search' => 'Search',
         'add_to_discord' => 'Add to Discord',
+        'login' => 'Log in',
+        'dashboard' => 'Dashboard',
     ],
     'footer' => [
         'tagline' => 'The duty-tracking and staff-management platform built for serious Discord communities.',

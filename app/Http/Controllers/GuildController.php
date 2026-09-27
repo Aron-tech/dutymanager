@@ -62,15 +62,17 @@ class GuildController extends Controller
      */
     public function select(Guild $guild): RedirectResponse|Response
     {
-        SelectedGuildService::set($guild);
-
         $user = auth()->user();
         $access_token = session('discord_access_token') ?? $user->access_token;
         $access_level = $this->service->determineAccessLevel($guild, $user->id, $access_token);
 
         if ($access_level === 'accepted') {
+            SelectedGuildService::set($guild);
+
             return to_route('dashboard');
         }
+
+        SelectedGuildService::clear();
 
         if ($access_level === 'pending') {
             return back()->with('error', __('guild_user.error_pending_approval'));

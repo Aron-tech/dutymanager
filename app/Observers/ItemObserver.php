@@ -27,7 +27,7 @@ class ItemObserver
      */
     public function deleted(Item $item): void
     {
-        $item->image()->delete();
+        $item->image?->delete();
     }
 
     /**

@@ -13,6 +13,7 @@ use App\Http\Controllers\ItemController;
 use App\Http\Controllers\LicenseKeyController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PunishmentController;
+use App\Http\Middleware\EnsureRouteModelsBelongToSelectedGuild;
 use App\Http\Middleware\RequireGuildSetupMiddleware;
 use App\Http\Middleware\SelectedGuildMiddleware;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
@@ -44,6 +45,7 @@ Route::post('/language/{locale}', function (string $locale) {
 Route::middleware(['auth'])->group(function () {
     Route::get('/guilds/selector', [GuildController::class, 'selector'])->name('guilds.selector');
     Route::post('/guilds/select/{guild}', [GuildController::class, 'select'])->name('guilds.select');
+    Route::post('/guilds/{guild}/join-request', [GuildUserController::class, 'requestJoin'])->name('guilds.join-request');
 
     // Subscriptions
     /*Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
@@ -51,7 +53,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');*/
     Route::post('/guilds/{guild}/license/activate', [LicenseKeyController::class, 'activate'])->name('guild.license.activate');
 
-    Route::middleware([SelectedGuildMiddleware::class, RequireGuildSetupMiddleware::class])->group(function () {
+    Route::middleware([SelectedGuildMiddleware::class, RequireGuildSetupMiddleware::class, EnsureRouteModelsBelongToSelectedGuild::class])->group(function () {
         Route::get('dashboard', [PageController::class, 'dashboard'])->name('dashboard');
         Route::get('/guilds/setup', [GuildController::class, 'show'])->name('guild.setup.show');
         Route::post('/guilds/setup/features', [GuildController::class, 'saveFeatures'])->name('guild.setup.features.save')->middleware([HandlePrecognitiveRequests::class]);
@@ -106,6 +108,9 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('item')->group(function () {
             Route::get('/', [ItemController::class, 'index'])->name('items.index');
             Route::post('/', [ItemController::class, 'store'])->name('items.store');
+            Route::put('/{item}', [ItemController::class, 'update'])->name('items.update');
+            Route::delete('/{item}', [ItemController::class, 'delete'])->name('items.destroy');
+            Route::delete('/{item}/image', [ItemController::class, 'destroyImage'])->name('items.image.destroy');
         });
 
         Route::prefix('activity-log')->group(function () {

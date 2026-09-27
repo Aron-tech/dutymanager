@@ -58,15 +58,12 @@ class DiscordBotCommand extends Command
         });
 
         $bot->on(Event::GUILD_CREATE, function ($guild) use ($bot) {
-            Guild::updateOrCreate(
-                ['id' => $guild->id],
-                [
-                    'name' => $guild->name,
-                    'icon' => $guild->icon,
-                    'owner_id' => $guild->owner_id,
-                    'lang_code' => 'hu',
-                ]
-            );
+            $guild_model = Guild::firstOrNew(['id' => $guild->id], ['lang_code' => 'hu']);
+            $guild_model->fill([
+                'name' => $guild->name,
+                'icon' => $guild->icon,
+                'owner_id' => $guild->owner_id,
+            ])->save();
 
             if ($this->dev_mode) {
                 if ($this->dev_guild_id === (string) $guild->id) {

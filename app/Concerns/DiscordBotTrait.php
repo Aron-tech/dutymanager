@@ -359,8 +359,7 @@ trait DiscordBotTrait
                 $role_data[(string) $role->id] = $role->name;
             }
 
-            $guild_model->setData('roles', $role_data);
-            $guild_model->save();
+            $guild_model->saveDataAtomically('roles', $role_data);
             $this->info('Rangok szinkronizálva: '.count($role_data).' db.');
         });
     }
@@ -380,8 +379,7 @@ trait DiscordBotTrait
         $current_roles = $guild_model->getData('roles') ?? [];
         $current_roles[(string) $role->id] = $role->name;
 
-        $guild_model->setData('roles', $current_roles);
-        $guild_model->save();
+        $guild_model->saveDataAtomically('roles', $current_roles);
     }
 
     protected function handleGuildRoleDelete($role): void
@@ -400,8 +398,7 @@ trait DiscordBotTrait
 
         if (isset($current_roles[(string) $role->id])) {
             unset($current_roles[(string) $role->id]);
-            $guild_model->setData('roles', $current_roles);
-            $guild_model->save();
+            $guild_model->saveDataAtomically('roles', $current_roles);
         }
     }
 

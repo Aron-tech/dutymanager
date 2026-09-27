@@ -41,6 +41,7 @@ return [
         'token' => env('DISCORD_BOT_TOKEN'),
         'redirect' => env('DISCORD_REDIRECT_URI'),
         'dev_guild_id' => env('DISCORD_DEV_GUILD_ID'),
+        'bot_permissions' => env('DISCORD_BOT_PERMISSIONS', '1099780148246'),
     ],
 
     'bot_api' => [

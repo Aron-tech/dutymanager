@@ -3,13 +3,18 @@
 namespace App\Models;
 
 use App\Enums\FeatureEnum;
+use Database\Factories\GuildSettingsFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable(['guild_id', 'features', 'feature_settings', 'user_details_config', 'current_view', 'is_complete'])]
 class GuildSettings extends Model
 {
+    /** @use HasFactory<GuildSettingsFactory> */
+    use HasFactory;
+
     protected $table = 'guild_settings';
 
     protected $primaryKey = 'guild_id';
@@ -39,7 +44,7 @@ class GuildSettings extends Model
 
     public function isEnabledFeature(FeatureEnum $feature): bool
     {
-        return in_array($feature->value, $this->features);
+        return in_array($feature->value, $this->features ?? []);
     }
 
     public function getFeatureSettings(FeatureEnum $feature, ?string $settings_name, mixed $fallback = null): mixed
@@ -72,12 +77,6 @@ class GuildSettings extends Model
         return $fallback;
     }
 
-    /**
-     * @param FeatureEnum $feature
-     * @param string|null $settings_name
-     * @param mixed $settings_value
-     * @return void
-     */
     public function setFeatureSettings(FeatureEnum $feature, ?string $settings_name, mixed $settings_value): void
     {
         $settings = $this->feature_settings ?? [];

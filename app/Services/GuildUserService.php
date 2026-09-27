@@ -12,7 +12,6 @@ use App\Enums\DutyStatusEnum;
 use App\Enums\FeatureEnum;
 use App\Enums\PunishmentTypeEnum;
 use App\Events\SendUserMessageEvent;
-use App\Jobs\AddDiscordRoleJob;
 use App\Jobs\DeleteGuildUserJob;
 use App\Jobs\UpdateGuildUserRankJob;
 use App\Models\ActivityLog;
@@ -43,6 +42,7 @@ class GuildUserService
         $unattached_guild_users = DiscordFetchService::getGuildMembers($guild->id, true, 2);
 
         $rank_roles = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'rank_roles', []);
+        $guild_role_names = $guild->getData('roles', []);
 
         return [
             'guild_users' => $paginated_users,
@@ -51,7 +51,10 @@ class GuildUserService
             'filters' => $data,
             'rank_roles' => $rank_roles,
             'has_rank_system' => $guild_settings->isEnabledFeature(FeatureEnum::RANK),
-            'available_ranks' => $guild->getData('roles'),
+            'available_ranks' => collect($rank_roles)
+                ->map(fn (string $role_id) => ['id' => $role_id, 'name' => $guild_role_names[$role_id] ?? $role_id])
+                ->values()
+                ->all(),
         ];
     }
 

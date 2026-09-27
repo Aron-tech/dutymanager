@@ -76,8 +76,10 @@ export default function UserManagerView({
         is_processing: boolean;
     }>({ is_open: false, id: null, is_processing: false });
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const safe_user_details = Array.isArray(user_details_config) ? user_details_config : [];
+    const safe_user_details = useMemo(
+        () => (Array.isArray(user_details_config) ? user_details_config : []),
+        [user_details_config],
+    );
 
     const hasAnyRank = useMemo(() => {
         return guild_users.data.some(user => user.data?.rank_role);
@@ -263,7 +265,19 @@ export default function UserManagerView({
                     };
                 } else if (col.id.startsWith('detail_')) {
                     const key = col.id.replace('detail_', '');
-                    render_func = (row: GuildUser) => row.details?.[key] || '-';
+                    render_func = (row: GuildUser) => {
+                        const value = row.details?.[key];
+
+                        if (value === null || value === undefined || value === '') {
+                            return '-';
+                        }
+
+                        if (typeof value === 'boolean') {
+                            return value ? 'Igen' : 'Nem';
+                        }
+
+                        return typeof value === 'object' ? JSON.stringify(value) : String(value);
+                    };
                 }
 
                 return { id: col.id, label: col.label, sortable: true, render: render_func };
@@ -486,7 +500,7 @@ export default function UserManagerView({
                 user_details_config={safe_user_details}
                 unattached_guild_users={unattached_guild_users || []}
                 has_rank_system={has_rank_system}
-                available_ranks={available_ranks || []}
+                available_ranks={available_ranks ?? undefined}
             />
 
             <BulkRankModal

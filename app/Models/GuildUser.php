@@ -9,9 +9,11 @@ use App\Enums\DutyStatusEnum;
 use App\Enums\FeatureEnum;
 use App\Enums\PermissionEnum;
 use App\Services\SelectedGuildService;
+use Database\Factories\GuildUserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -23,7 +25,8 @@ use Illuminate\Support\Facades\Cache;
 #[Hidden(['cached_roles'])]
 class GuildUser extends Model
 {
-    use DataTrait;
+    /** @use HasFactory<GuildUserFactory> */
+    use DataTrait, HasFactory;
 
     protected $appends = ['rank_changed_ago', 'joined_ago'];
 

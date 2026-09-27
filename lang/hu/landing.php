@@ -91,6 +91,8 @@ return [
         'contact' => 'Kapcsolat',
         'search' => 'Keresés',
         'add_to_discord' => 'Hozzáadás',
+        'login' => 'Bejelentkezés',
+        'dashboard' => 'Vezérlőpult',
     ],
     'footer' => [
         'tagline' => 'A szolgálatkövető és személyzetkezelő platform komoly Discord közösségek számára.',

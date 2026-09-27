@@ -1,6 +1,6 @@
 import { useForm, usePage } from '@inertiajs/react';
 import { Clock } from 'lucide-react';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import SearchableSingleSelect from '@/components/searchable-single-select';
 import { Button } from '@/components/ui/button';
@@ -53,17 +53,25 @@ export default function CreateEditUserModal({
     is_request_mode = false,
     target_discord_id,
 }: CreateEditUserModalProps) {
-    const safe_unattached_guild_users = Array.isArray(unattached_guild_users)
-        ? unattached_guild_users
-        : unattached_guild_users && typeof unattached_guild_users === 'object'
-          ? Object.values(unattached_guild_users)
-          : [];
+    // Memoized so the reset effect below does not re-run (and loop) on every render.
+    const safe_unattached_guild_users = useMemo(
+        () =>
+            Array.isArray(unattached_guild_users)
+                ? unattached_guild_users
+                : unattached_guild_users &&
+                    typeof unattached_guild_users === 'object'
+                  ? Object.values(unattached_guild_users)
+                  : [],
+        [unattached_guild_users],
+    );
 
-    const safe_available_ranks = Array.isArray(available_ranks)
-        ? available_ranks
-        : available_ranks && typeof available_ranks === 'object'
-          ? Object.values(available_ranks)
-          : [];
+    const safe_available_ranks = useMemo(
+        () =>
+            (Array.isArray(available_ranks) ? available_ranks : []).filter(
+                (rank): rank is Rank => Boolean(rank && rank.id !== undefined),
+            ),
+        [available_ranks],
+    );
 
     const safe_user_details_config = Array.isArray(user_details_config)
         ? user_details_config
@@ -104,7 +112,8 @@ export default function CreateEditUserModal({
                     user_id: edit_user.user_id || '',
                     name: edit_user.user?.name || '',
                     ic_name: edit_user.ic_name || '',
-                    rank_id: (edit_user as any)?.rank_id?.toString() || '',
+                    rank_id:
+                        Object.keys(edit_user.data?.rank_role ?? {})[0] || '',
                     details: edit_user.details || {},
                     config_data: {},
                 });
@@ -162,7 +171,10 @@ export default function CreateEditUserModal({
         };
 
         if (is_request_mode && target_discord_id) {
-            post(route('guild.users.store', target_discord_id), common_options);
+            post(
+                route('guilds.join-request', target_discord_id),
+                common_options,
+            );
         } else if (is_edit && edit_user) {
             put(route('guild.users.update', edit_user.id), common_options);
         } else {
@@ -268,8 +280,13 @@ export default function CreateEditUserModal({
                                     </SelectTrigger>
                                     <SelectContent>
                                         {safe_available_ranks.map((rank) => {
-                                            if (!rank || rank.id === undefined)
+                                            if (
+                                                !rank ||
+                                                rank.id === undefined
+                                            ) {
                                                 return null;
+                                            }
+
                                             return (
                                                 <SelectItem
                                                     key={rank.id}
@@ -290,10 +307,11 @@ export default function CreateEditUserModal({
                         )}
 
                     {safe_user_details_config.map((config) => {
-                        if (!config || !config.name) return null;
-                        const error_key = is_request_mode
-                            ? `config_data.${config.name}`
-                            : `details.${config.name}`;
+                        if (!config || !config.name) {
+                            return null;
+                        }
+
+                        const error_key = `details.${config.name}`;
 
                         return (
                             <div key={config.name} className="space-y-2">
@@ -325,7 +343,7 @@ export default function CreateEditUserModal({
                                                             checked === true,
                                                     });
                                                     clearErrors(
-                                                        `config_data.${config.name}`,
+                                                        `details.${config.name}`,
                                                     );
                                                 } else {
                                                     setFormData('details', {
@@ -364,7 +382,7 @@ export default function CreateEditUserModal({
                                                         e.target.value,
                                                 });
                                                 clearErrors(
-                                                    `config_data.${config.name}`,
+                                                    `details.${config.name}`,
                                                 );
                                             } else {
                                                 setFormData('details', {

@@ -7,8 +7,10 @@ use App\Enums\FeatureEnum;
 use App\Enums\PunishmentTypeEnum;
 use App\Services\DiscordEmbedFactory;
 use App\Services\DiscordFetchService;
+use Database\Factories\PunishmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -17,7 +19,8 @@ use Illuminate\Support\Facades\DB;
 #[Fillable(['user_id', 'guild_id', 'guild_user_id', 'type', 'level', 'reason', 'expires_at', 'created_by', 'is_expired'])]
 class Punishment extends Model
 {
-    use SoftDeletes;
+    /** @use HasFactory<PunishmentFactory> */
+    use HasFactory, SoftDeletes;
 
     protected function casts(): array
     {

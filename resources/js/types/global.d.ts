@@ -12,12 +12,16 @@ declare module '@inertiajs/core' {
             activeGuild: string;
             sidebarOpen: boolean;
             guildHasActiveSubscription: boolean;
+            discordBotInviteUrl: string;
             [key: string]: unknown;
         };
     }
 }
 
 declare global {
+    // Assigned in app.tsx from the shared Ziggy config.
+    var route: typeof ziggyRoute;
+
     interface Window {
         axios: AxiosInstance;
         route: typeof ziggyRoute;

@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Enums\DutyStatusEnum;
+use Database\Factories\DutyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -12,7 +14,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['user_id', 'guild_id', 'guild_user_id', 'value', 'started_at', 'finished_at', 'status'])]
 class Duty extends Model
 {
-    use SoftDeletes;
+    /** @use HasFactory<DutyFactory> */
+    use HasFactory, SoftDeletes;
 
     public $timestamps = false;
 
@@ -29,15 +32,11 @@ class Duty extends Model
         ];
     }
 
-    public static function getActiveDutiesCount(): int
+    public static function getActiveDutiesCount(string $guild_id): int
     {
-        return self::whereNull('value')->whereNull('finished_at')->count();
+        return self::where('guild_id', $guild_id)->whereNull('finished_at')->count();
     }
 
-    /**
-     * @param int $value
-     * @return string
-     */
     public static function standardFormat(int $value): string
     {
         $hours = intdiv($value, 60);
@@ -46,43 +45,26 @@ class Duty extends Model
         return sprintf('%02d:%02d', $hours, $minutes);
     }
 
-    /**
-     * @return BelongsTo
-     */
     public function guildUser(): BelongsTo
     {
         return $this->belongsTo(GuildUser::class);
     }
 
-    /**
-     * @return BelongsTo
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * @return BelongsTo
-     */
     public function guild(): BelongsTo
     {
         return $this->belongsTo(Guild::class);
     }
 
-    /**
-     * @param Builder $query
-     * @return Builder
-     */
     public function scopeActiveDuties(Builder $query): Builder
     {
         return $query->whereNull('finished_at');
     }
 
-    /**
-     * @param Builder $query
-     * @return Builder
-     */
     public function scopeFinishedDuties(Builder $query): Builder
     {
         return $query->whereNotNull('finished_at');

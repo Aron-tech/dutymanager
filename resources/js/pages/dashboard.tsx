@@ -41,7 +41,7 @@ interface ChartDataPoint {
 }
 
 interface DashboardProps {
-    guild_user_id: number;
+    guild_user_id: number | null;
     active_duties_count: number;
     has_active_duty: boolean;
     current_total_duty_time: number;
@@ -97,6 +97,10 @@ export default function Dashboard({
     };
 
     const handleToggleDuty = async () => {
+        if (guild_user_id === null) {
+            return;
+        }
+
         setIsTogglingDuty(true);
 
         try {
@@ -126,7 +130,8 @@ export default function Dashboard({
             }
         } catch (error: any) {
             toast.error(
-                error.message ||
+                error.response?.data?.message ||
+                    error.message ||
                     'Kiszolgáló hiba történt az állapot módosításakor.',
             );
         } finally {
@@ -184,7 +189,7 @@ export default function Dashboard({
                             <Activity className="h-4 w-4 text-muted-foreground" />
                         }
                         action_element={
-                            can('toggle_duty') && (
+                            can('toggle_duty') && guild_user_id !== null && (
                             <Button
                                 variant={
                                     has_active_duty ? 'destructive' : 'default'

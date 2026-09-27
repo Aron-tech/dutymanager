@@ -2,12 +2,14 @@
 
 namespace App\Http\Middleware;
 
-use App\Enums\GlobalRoleEnum;
-use App\Enums\PermissionEnum;
+use App\Models\Guild;
+use App\Models\User;
+use App\Services\GuildPermissionResolver;
 use App\Services\SelectedGuildService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\File;
+use Inertia\Inertia;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
 
@@ -48,34 +50,11 @@ class HandleInertiaRequests extends Middleware
         if ($user) {
             $guild = SelectedGuildService::get();
             if ($guild) {
-                if ($guild->owner_id === $user->id) {
-                    $permissions = [PermissionEnum::ALL->value];
-                } else {
-                    $guild_user = $guild->acceptedGuildUsers()->where('user_id', $user->id)->first();
-                    if ($guild_user) {
-                        if ($guild_user->global_role == GlobalRoleEnum::ADMIN) {
-                            $permissions = [PermissionEnum::ALL->value];
-                        } else {
-                            $permissions = $guild_user->getPermissionsAttribute();
-                        }
-                    }
-                }
+                $permissions = self::resolvePermissions($user, $guild);
             }
         }
 
         $locale = App::getLocale();
-        $translations = [];
-        $path = lang_path($locale);
-
-        if (File::isDirectory($path)) {
-            $files = File::allFiles($path);
-            foreach ($files as $file) {
-                if ($file->getExtension() === 'php') {
-                    $key = $file->getFilenameWithoutExtension();
-                    $translations[$key] = require $file->getRealPath();
-                }
-            }
-        }
 
         return [
             ...parent::share($request),
@@ -86,7 +65,7 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => $permissions,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-            'selectedGuild' => $guild,
+            'selectedGuild' => $guild?->only(['id', 'name', 'icon', 'is_installed']),
             'activeGuild' => $request->session()->get('selected_guild_id'),
             'guildHasActiveSubscription' => $guild?->hasActiveSubscription() ?? false,
             'ziggy' => fn () => [
@@ -97,7 +76,53 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
-            'translations' => $translations,
+            'translations' => Inertia::once(fn () => self::loadTranslations($locale))->as("translations.{$locale}"),
+            'discordBotInviteUrl' => self::discordBotInviteUrl(),
         ];
+    }
+
+    /**
+     * Delegates to GuildPermissionResolver (also used by AuthServiceProvider's Gate::before)
+     * so the UI always shows exactly what the backend allows.
+     *
+     * @return list<string>
+     */
+    private static function resolvePermissions(User $user, Guild $guild): array
+    {
+        return GuildPermissionResolver::resolve($user, $guild) ?? [];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function loadTranslations(string $locale): array
+    {
+        $translations = [];
+        $path = lang_path($locale);
+
+        if (! File::isDirectory($path)) {
+            return $translations;
+        }
+
+        foreach (File::allFiles($path) as $file) {
+            if ($file->getExtension() === 'php') {
+                $translations[$file->getFilenameWithoutExtension()] = require $file->getRealPath();
+            }
+        }
+
+        return $translations;
+    }
+
+    /**
+     * OAuth2 URL that adds the bot to a server (not an invite to the support server).
+     */
+    public static function discordBotInviteUrl(): string
+    {
+        return 'https://discord.com/oauth2/authorize?'.http_build_query([
+            'client_id' => config('services.discord.client_id'),
+            'permissions' => config('services.discord.bot_permissions'),
+            'scope' => 'bot applications.commands',
+            'integration_type' => 0,
+        ], '', '&', PHP_QUERY_RFC3986);
     }
 }

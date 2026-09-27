@@ -7,11 +7,12 @@ use App\Enums\ItemTypeEnum;
 use App\Enums\PermissionEnum;
 use App\Http\Requests\IndexItemRequest;
 use App\Http\Requests\StoreItemRequest;
+use App\Http\Requests\UpdateItemRequest;
 use App\Models\ActivityLog;
 use App\Models\Item;
 use App\Services\ItemService;
 use App\Services\SelectedGuildService;
-use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -28,11 +29,7 @@ class ItemController extends Controller
 
         $type = ItemTypeEnum::from($request->validated()['type']);
 
-        if (auth()->user()->cannot(PermissionEnum::VIEW_ITEMS)) {
-            if (($type === ItemTypeEnum::VEHICLE && auth()->user()->cannot(PermissionEnum::VIEW_ITEM_VEHICLES)) || ($type === ItemTypeEnum::CLOTHING && auth()->user()->cannot(PermissionEnum::VIEW_ITEM_CLOTHES))) {
-                abort(403, __('app.error_no_permission'));
-            }
-        }
+        $this->authorizeItemAction(PermissionEnum::VIEW_ITEMS, $type);
 
         $items = $guild->items()->with('image')->where('type', $type)->orderBy('position')->get();
 
@@ -42,21 +39,13 @@ class ItemController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreItemRequest $request)
+    public function store(StoreItemRequest $request): RedirectResponse
     {
         $guild = SelectedGuildService::get();
         $data = $request->validated();
+
+        $this->authorizeItemAction(PermissionEnum::ADD_ITEMS, ItemTypeEnum::from($data['type']));
+
         try {
             $item = DB::transaction(function () use ($request, $data, $guild) {
                 $item = $this->service->createItem($guild, $data, $request->file('image'));
@@ -68,53 +57,80 @@ class ItemController extends Controller
 
             return back()->with('success', 'Sikeresen létrehoztad a(z) '.$item->name.'.');
         } catch (Throwable $e) {
-            return back()->with('error', $e->getMessage())->withInput();
+            Log::error($e);
+
+            return back()->with('error', __('app.error_action'))->withInput();
+        }
+    }
+
+    public function update(UpdateItemRequest $request, Item $item): RedirectResponse
+    {
+        $data = $request->validated();
+        $new_type = ItemTypeEnum::from($data['type']);
+
+        $this->authorizeItemAction(PermissionEnum::EDIT_ITEMS, $item->type);
+
+        if ($new_type !== $item->type) {
+            $this->authorizeItemAction(PermissionEnum::EDIT_ITEMS, $new_type);
+        }
+
+        try {
+            DB::transaction(fn () => $this->service->updateItem($item, $data, $request->file('image')));
+
+            return back()->with('success', 'Sikeresen módosítottad a(z) '.$item->name.'.');
+        } catch (Throwable $e) {
+            Log::error($e);
+
+            return back()->with('error', __('app.error_action'))->withInput();
+        }
+    }
+
+    public function destroyImage(Item $item): RedirectResponse
+    {
+        $this->authorizeItemAction(PermissionEnum::EDIT_ITEMS, $item->type);
+
+        $this->service->deleteImage($item);
+
+        return back()->with('success', 'A kép törölve lett.');
+    }
+
+    public function delete(Item $item): RedirectResponse
+    {
+        $this->authorizeItemAction(PermissionEnum::DELETE_ITEMS, $item->type);
+
+        try {
+            $item_data = $item->toArray();
+            $item->delete();
+            ActivityLog::make($item->guild_id, auth()->id(), null, ActionTypeEnum::DELETE_ITEM_FROM_GUILD, $item_data);
+
+            return back()->with('success', 'Sikeresen törölve a(z) '.$item->name.'.');
+        } catch (Throwable $e) {
+            Log::error($e);
+
+            return back()->with('error', __('app.error_action'));
         }
     }
 
     /**
-     * Display the specified resource.
+     * Allows the action with either the general item permission or the type specific one.
      */
-    public function show(Item $item)
+    private function authorizeItemAction(PermissionEnum $general_permission, ItemTypeEnum $type): void
     {
-        //
-    }
+        $user = auth()->user();
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Item $item)
-    {
-        //
-    }
+        if ($user->can($general_permission)) {
+            return;
+        }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Item $item)
-    {
-        //
-    }
+        $type_permission = match ($general_permission) {
+            PermissionEnum::VIEW_ITEMS => $type === ItemTypeEnum::VEHICLE ? PermissionEnum::VIEW_ITEM_VEHICLES : PermissionEnum::VIEW_ITEM_CLOTHES,
+            PermissionEnum::ADD_ITEMS => $type === ItemTypeEnum::VEHICLE ? PermissionEnum::ADD_ITEM_VEHICLES : PermissionEnum::ADD_ITEM_CLOTHES,
+            PermissionEnum::EDIT_ITEMS => $type === ItemTypeEnum::VEHICLE ? PermissionEnum::EDIT_ITEM_VEHICLES : PermissionEnum::EDIT_ITEM_CLOTHES,
+            PermissionEnum::DELETE_ITEMS => $type === ItemTypeEnum::VEHICLE ? PermissionEnum::DELETE_ITEM_VEHICLES : PermissionEnum::DELETE_ITEM_CLOTHES,
+        };
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function delete(Item $item)
-    {
-        $guild = SelectedGuildService::get();
-        try {
-            if ($item->guild_id !== $guild->id) {
-                return;
-            }
-            $item_model = clone $item;
-            $item->delete();
-            ActivityLog::make($item->guild_id, auth()->id(), null, ActionTypeEnum::DELETE_ITEM_FROM_GUILD, $item_model->toArray());
-
-            return back()->with('success', 'Sikeresen törölve a(z) '.$item_model?->name.'.');
-        } catch (Throwable $e) {
-            Log::error($e);
-
-            return back()->with('error', $e->getMessage())->withInput();
+        if ($user->cannot($type_permission)) {
+            abort(403, __('app.error_no_permission'));
         }
     }
 }

@@ -345,8 +345,7 @@ class HandleGuildUserInteraction
             return;
         }
 
-        $this->guild->setData('sync_users', $to_delete);
-        $this->guild->save();
+        $this->guild->saveDataAtomically('sync_users', $to_delete);
         $chunks = $this->chunkTextLines($lines, 4000);
 
         $builder = MessageBuilder::new();
@@ -397,16 +396,13 @@ class HandleGuildUserInteraction
             }
         }
 
-        $this->guild->setData('sync_users', []);
-        $this->guild->save();
+        $this->guild->saveDataAtomically('sync_users', []);
         $this->respondSimpleEmbed($interaction, "✅ Szinkronizáció befejezve. ({$deleted_count} felhasználó törölve)", '00FF00');
     }
 
     public function handleSyncCancelCommand(DiscordInteraction $interaction): void
     {
-        $this->guild->refresh();
-        $this->guild->setData('sync_users', []);
-        $this->guild->save();
+        $this->guild->saveDataAtomically('sync_users', []);
         $this->respondSimpleEmbed($interaction, '❌ Szinkronizáció megszakítva.', 'FF0000');
     }
 }

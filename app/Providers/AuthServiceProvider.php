@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Enums\GlobalRoleEnum;
+use App\Enums\PermissionEnum;
 use App\Models\Guild;
 use App\Models\User;
+use App\Services\GuildPermissionResolver;
 use App\Services\SelectedGuildService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -45,27 +47,17 @@ class AuthServiceProvider extends ServiceProvider
                 return null;
             }
 
-            if ($guild->owner_id === $user->id) {
-                return true;
-            }
+            $permissions = GuildPermissionResolver::resolve($user, $guild);
 
-            $guild_user = $guild->acceptedGuildUsers()->where('user_id', $user->id)->first();
-
-            if (! $guild_user) {
+            if ($permissions === null) {
                 return false;
             }
 
-            if ($user->global_role === GlobalRoleEnum::ADMIN) {
+            if (in_array(PermissionEnum::ALL->value, $permissions, true)) {
                 return true;
             }
 
-            $permissions = $guild_user->permissions;
-
-            if (empty($permissions)) {
-                return false;
-            }
-
-            return in_array($ability, $permissions);
+            return in_array($ability, $permissions, true);
         });
     }
 }

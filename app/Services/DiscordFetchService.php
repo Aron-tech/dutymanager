@@ -381,8 +381,14 @@ class DiscordFetchService
         }
     }
 
-    public static function addRoleToMember(string $guild_id, string $user_id, string $role_id): bool
+    public static function addRoleToMember(string $guild_id, string $user_id, ?string $role_id): bool
     {
+        if (empty($role_id)) {
+            Log::warning("Nem lehet Discord szerepkört hozzárendelni, mert nincs beállítva role_id (guild: {$guild_id}, user: {$user_id}).");
+
+            return false;
+        }
+
         return self::dispatchToBot('add_role', [
             'guild_id' => $guild_id,
             'user_id' => $user_id,
@@ -390,8 +396,14 @@ class DiscordFetchService
         ]);
     }
 
-    public static function removeRoleFromMember(string $guild_id, string $user_id, string $role_id): bool
+    public static function removeRoleFromMember(string $guild_id, string $user_id, ?string $role_id): bool
     {
+        if (empty($role_id)) {
+            Log::warning("Nem lehet Discord szerepkört eltávolítani, mert nincs beállítva role_id (guild: {$guild_id}, user: {$user_id}).");
+
+            return false;
+        }
+
         return self::dispatchToBot('remove_role', [
             'guild_id' => $guild_id,
             'user_id' => $user_id,
