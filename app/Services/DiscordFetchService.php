@@ -258,61 +258,82 @@ class DiscordFetchService
         return self::getGuildChannels($guild_id, true, [4]);
     }
 
-    public static function getGuildMembers(string $guild_id, bool $select_format = false, ?int $filter = null): array
+    /**
+     * Fetches every human member of the guild, following Discord's cursor pagination.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function fetchAllGuildMembers(string $guild_id): ?array
     {
-        $cache_filter = $filter ?? 0;
-        $cache_key = "discord_guild_{$guild_id}_members_".($select_format ? 'select' : 'raw')."_{$cache_filter}";
-        $result = self::cacheValidResponse($cache_key, 15, function () use ($guild_id, $select_format, $filter) {
-            $data = self::callBotApi('GET', "/guilds/{$guild_id}/members");
+        $members = [];
+        $after = '0';
 
-            if ($data === null) {
+        do {
+            $page = self::callBotApi('GET', "/guilds/{$guild_id}/members", ['limit' => 1000, 'after' => $after]);
+
+            if ($page === null) {
                 return null;
             }
 
-            $collection = collect($data);
+            $members = array_merge($members, $page);
+            $after = (string) (collect($page)->last()['user']['id'] ?? '');
+        } while (count($page) === 1000 && $after !== '');
 
-            if ($filter === 1 || $filter === 2) {
-                $db_user_ids = GuildUser::where('guild_id', $guild_id)->pluck('user_id')->toArray();
+        return $members;
+    }
 
-                $collection = $collection->filter(function ($member) use ($db_user_ids, $filter) {
-                    $user_id = (string) ($member['user']['id'] ?? '');
-                    if (! $user_id) {
-                        return false;
-                    }
+    /**
+     * The DB-dependent filtering is applied after the cache, so adding or removing guild users shows up immediately.
+     *
+     * @param  int|null  $filter  1 = only members already in the system, 2 = only members not yet in the system
+     */
+    public static function getGuildMembers(string $guild_id, bool $select_format = false, ?int $filter = null): array
+    {
+        $members = self::cacheValidResponse(
+            "discord_guild_{$guild_id}_members",
+            5,
+            fn () => self::fetchAllGuildMembers($guild_id)
+        ) ?? [];
 
-                    $is_in_db = in_array($user_id, $db_user_ids);
+        $collection = collect($members)->reject(fn ($member) => (bool) ($member['user']['bot'] ?? false));
 
-                    return $filter === 1 ? $is_in_db : ! $is_in_db;
-                });
-            }
+        if ($filter === 1 || $filter === 2) {
+            $db_user_ids = GuildUser::where('guild_id', $guild_id)->pluck('user_id')->map(fn ($id) => (string) $id)->all();
 
-            if (! $select_format) {
-                return $collection->values()->toArray();
-            }
+            $collection = $collection->filter(function ($member) use ($db_user_ids, $filter) {
+                $user_id = (string) ($member['user']['id'] ?? '');
+                if ($user_id === '') {
+                    return false;
+                }
 
-            return $collection->map(function ($member) {
-                $user = $member['user'] ?? [];
+                $is_in_db = in_array($user_id, $db_user_ids, true);
 
-                return [
-                    'value' => (string) ($user['id'] ?? ''),
-                    'label' => $user['global_name'] ?? ($user['username'] ?? 'Ismeretlen'),
-                    'name' => $user['username'] ?? 'Ismeretlen',
-                ];
-            })->values()->toArray();
-        });
+                return $filter === 1 ? $is_in_db : ! $is_in_db;
+            });
+        }
 
-        return $result ?? [];
+        if (! $select_format) {
+            return $collection->values()->toArray();
+        }
+
+        return $collection->map(function ($member) {
+            $user = $member['user'] ?? [];
+
+            return [
+                'value' => (string) ($user['id'] ?? ''),
+                'label' => $user['global_name'] ?? ($user['username'] ?? 'Ismeretlen'),
+                'name' => $user['username'] ?? 'Ismeretlen',
+            ];
+        })->values()->toArray();
     }
 
     public static function getGuildMemberIds(string $guild_id): array
     {
-        $result = self::cacheValidResponse("discord_guild_{$guild_id}_member_ids", 15, function () use ($guild_id) {
-            $data = self::callBotApi('GET', "/guilds/{$guild_id}/members");
-
-            return $data !== null ? collect($data)->pluck('id')->toArray() : null;
-        });
-
-        return $result ?? [];
+        return collect(self::getGuildMembers($guild_id))
+            ->map(fn ($member) => (string) ($member['user']['id'] ?? ''))
+            ->filter()
+            ->values()
+            ->all();
     }
 
     public static function getGuildBans(string $guild_id): array

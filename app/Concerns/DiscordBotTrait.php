@@ -2,14 +2,12 @@
 
 namespace App\Concerns;
 
-use App\Enums\FeatureEnum;
 use App\Models\Guild;
 use App\Models\GuildUser;
 use App\Services\CommandRegistrationService;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use Discord\Parts\Embed\Embed;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use React\Promise\Deferred;
@@ -245,23 +243,6 @@ trait DiscordBotTrait
         }
     }
 
-    public function listRoleWhitelist(Guild $guild): array
-    {
-        $guild_settings = $guild->guildSettings;
-
-        $rank_role_ids = [];
-        $guild_role_ids = [];
-        foreach ($guild->guildRoles as $role) {
-            $guild_role_ids[] = $role->role_id;
-        }
-
-        if ($guild_settings->isEnabledFeature(FeatureEnum::RANK)) {
-            $rank_role_ids = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'rank_roles', []);
-        }
-
-        return array_unique(array_merge($guild_role_ids, $rank_role_ids));
-    }
-
     /**
      * @throws Throwable
      */
@@ -302,12 +283,8 @@ trait DiscordBotTrait
             return;
         }
 
-        $cache_key = Guild::ROLE_WHITELIST_CACHE_PREFIX.$member->guild_id;
-        $whitelist = Cache::remember($cache_key, now()->addHour(), function () use ($member) {
-            $guild = Guild::where('id', $member->guild_id)->with(['guildRoles', 'guildSettings'])->installed()->first();
-
-            return $guild ? $this->listRoleWhitelist($guild) : [];
-        });
+        $guild = Guild::where('id', $member->guild_id)->with(['guildSettings'])->installed()->first();
+        $whitelist = $guild?->getRoleWhitelist() ?? [];
 
         if (empty($whitelist)) {
             return;

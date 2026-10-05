@@ -70,6 +70,8 @@ readonly class GuildSettingsService
 
             $guild_settings->save();
 
+            Guild::deleteRoleWhitelistCache($guild_settings->guild_id);
+
             // Sort old config as well for accurate comparison
             $old_user_details_config_sorted = is_array($old_user_details_config) ? collect($old_user_details_config)->sortBy('key')->values()->all() : [];
 

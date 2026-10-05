@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\DataTrait;
 use App\Enums\DutyStatusEnum;
+use App\Enums\FeatureEnum;
 use Database\Factories\GuildFactory;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -45,6 +46,38 @@ class Guild extends Model
     public static function deleteRoleWhitelistCache(string $guild_id): void
     {
         Cache::forget(self::ROLE_WHITELIST_CACHE_PREFIX.$guild_id);
+    }
+
+    /**
+     * Role IDs worth persisting into guild_users.cached_roles (permission roles + rank roles).
+     * An empty result is never cached, so an uninstalled/unconfigured guild doesn't stay blank for an hour.
+     *
+     * @return list<string>
+     */
+    public function getRoleWhitelist(): array
+    {
+        $cache_key = self::ROLE_WHITELIST_CACHE_PREFIX.$this->id;
+        $whitelist = Cache::get($cache_key);
+
+        if ($whitelist !== null) {
+            return $whitelist;
+        }
+
+        $guild_role_ids = $this->guildRoles()->pluck('role_id')->map(fn ($id) => (string) $id)->all();
+        $rank_role_ids = [];
+        $guild_settings = $this->guildSettings;
+
+        if ($guild_settings?->isEnabledFeature(FeatureEnum::RANK)) {
+            $rank_role_ids = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'rank_roles', []);
+        }
+
+        $whitelist = array_values(array_unique(array_merge($guild_role_ids, $rank_role_ids)));
+
+        if ($whitelist !== []) {
+            Cache::put($cache_key, $whitelist, now()->addHour());
+        }
+
+        return $whitelist;
     }
 
     public function guildSettings(): HasOne

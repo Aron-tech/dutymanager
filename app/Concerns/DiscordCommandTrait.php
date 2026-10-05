@@ -21,6 +21,7 @@ use Discord\Parts\Embed\Embed;
 use Discord\Parts\Interactions\Interaction as DiscordInteraction;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Gate;
+use Throwable;
 
 trait DiscordCommandTrait
 {
@@ -69,6 +70,7 @@ trait DiscordCommandTrait
 
         if ($this->guild && $this->user) {
             $this->guild_user = $this->guild->acceptedGuildUsers()->where('user_id', $this->user->id)->first();
+            $this->syncGuildUserRoles($interaction);
         }
 
         if ($this->active_options !== null && $this->active_options->count() > 0) {
@@ -87,6 +89,40 @@ trait DiscordCommandTrait
 
         foreach ($data as $key => $value) {
             $this->{$key} = $value;
+        }
+    }
+
+    /**
+     * The interaction carries the invoker's live Discord roles, so use them instead of trusting a possibly
+     * stale (or never filled) cached_roles column that the permission check is built on.
+     */
+    protected function syncGuildUserRoles(DiscordInteraction $interaction): void
+    {
+        if (! $this->guild_user || ! $interaction->member?->roles) {
+            return;
+        }
+
+        try {
+            $live_role_ids = array_map('strval', array_values($interaction->member->roles->map(fn ($role) => $role->id)->toArray()));
+            $whitelist = $this->guild->getRoleWhitelist();
+
+            if ($whitelist === []) {
+                return;
+            }
+
+            $new_roles = array_values(array_intersect($live_role_ids, $whitelist));
+            $saved_roles = array_map('strval', $this->guild_user->cached_roles ?? []);
+
+            sort($new_roles);
+            sort($saved_roles);
+
+            if ($new_roles === $saved_roles) {
+                return;
+            }
+
+            $this->guild_user->update(['cached_roles' => $new_roles]);
+        } catch (Throwable $e) {
+            report($e);
         }
     }
 

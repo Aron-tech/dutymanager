@@ -26,7 +26,7 @@ class GuildUserObserver
      */
     public function created(GuildUser $guildUser): void
     {
-        //
+        GuildUser::deletePermissionCache($guildUser->guild_id, $guildUser->user_id);
     }
 
     /**
@@ -34,7 +34,9 @@ class GuildUserObserver
      */
     public function updated(GuildUser $guildUser): void
     {
-        //
+        if ($guildUser->wasChanged(['cached_roles', 'accepted_at'])) {
+            GuildUser::deletePermissionCache($guildUser->guild_id, $guildUser->user_id);
+        }
     }
 
     /**

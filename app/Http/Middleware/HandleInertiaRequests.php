@@ -121,8 +121,8 @@ class HandleInertiaRequests extends Middleware
         return 'https://discord.com/oauth2/authorize?'.http_build_query([
             'client_id' => config('services.discord.client_id'),
             'permissions' => config('services.discord.bot_permissions'),
-            'scope' => 'bot applications.commands',
             'integration_type' => 0,
+            'scope' => 'bot',
         ], '', '&', PHP_QUERY_RFC3986);
     }
 }

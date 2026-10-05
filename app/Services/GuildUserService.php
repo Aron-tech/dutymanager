@@ -41,7 +41,7 @@ class GuildUserService
         $user_details_config = $guild_settings?->user_details_config ?? [];
         $unattached_guild_users = DiscordFetchService::getGuildMembers($guild->id, true, 2);
 
-        $rank_roles = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'rank_roles', []);
+        $rank_roles = $guild_settings?->getFeatureSettings(FeatureEnum::RANK, 'rank_roles', []) ?? [];
         $guild_role_names = $guild->getData('roles', []);
 
         return [
@@ -50,7 +50,7 @@ class GuildUserService
             'unattached_guild_users' => $unattached_guild_users,
             'filters' => $data,
             'rank_roles' => $rank_roles,
-            'has_rank_system' => $guild_settings->isEnabledFeature(FeatureEnum::RANK),
+            'has_rank_system' => $guild_settings?->isEnabledFeature(FeatureEnum::RANK) ?? false,
             'available_ranks' => collect($rank_roles)
                 ->map(fn (string $role_id) => ['id' => $role_id, 'name' => $guild_role_names[$role_id] ?? $role_id])
                 ->values()
@@ -208,7 +208,7 @@ class GuildUserService
             return;
         }
 
-        $rank_roles = $guild_settings->getFeatureSettings(FeatureEnum::RANK, 'rank_roles', []);
+        $rank_roles = $guild_settings?->getFeatureSettings(FeatureEnum::RANK, 'rank_roles', []) ?? [];
         $current_index = $current_rank_data['index'] ?? -1;
         $new_index = array_search($new_rank_id, $rank_roles);
 
@@ -244,6 +244,8 @@ class GuildUserService
             ActivityLog::make($guild_user->guild_id, $auth_user->id, $guild_user->user_id, ActionTypeEnum::ACCEPTED_USER_TO_GUILD, $guild_user->toArray());
 
             DB::commit();
+
+            $guild_user->syncRolesFromDiscord();
 
             if ($default_role) {
                 DiscordFetchService::addRoleToMember($guild->id, $guild_user->user_id, $default_role);

@@ -11,7 +11,6 @@ use App\Models\GuildUser;
 use App\Models\Holiday;
 use App\Models\Punishment;
 use App\Models\User;
-use App\Services\DiscordFetchService;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -35,8 +34,11 @@ class JoinUserToGuildAction
             ActivityLog::make($guild->id, $user->id, null, ActionTypeEnum::REQUEST_JOIN_GUILD, $guild_user->toArray());
         } elseif ($use_restore) {
             $this->restore($guild_user);
+            $guild_user->syncRolesFromDiscord();
             ActivityLog::make($guild->id, $added_by->id, $user->id, ActionTypeEnum::ADD_USER_TO_GUILD_WITH_RESTORE, $guild_user->toArray());
         } else {
+            $guild_user->syncRolesFromDiscord();
+
             $default_role = $guild->guildSettings->getGeneralSettings('default_role');
 
             if ($default_role) {

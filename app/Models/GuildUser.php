@@ -8,6 +8,7 @@ use App\Enums\DutyActionEnum;
 use App\Enums\DutyStatusEnum;
 use App\Enums\FeatureEnum;
 use App\Enums\PermissionEnum;
+use App\Services\DiscordFetchService;
 use App\Services\SelectedGuildService;
 use Database\Factories\GuildUserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -233,6 +234,26 @@ class GuildUser extends Model
     public function hasActiveHoliday(): bool
     {
         return $this->activeHoliday->exists();
+    }
+
+    /**
+     * Pulls the member's current Discord roles so permissions work right away for people who
+     * already held the roles before being added to the system (no member-update event would fire for them).
+     */
+    public function syncRolesFromDiscord(): void
+    {
+        $member = DiscordFetchService::getMemberDetails($this->guild_id, $this->user_id);
+
+        if ($member === null || ! isset($member['roles'])) {
+            return;
+        }
+
+        $whitelist = $this->guild()->first()?->getRoleWhitelist() ?? [];
+        $roles = array_values(array_intersect(array_map('strval', $member['roles']), $whitelist));
+
+        if ($roles !== []) {
+            $this->update(['cached_roles' => $roles]);
+        }
     }
 
     public function hasRole(string $role_id): bool
