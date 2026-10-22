@@ -23,6 +23,7 @@
         "martinbean/socialite-discord-provider": "^1.2",
         "predis/predis": "^3.4",
         "socialiteproviders/discord": "^4.2",
+        "team-reflex/discord-php": "^10.50",
         "tightenco/ziggy": "^2.6"
     },
     "require-dev": {
