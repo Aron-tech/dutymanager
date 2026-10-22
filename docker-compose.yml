@@ -1,0 +1,154 @@
+# Coolify: új resource -> Docker Compose (Build Pack: Docker Compose), ez a fájl a repó gyökerében.
+# A web szolgáltatáshoz a Coolify felületén add meg a domaint: https://dutymanager.hu:8080
+# (a :8080 a konténeren belüli port). A PostgreSQL külön Coolify-resource, lásd DB_HOST.
+# Fontos: az itt nem szereplő környezeti változókat a konténer nem kapja meg, ezeket vedd fel az
+# alábbi x-app-env blokkba.
+
+x-app-build: &app-build
+  context: .
+  dockerfile: Dockerfile
+  args:
+    PHP_VERSION: "8.5.12"
+    VITE_APP_NAME: ${APP_NAME:-DutyManager}
+    VITE_REVERB_APP_KEY: ${REVERB_APP_KEY:-}
+    VITE_REVERB_HOST: ${REVERB_HOST:-}
+    VITE_REVERB_PORT: ${REVERB_PORT:-443}
+    VITE_REVERB_SCHEME: ${REVERB_SCHEME:-https}
+
+x-app-env: &app-env
+  APP_NAME: ${APP_NAME:-DutyManager}
+  APP_ENV: production
+  APP_KEY: ${APP_KEY:?APP_KEY kötelező}
+  APP_DEBUG: "false"
+  APP_URL: ${APP_URL:-https://dutymanager.hu}
+  APP_LOCALE: ${APP_LOCALE:-en}
+  APP_FALLBACK_LOCALE: ${APP_FALLBACK_LOCALE:-en}
+  LOG_CHANNEL: stderr
+  LOG_LEVEL: ${LOG_LEVEL:-warning}
+
+  DB_CONNECTION: pgsql
+  DB_HOST: ${DB_HOST:?DB_HOST kötelező}
+  DB_PORT: ${DB_PORT:-5432}
+  DB_DATABASE: ${DB_DATABASE:-dutymanager_db}
+  DB_USERNAME: ${DB_USERNAME:-dutymanager}
+  DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD kötelező}
+
+  SESSION_DRIVER: ${SESSION_DRIVER:-database}
+  SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
+  SESSION_DOMAIN: ${SESSION_DOMAIN:-null}
+  QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
+  CACHE_STORE: ${CACHE_STORE:-redis}
+  FILESYSTEM_DISK: ${FILESYSTEM_DISK:-local}
+  BROADCAST_CONNECTION: ${BROADCAST_CONNECTION:-log}
+
+  REDIS_CLIENT: ${REDIS_CLIENT:-phpredis}
+  REDIS_HOST: redis
+  REDIS_PASSWORD: "null"
+  REDIS_PORT: "6379"
+
+  MAIL_MAILER: ${MAIL_MAILER:-log}
+  MAIL_SCHEME: ${MAIL_SCHEME:-null}
+  MAIL_HOST: ${MAIL_HOST:-127.0.0.1}
+  MAIL_PORT: ${MAIL_PORT:-2525}
+  MAIL_USERNAME: ${MAIL_USERNAME:-null}
+  MAIL_PASSWORD: ${MAIL_PASSWORD:-null}
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-hello@example.com}
+  MAIL_FROM_NAME: ${MAIL_FROM_NAME:-DutyManager}
+
+  DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+  DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
+  DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+  DISCORD_REDIRECT_URI: ${DISCORD_REDIRECT_URI:-https://dutymanager.hu/login/callback}
+  DISCORD_DEV_GUILD_ID: ${DISCORD_DEV_GUILD_ID:-}
+  DISCORD_BOT_PERMISSIONS: ${DISCORD_BOT_PERMISSIONS:-8}
+
+  STRIPE_KEY: ${STRIPE_KEY:-}
+  STRIPE_SECRET: ${STRIPE_SECRET:-}
+  STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+
+  REVERB_APP_ID: ${REVERB_APP_ID:-}
+  REVERB_APP_KEY: ${REVERB_APP_KEY:-}
+  REVERB_APP_SECRET: ${REVERB_APP_SECRET:-}
+  REVERB_HOST: ${REVERB_HOST:-}
+  REVERB_PORT: ${REVERB_PORT:-443}
+  REVERB_SCHEME: ${REVERB_SCHEME:-https}
+
+services:
+  web:
+    build: *app-build
+    init: true
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      <<: *app-env
+      # Az első (üres adatbázisra futó) tesztdeploy után, a dump visszatöltése UTÁN kapcsold "true"-ra.
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
+    volumes:
+      - storage-app:/var/www/html/storage/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/up >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  queue:
+    build: *app-build
+    init: true
+    restart: unless-stopped
+    # Eredeti systemd-parancs + --max-time, hogy a worker óránként tisztán újrainduljon.
+    command: ["php", "artisan", "queue:work", "--queue=default", "--tries=3", "--timeout=90", "--max-time=3600"]
+    stop_grace_period: 100s
+    environment:
+      <<: *app-env
+    volumes:
+      - storage-app:/var/www/html/storage/app
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    build: *app-build
+    init: true
+    restart: unless-stopped
+    # FIGYELEM: a jelenlegi szerveren nincs cron, vagyis ezek az ütemezett parancsok most nem futnak.
+    # Az átállással először lefutnak (clean-up, lejárt szabadságok/büntetések kezelése, aktív szolgálatok).
+    command: ["php", "artisan", "schedule:work"]
+    environment:
+      <<: *app-env
+    volumes:
+      - storage-app:/var/www/html/storage/app
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  discord-bot:
+    build: *app-build
+    init: true
+    restart: unless-stopped
+    command: ["php", "artisan", "bot:start"]
+    environment:
+      <<: *app-env
+    volumes:
+      - storage-app:/var/www/html/storage/app
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Csak gyorsítótár (CACHE_STORE=redis), perzisztencia nem kell.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  storage-app:
