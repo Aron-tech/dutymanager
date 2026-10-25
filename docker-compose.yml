@@ -42,7 +42,7 @@ x-app-env: &app-env
   BROADCAST_CONNECTION: ${BROADCAST_CONNECTION:-log}
 
   REDIS_CLIENT: ${REDIS_CLIENT:-phpredis}
-  REDIS_HOST: redis
+  REDIS_HOST: dm-redis
   REDIS_PASSWORD: "null"
   REDIS_PORT: "6379"
 
@@ -87,7 +87,7 @@ services:
     volumes:
       - storage-app:/var/www/html/storage/app
     depends_on:
-      redis:
+      dm-redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/up >/dev/null || exit 1"]
@@ -108,7 +108,7 @@ services:
     volumes:
       - storage-app:/var/www/html/storage/app
     depends_on:
-      redis:
+      dm-redis:
         condition: service_healthy
 
   scheduler:
@@ -123,7 +123,7 @@ services:
     volumes:
       - storage-app:/var/www/html/storage/app
     depends_on:
-      redis:
+      dm-redis:
         condition: service_healthy
 
   discord-bot:
@@ -136,10 +136,10 @@ services:
     volumes:
       - storage-app:/var/www/html/storage/app
     depends_on:
-      redis:
+      dm-redis:
         condition: service_healthy
 
-  redis:
+  dm-redis:
     image: redis:7-alpine
     restart: unless-stopped
     # Csak gyorsítótár (CACHE_STORE=redis), perzisztencia nem kell.
